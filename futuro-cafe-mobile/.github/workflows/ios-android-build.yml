@@ -3,10 +3,10 @@ name: Build Pipeline
 on:
   push:
     branches:
-      - feature/main
+      - main
   pull_request:
     branches:
-      - feature/main
+      - main
 
 jobs:
   build_ios:
@@ -28,13 +28,13 @@ jobs:
         run: bundle install
 
       - name: Build the iOS app
-        run: bundle exec fastlane gym --scheme "FuturoCafé" --export_method "ad-hoc"
+        run: bundle exec fastlane gym --scheme "FuturoCafe" --export_method "ad-hoc"
 
       - name: Upload IPA
         uses: actions/upload-artifact@v3
         with:
-          name: FuturoCafé.ipa
-          path: path/to/output/FuturoCafé.ipa  # Ajuste para o caminho correto do seu .ipa
+          name: FuturoCafe.ipa
+          path: path/to/output/FuturoCafe.ipa  # Ajuste para o caminho correto do seu .ipa
 
   build_android:
     runs-on: ubuntu-latest
@@ -60,5 +60,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v3
         with:
-          name: FuturoCafé.apk
-          path: android/app/build/outputs/apk/release/app-release.apk  # Ajuste para o caminho correto do seu .apk
+          name: FuturoCafe.apk
+          path: android/app/build/outputs/apk/release/FuturoCafe.apk  # Ajuste para o caminho correto do seu .apk
