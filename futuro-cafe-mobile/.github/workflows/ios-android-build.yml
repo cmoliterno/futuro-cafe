@@ -3,10 +3,10 @@ name: Build Pipeline
 on:
   push:
     branches:
-      - feature/futuro-cafe
+      - feature/main
   pull_request:
     branches:
-      - feature/futuro-cafe
+      - feature/main
 
 jobs:
   build_ios:
