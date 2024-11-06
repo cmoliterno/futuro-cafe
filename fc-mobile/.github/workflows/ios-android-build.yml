@@ -25,16 +25,20 @@ jobs:
         run: gem install bundler
 
       - name: Install dependencies
-        run: bundle install
+        run: |
+          cd fc-mobile/ios
+          bundle install
 
       - name: Build the iOS app
-        run: bundle exec fastlane gym --scheme "FuturoCafe" --export_method "ad-hoc"
+        run: |
+          cd fc-mobile/ios
+          bundle exec fastlane gym --scheme "FuturoCafe" --export_method "ad-hoc"
 
       - name: Upload IPA
         uses: actions/upload-artifact@v3
         with:
           name: FuturoCafe.ipa
-          path: path/to/output/FuturoCafe.ipa  # Ajuste para o caminho correto do seu .ipa
+          path: fc-mobile/ios/build/FuturoCafe.ipa  # Ajuste para o caminho correto do seu .ipa
 
   build_android:
     runs-on: ubuntu-latest
@@ -44,7 +48,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Give execute permission to gradlew
-        run: chmod +x android/gradlew
+        run: chmod +x fc-mobile/android/gradlew
 
       - name: Set up Node.js
         uses: actions/setup-node@v2
@@ -52,13 +56,17 @@ jobs:
           node-version: '14'
 
       - name: Install dependencies
-        run: npm install
+        run: |
+          cd fc-mobile
+          npm install
 
       - name: Build the Android app
-        run: cd android && ./gradlew assembleRelease
+        run: |
+          cd fc-mobile/android
+          ./gradlew assembleRelease
 
       - name: Upload APK
         uses: actions/upload-artifact@v3
         with:
           name: FuturoCafe.apk
-          path: android/app/build/outputs/apk/release/FuturoCafe.apk  # Ajuste para o caminho correto do seu .apk
+          path: fc-mobile/android/app/build/outputs/apk/release/FuturoCafe.apk  # Ajuste para o caminho correto do seu .apk
