@@ -1,0 +1,17 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: #eaeaea;
+}
+
+h1, h2, h3 {
+  color: #333;
+}
+
+input, button {
+  border-radius: 4px;
+}
+
+button {
+  cursor: pointer;
+}

@@ -1,0 +1,30 @@
+const RouteName = {
+  SWIPER_SCREEN: 'SwiperScreen',
+  LOGIN_SCREEN: 'LoginScreen',
+  REGISTER_SCREEN: 'Register',
+  OTP_VERYFY_SCREEN: 'OtpVerifyScreen',
+  HOME_SCREEN: 'HomeScreen',
+  TAB_NAVIGATOR: 'TabNavigator',
+  REGISTRATION_SUCCESSFUL: 'RegistrationSuccessful',
+  HOME_TAB: 'Home',
+  PROFILE_TAB: 'Profile',
+  SELECT_LANGUAGE: 'TranslationScreen',
+  FORGOT_PASSWORD: 'ForgotPassword',
+  EDIT_PROFILE_SCREEN: 'EditProfileScreen',
+  SETTING_SCREEN: 'SettingsScreen',
+  NOTIFICTION_SCREEN: 'NotificationScreen',
+  PAYMENT_SCREEN: 'PaymentScreen',
+  PAYMENT_SUCCESSFULLY: 'PaymentSuccessFully',
+  PHOTO_COLLECTION_SCREEN: 'PhotoCollectionScreen',
+  PHOTO_HARVEST_SCREEN: 'PhotoHarvestScreen',
+  PHOTO_FLOWERING_SCREEN: 'PhotoFloweringScreen',
+  PHOTO_PESTS_SCREEN: 'PhotoPestsScreen',
+  RESULTS_SCREEN: 'ResultsScreen',
+  FAZENDA_SCREEN: 'FazendaScreen',
+  GRUPO_SCREEN: 'GrupoScreen',
+  PROJETO_SCREEN: 'ProjetoScreen',
+  TALHAO_SCREEN: 'TalhaoScreen',
+  TALHAO_WIZARD_SCREEN: 'TalhaoWizardScreen'
+};
+
+export default RouteName;

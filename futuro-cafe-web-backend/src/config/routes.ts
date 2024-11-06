@@ -1,0 +1,79 @@
+import { Router } from 'express';
+import { registerUser, authenticateUser, updateUser, deleteUser } from '../controllers/UsuarioController';
+import { getAllCultivares, getCultivarById, createCultivar, updateCultivar, deleteCultivar } from '../controllers/CultivaresController';
+import { getAllFazendas, getFazendaById, createFazenda, updateFazenda, deleteFazenda } from '../controllers/FazendaController';
+import { getAllTalhoes, getTalhaoById, createTalhao, updateTalhao, deleteTalhao } from '../controllers/TalhaoController';
+import { getEstatisticas } from '../controllers/EstatisticasController';
+import { getAllPerfis, getPerfilById, createPerfil, updatePerfil, deletePerfil } from '../controllers/PerfisController';
+import { getAllRoles, getRoleById, createRole, updateRole, deleteRole } from '../controllers/RolesController';
+import { getAllGrupos, getGrupoById, createGrupo, updateGrupo, deleteGrupo } from '../controllers/GrupoController';
+import { getAllProjetos, getProjetoById, createProjeto, updateProjeto, deleteProjeto } from '../controllers/ProjetoController';
+import { authenticateJWT } from '../middlewares/authenticateJWT';
+
+
+const router = Router();
+
+// Definição das rotas de usuários (sem autenticação)
+router.post('/usuarios/register', registerUser);
+router.post('/usuarios/authenticate', authenticateUser);
+
+// Todas as outras rotas requerem autenticação
+router.use(authenticateJWT); // Aplica o middleware a todas as rotas a seguir
+
+// Rotas de usuários
+router.put('/usuarios/:id', updateUser);
+router.delete('/usuarios/:id', deleteUser);
+
+// Cultivares
+router.get('/cultivares', getAllCultivares);
+router.get('/cultivares/:id', getCultivarById);
+router.post('/cultivares', createCultivar);
+router.put('/cultivares/:id', updateCultivar);
+router.delete('/cultivares/:id', deleteCultivar);
+
+// Fazendas
+router.get('/fazendas', getAllFazendas);
+router.get('/fazendas/:id', getFazendaById);
+router.post('/fazendas', createFazenda);
+router.put('/fazendas/:id', updateFazenda);
+router.delete('/fazendas/:id', deleteFazenda);
+
+// Talhões
+router.get('/talhoes', getAllTalhoes);
+router.get('/talhoes/:id', getTalhaoById);
+router.post('/talhoes', createTalhao);
+router.put('/talhoes/:id', updateTalhao);
+router.delete('/talhoes/:id', deleteTalhao);
+
+// Estatísticas
+router.get('/estatisticas', getEstatisticas);
+
+// Perfis
+router.get('/perfis', getAllPerfis);
+router.get('/perfis/:id', getPerfilById);
+router.post('/perfis', createPerfil);
+router.put('/perfis/:id', updatePerfil);
+router.delete('/perfis/:id', deletePerfil);
+
+// Roles
+router.get('/roles', getAllRoles);
+router.get('/roles/:id', getRoleById);
+router.post('/roles', createRole);
+router.put('/roles/:id', updateRole);
+router.delete('/roles/:id', deleteRole);
+
+// Grupos
+router.get('/grupos', getAllGrupos);
+router.get('/grupos/:id', getGrupoById);
+router.post('/grupos', createGrupo);
+router.put('/grupos/:id', updateGrupo);
+router.delete('/grupos/:id', deleteGrupo);
+
+// Projetos
+router.get('/projetos', getAllProjetos);
+router.get('/projetos/:id', getProjetoById);
+router.post('/projetos', createProjeto);
+router.put('/projetos/:id', updateProjeto);
+router.delete('/projetos/:id', deleteProjeto);
+
+export default router;
