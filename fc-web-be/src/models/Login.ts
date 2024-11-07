@@ -1,6 +1,5 @@
-import { Model, DataTypes, Association, QueryTypes } from 'sequelize';
+import { Model, DataTypes } from 'sequelize';
 import { sequelize } from '../services/DatabaseService';
-import Perfil from './Perfil';
 
 class Login extends Model {
     public id!: string;  // UUID para identificação
@@ -8,31 +7,10 @@ class Login extends Model {
     public providerValue!: string;  // Valor do provedor (substituindo o email)
     public providerToken!: string;  // Token do provedor
     public pessoaFisicaId!: string;  // ID da pessoa física associado
-
-    // Define associations
-    public static associations: {
-        perfis: Association<Login, Perfil>;
-    };
-
-    // Método customizado para associar perfis
-    public async setPerfis(perfis: Perfil[]) {
-        // Remove associações existentes
-        await sequelize.query('DELETE FROM LoginPerfil WHERE LoginId = ?', {
-            replacements: [this.id],
-            type: QueryTypes.DELETE
-        });
-
-        // Adiciona as novas associações
-        for (const perfil of perfis) {
-            await sequelize.query('INSERT INTO LoginPerfil (LoginId, PerfilId) VALUES (?, ?)', {
-                replacements: [this.id, perfil.id],
-                type: QueryTypes.INSERT
-            });
-        }
-    }
+    public createdAt!: Date;  // Data de criação
+    public lastUpdatedAt!: Date;  // Data da última atualização
 }
 
-// Inicializa o modelo
 Login.init({
     id: {
         type: DataTypes.UUID,
@@ -41,7 +19,7 @@ Login.init({
         field: 'Id'
     },
     provider: {
-        type: DataTypes.STRING(50),  // Campo para identificar o provedor
+        type: DataTypes.STRING(50),
         allowNull: false,
         field: 'Provider'
     },
@@ -52,23 +30,31 @@ Login.init({
     },
     providerToken: {
         type: DataTypes.STRING(255),
-        allowNull: true,  // Pode ser nulo se não houver token
+        allowNull: true,
         field: 'ProviderToken'
     },
     pessoaFisicaId: {
         type: DataTypes.UUID,
         allowNull: false,
         field: 'PessoaFisicaId'
+    },
+    createdAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+        field: 'CreatedAt'
+    },
+    lastUpdatedAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+        field: 'LastUpdatedAt'
     }
 }, {
     sequelize,
     modelName: 'Login',
     tableName: 'tbLogin',
-    timestamps: true  // Para manter registros de criação e atualização
+    timestamps: false
 });
-
-// Define as associações
-Login.belongsToMany(Perfil, { through: 'LoginPerfil', foreignKey: 'LoginId' });
-Perfil.belongsToMany(Login, { through: 'LoginPerfil', foreignKey: 'PerfilId' });
 
 export default Login;

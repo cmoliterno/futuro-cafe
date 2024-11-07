@@ -1,78 +1,150 @@
 import { Request, Response } from 'express';
-import bcrypt from 'bcrypt';
+import { sequelize } from '../services/DatabaseService';
 import crypto from 'crypto';
+import Pessoa from '../models/Pessoa'; // Importe o modelo de Pessoa
 import PessoaFisica from '../models/PessoaFisica';
 import Login from '../models/Login';
 import Perfil from '../models/Perfil';
+import { AuthService } from "../services/AuthService";
 
-const saltRounds = 10;
+// Função para criar hash da senha com a PassPhrase
+function createPasswordHash(password: string, salt: string): string {
+    const passphrase = process.env.CIPHER_PASS_PHRASE;
+    if (!passphrase) {
+        throw new Error('PassPhrase não está definida no .env');
+    }
 
-// Register new user
+    const hash = crypto.createHmac('sha256', passphrase + salt)
+        .update(password)
+        .digest('hex');
+    return hash;
+}
+
 export async function registerUser(req: Request, res: Response) {
+    const transaction = await sequelize.transaction(); // Inicia a transação
     try {
-        const { nomeCompleto, email, documento, perfisIds } = req.body;
+        const { nomeCompleto, email, documento, senha, cpf } = req.body;
 
-        const existingUser = await Login.findOne({ where: { providerValue: email } });
+        console.log('Dados recebidos para registro:', req.body);
+
+        if (!cpf) {
+            return res.status(400).json({ message: 'CPF é obrigatório' });
+        }
+
+        const existingUser = await Login.findOne({ where: { providerValue: email }, transaction });
         if (existingUser) {
             return res.status(400).json({ message: 'Email já está em uso' });
         }
 
+        const existingCpf = await PessoaFisica.findOne({ where: { CPF: cpf }, transaction });
+        if (existingCpf) {
+            return res.status(400).json({ message: 'CPF já está em uso' });
+        }
+
+        const salt = crypto.randomUUID(); // Gera um salt
+        const hashedPassword = createPasswordHash(senha, salt); // Cria hash da senha
+
+        // Cria uma nova instância de Pessoa
+        const pessoaId = crypto.randomUUID(); // Gera um novo ID para a Pessoa
+        await Pessoa.create({
+            id: pessoaId, // Usando o ID gerado
+            natureza: 'Física' // Definindo a natureza como "Física"
+        }, { transaction });
+
+        // Cria uma nova instância de PessoaFisica
         const pessoaFisica = await PessoaFisica.create({
-            id: crypto.randomUUID(),
+            id: pessoaId,
             nomeCompleto,
             email,
-            documento
-        });
+            documento,
+            cpf,
+            passwordHash: JSON.stringify({ Hash: hashedPassword, Salt: salt }),
+        }, { transaction });
 
         const loginInstance = await Login.create({
             id: crypto.randomUUID(),
             provider: 'local',
             providerValue: email,
-            pessoaFisicaId: pessoaFisica.id
-        });
+            pessoaFisicaId: pessoaFisica.id,
+        }, { transaction });
 
-        if (perfisIds && Array.isArray(perfisIds)) {
-            const perfis = await Perfil.findAll({ where: { id: perfisIds } });
-            // Chama setPerfis na instância do login
-            await loginInstance.setPerfis(perfis);  // Método deve estar disponível
-        }
-
+        await transaction.commit(); // Confirma a transação
         res.status(201).json({ message: 'Usuário registrado com sucesso', pessoaFisica });
     } catch (error) {
+        await transaction.rollback(); // Desfaz a transação em caso de erro
+        console.error('Erro ao registrar usuário:', error);
         res.status(500).json({ message: 'Erro ao registrar usuário', error });
     }
 }
 
-// Autenticação do usuário
+
+// Autenticação de usuário
 export async function authenticateUser(req: Request, res: Response) {
     try {
-        const { email, providerToken } = req.body;
+        const { email, password } = req.body;
 
-        console.log(`Autenticação iniciada para o usuário: ${email}`);
+        console.log('Autenticação iniciada para o usuário:', email);
 
-        // Encontrar o login pelo email
-        const loginInstance = await Login.findOne({ where: { providerValue: email } });
-        if (!loginInstance) {
-            console.log(`Usuário não encontrado: ${email}`);
+        // Encontrar a pessoa física pelo email
+        const pessoaFisica = await PessoaFisica.findOne({ where: { email } });
+        if (!pessoaFisica) {
+            console.warn('Usuário não encontrado:', email);
             return res.status(404).json({ message: 'Usuário não encontrado' });
         }
 
-        console.log(`Usuário encontrado: ${loginInstance.id}`);
-
-        // Verificar o token do provider, se fornecido
-        if (providerToken && loginInstance.providerToken) {
-            console.log(`Verificando token para o usuário: ${email}`);
-            const tokenMatch = await bcrypt.compare(providerToken, loginInstance.providerToken);
-            if (!tokenMatch) {
-                console.log(`Token do provedor incorreto para o usuário: ${email}`);
-                return res.status(401).json({ message: 'Token do provedor incorreto' });
-            }
-            console.log(`Token do provedor verificado com sucesso para o usuário: ${email}`);
+        // Verificar se passwordHash é válido
+        if (!pessoaFisica.passwordHash) {
+            console.warn('Hash de senha não encontrado para o usuário:', email);
+            return res.status(500).json({ message: 'Dados de senha inválidos' });
         }
 
-        res.json({ message: 'Autenticação bem-sucedida', login: loginInstance });
+        let storedPasswordData;
+        try {
+            storedPasswordData = JSON.parse(pessoaFisica.passwordHash);
+        } catch (error) {
+            console.error('Erro ao analisar o hash da senha:', error);
+            return res.status(500).json({ message: 'Erro ao analisar os dados de senha' });
+        }
+
+        const storedHash = storedPasswordData.Hash;
+        const storedSalt = storedPasswordData.Salt;
+
+        console.log('Autenticação storedPasswordHash:', storedPasswordData);
+
+        // Criar hash da senha fornecida usando a mesma PassPhrase e salt
+        const hashedPassword = createPasswordHash(password, storedSalt);
+
+        console.log('Autenticação hashedPassword:', hashedPassword);
+
+        // Comparar o hash da senha armazenada com o hash da senha fornecida
+        if (hashedPassword !== storedHash) {
+            console.warn('Senha incorreta para o usuário:', email);
+            return res.status(401).json({ message: 'Senha incorreta' });
+        }
+
+        // Gerar token
+        const authService = new AuthService();
+        const token = authService.generateToken(pessoaFisica.id);
+
+        // Formatar a resposta
+        const responseData = {
+            result: {
+                accessToken: token,
+                refreshToken: storedHash, // Ajuste se necessário
+                expiresIn: new Date(Date.now() + 3600 * 1000).toISOString(), // Exemplo de expiração em 1 hora
+                tokenType: 'Bearer'
+            },
+            success: true,
+            messages: [],
+            hasErrors: false,
+            hasImpediments: false,
+            hasWarnings: false
+        };
+
+        console.log('Autenticação bem-sucedida para o usuário:', email);
+        res.json(responseData);
     } catch (error) {
-        console.error('Erro ao autenticar usuário:', error); // Log detalhado do erro
+        console.error('Erro ao autenticar usuário:', error);
         res.status(500).json({ message: 'Erro ao autenticar usuário', error });
     }
 }
@@ -81,23 +153,19 @@ export async function authenticateUser(req: Request, res: Response) {
 export async function updateUser(req: Request, res: Response) {
     try {
         const { id } = req.params;
-        const { nomeCompleto, email, perfisIds } = req.body;
+        const { nomeCompleto, email } = req.body; // Removido perfisIds
 
         const pessoaFisica = await PessoaFisica.findByPk(id);
         if (!pessoaFisica) {
             return res.status(404).json({ message: 'Usuário não encontrado' });
         }
 
+        // Atualiza os campos do usuário
         pessoaFisica.nomeCompleto = nomeCompleto;
         pessoaFisica.email = email;
         await pessoaFisica.save();
 
-        // Atualizar perfis associados via login
-        const loginInstance = await Login.findOne({ where: { pessoaFisicaId: id } });
-        if (loginInstance && perfisIds && Array.isArray(perfisIds)) {
-            const perfis = await Perfil.findAll({ where: { id: perfisIds } });
-            await loginInstance.setPerfis(perfis);  // Método deve estar disponível
-        }
+        // Removido código para atualizar perfis, pois não é mais aplicável
 
         res.json({ message: 'Usuário atualizado com sucesso', pessoaFisica });
     } catch (error) {

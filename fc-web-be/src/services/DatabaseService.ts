@@ -1,5 +1,5 @@
 import { Sequelize } from 'sequelize';
-const dbConfig = require(`${__dirname}/../config/config.js`)['production']; 
+const dbConfig = require(`${__dirname}/../config/config.js`)['production'];
 
 export const sequelize = new Sequelize(
     dbConfig.database,
@@ -9,7 +9,7 @@ export const sequelize = new Sequelize(
         host: dbConfig.host,
         dialect: dbConfig.dialect,
         port: dbConfig.port,
-        logging: false,
+        logging: true,
         dialectOptions: dbConfig.dialectOptions,
     }
 );
