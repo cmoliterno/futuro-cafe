@@ -14,8 +14,8 @@ import { authenticateJWT } from '../middlewares/authenticateJWT';
 const router = Router();
 
 // Definição das rotas de usuários (sem autenticação)
-router.post('/usuarios/register', registerUser);
-router.post('/usuarios/authenticate', authenticateUser);
+router.post('/registrar', registerUser);
+router.post('/auth/token', authenticateUser);
 
 // Todas as outras rotas requerem autenticação
 router.use(authenticateJWT); // Aplica o middleware a todas as rotas a seguir

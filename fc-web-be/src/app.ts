@@ -8,16 +8,14 @@ const app = express();
 app.use(cors({
   origin: 'http://localhost:3001', // URL do seu frontend
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
 }));
 
-// Outros middlewares
+// Middleware
 app.use(express.json());
 
 // Use as rotas com o prefixo /api
 app.use('/api', routes);
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
-});
+export default app;

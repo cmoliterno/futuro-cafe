@@ -9,12 +9,12 @@ export class Analise extends Model {
     public greenYellow!: number;
     public raisin!: number;
     public total!: number;
-    public talhaoId!: string;
+    public talhaoId!: string; // Relacionamento com Talhao
     public grupoId?: string;
     public projetoId?: string;
-    public coordenadas?: string; // Adicionando coordenadas
-    public imagemUrl?: string; // Adicionando URL da imagem
-    public imagemResultadoUrl?: string; // Adicionando URL da imagem do resultado
+    public coordenadas?: string;
+    public imagemUrl!: string; // Agora é obrigatório
+    public imagemResultadoUrl?: string;
     public createdAt!: Date; // Adicionando createdAt
     public lastUpdatedAt!: Date; // Adicionando lastUpdatedAt
 }
@@ -72,25 +72,35 @@ Analise.init({
         field: 'ProjetoId'
     },
     coordenadas: {
-        type: DataTypes.STRING, // Ajuste o tipo conforme necessário
+        type: DataTypes.STRING,
         allowNull: true,
         field: 'Coordenadas'
     },
     imagemUrl: {
-        type: DataTypes.STRING, // Ajuste o tipo conforme necessário
-        allowNull: true,
+        type: DataTypes.STRING,
+        allowNull: false,
         field: 'ImagemUrl'
     },
     imagemResultadoUrl: {
-        type: DataTypes.STRING, // Ajuste o tipo conforme necessário
+        type: DataTypes.STRING,
         allowNull: true,
         field: 'ImagemResultadoUrl'
     },
+    createdAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        field: 'CreatedAt'
+    },
+    lastUpdatedAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        field: 'LastUpdatedAt'
+    }
 }, {
     sequelize,
     modelName: 'Analise',
     tableName: 'tbAnalise',
-    timestamps: true // Isso adiciona createdAt e updatedAt automaticamente
+    timestamps: false // Removido
 });
 
 export default Analise;

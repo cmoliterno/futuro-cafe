@@ -26,44 +26,53 @@ const Card = styled.div`
   margin: 0 10px;
 `;
 
+const ErrorMessage = styled.p`
+  color: red;
+  text-align: center;
+`;
+
 const DashboardPage: React.FC = () => {
   const [data, setData] = useState({
     totalTalhoes: 0,
     totalCultivares: 0,
     totalConexoes: 0,
   });
+  const [error, setError] = useState(''); // Estado para armazenar mensagens de erro
 
   useEffect(() => {
     const getData = async () => {
       try {
         const estatisticasResponse = await api.getEstatisticas();
         setData(estatisticasResponse.data);
-      } catch (error) {
+        setError(''); // Limpa qualquer mensagem de erro anterior
+      } catch (error: any) {
         console.error('Erro ao buscar dados do dashboard:', error);
+        setError(error.response?.data.message || 'Erro ao buscar dados do dashboard.'); // Define a mensagem de erro
       }
     };
     getData();
   }, []);
 
   return (
-    <DashboardContainer>
-      <Title>Dashboard</Title>
-      <Stats>
-        <Card>
-          <h2>Total de Talhões</h2>
-          <p>{data.totalTalhoes}</p>
-        </Card>
-        <Card>
-          <h2>Total de Cultivares</h2>
-          <p>{data.totalCultivares}</p>
-        </Card>
-        <Card>
-          <h2>Total de Conexões</h2>
-          <p>{data.totalConexoes}</p>
-        </Card>
-      </Stats>
-      {/* Outros componentes e informações adicionais */}
-    </DashboardContainer>
+      <DashboardContainer>
+        <Title>Dashboard</Title>
+        {error && <ErrorMessage>{error}</ErrorMessage>} {/* Exibe a mensagem de erro se existir */}
+        <Stats>
+          <Card>
+            <h2>Total de Talhões</h2>
+            <p>{data.totalTalhoes}</p>
+          </Card>
+          <Card>
+            <h2>Total de Cultivares</h2>
+            <p>{data.totalCultivares}</p>
+          </Card>
+          <Card>
+            <h2>Total de Conexões</h2>
+            <p>{data.totalConexoes}</p>
+          </Card>
+        </Stats>
+        {/* Outros componentes e informações adicionais */}
+      </DashboardContainer>
   );
 };
 
