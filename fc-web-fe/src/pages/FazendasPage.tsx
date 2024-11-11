@@ -65,7 +65,7 @@ const Overlay = styled.div`
 const FazendasPage: React.FC = () => {
   const [fazendas, setFazendas] = useState([]);
   const [nome, setNome] = useState('');
-  const [editId, setEditId] = useState<number | null>(null); // ID para editar
+  const [editId, setEditId] = useState<string | null>(null); // ID para editar
   const [showModal, setShowModal] = useState(false); // Controle do modal
 
   useEffect(() => {
@@ -99,7 +99,7 @@ const FazendasPage: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     // Função para excluir uma fazenda
     await api.deleteFazenda(id);
     fetchFazendas(); // Atualizando a lista de fazendas

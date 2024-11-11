@@ -2,8 +2,15 @@ import { Router } from 'express';
 import { registerUser, authenticateUser, updateUser, deleteUser, refreshAccessToken } from '../controllers/UsuarioController';
 import { getAllCultivares, getCultivarById, createCultivar, updateCultivar, deleteCultivar } from '../controllers/CultivaresController';
 import { getAllFazendas, getFazendaById, createFazenda, updateFazenda, deleteFazenda } from '../controllers/FazendaController';
-import { getAllTalhoes, getTalhaoById, createTalhao, updateTalhao, deleteTalhao } from '../controllers/TalhaoController';
-import { getEstatisticas } from '../controllers/EstatisticasController';
+import {
+    getAllTalhoes,
+    getTalhaoById,
+    createTalhao,
+    updateTalhao,
+    deleteTalhao,
+    getTalhoesByFazenda
+} from '../controllers/TalhaoController';
+import {getDataToChartBy, getEstatisticas} from '../controllers/EstatisticasController';
 import { getAllPerfis, getPerfilById, createPerfil, updatePerfil, deletePerfil } from '../controllers/PerfisController';
 import { getAllRoles, getRoleById, createRole, updateRole, deleteRole } from '../controllers/RolesController';
 import { getAllGrupos, getGrupoById, createGrupo, updateGrupo, deleteGrupo } from '../controllers/GrupoController';
@@ -45,9 +52,12 @@ router.get('/talhoes/:id', getTalhaoById);
 router.post('/talhoes', createTalhao);
 router.put('/talhoes/:id', updateTalhao);
 router.delete('/talhoes/:id', deleteTalhao);
+router.get('/talhoes/fazenda/:fazendaId', getTalhoesByFazenda);
+
 
 // Estatísticas
 router.get('/estatisticas', getEstatisticas);
+router.get('/chart', getDataToChartBy);
 
 // Perfis
 router.get('/perfis', getAllPerfis);

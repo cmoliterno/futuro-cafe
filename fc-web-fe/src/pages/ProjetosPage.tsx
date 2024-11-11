@@ -47,8 +47,8 @@ const ProjetosPage: React.FC = () => {
   const [descricao, setDescricao] = useState('');
   const [dataInicio, setDataInicio] = useState<Date | null>(null); // Inicializando como null
   const [dataFim, setDataFim] = useState<Date | null>(null); // Inicializando como null
-  const [grupoId, setGrupoId] = useState<number | null>(null); // Inicializando como null
-  const [editId, setEditId] = useState<number | null>(null); // ID para editar
+  const [grupoId, setGrupoId] = useState<string | null>(null); // Inicializando como null
+  const [editId, setEditId] = useState<string | null>(null); // ID para editar
 
   useEffect(() => {
     fetchProjetos();
@@ -66,7 +66,7 @@ const ProjetosPage: React.FC = () => {
       descricao,
       dataInicio: dataInicio ? dataInicio : new Date(), // Usando data atual se dataInicio for null
       dataFim: dataFim ? dataFim : new Date(), // Usando data atual se dataFim for null
-      grupoId: grupoId ? grupoId : 0, // Usando 0 se grupoId for null
+      grupoId: grupoId ? grupoId : "0", // Usando 0 se grupoId for null
     });
     setNome(''); // Resetando o campo de nome
     setDescricao(''); // Resetando o campo de descrição
@@ -84,7 +84,7 @@ const ProjetosPage: React.FC = () => {
         descricao,
         dataInicio: dataInicio ? dataInicio : new Date(), // Usando data atual se dataInicio for null
         dataFim: dataFim ? dataFim : new Date(), // Usando data atual se dataFim for null
-        grupoId: grupoId ? grupoId : 0, // Usando 0 se grupoId for null
+        grupoId: grupoId ? grupoId : "0", // Usando 0 se grupoId for null
       });
       setEditId(null); // Resetando o ID de edição
       setNome(''); // Resetando o campo de nome
@@ -96,7 +96,7 @@ const ProjetosPage: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     // Função para excluir um projeto
     await api.deleteProjeto(id);
     fetchProjetos(); // Atualizando a lista de projetos
@@ -131,7 +131,7 @@ const ProjetosPage: React.FC = () => {
         type="number"
         value={grupoId || ''}
         placeholder="ID do Grupo"
-        onChange={(e) => setGrupoId(Number(e.target.value))} // Atualizando o ID do grupo
+        onChange={(e) => setGrupoId(e.target.value)} // Atualizando o ID do grupo
       />
       <Button onClick={editId ? handleEdit : handleCreate}>
         {editId ? 'Salvar Alterações' : 'Adicionar Projeto'}

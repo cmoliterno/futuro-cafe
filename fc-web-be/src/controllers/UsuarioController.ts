@@ -145,7 +145,7 @@ export async function authenticateUser(req: Request, res: Response) {
             result: {
                 accessToken: token,
                 refreshToken: storedHash, // Ajuste se necessário
-                expiresIn: new Date(Date.now() + 3600 * 1000).toISOString(), // Exemplo de expiração em 1 hora
+               // expiresIn: new Date(Date.now() + 3600 * 1000).toISOString(), // Exemplo de expiração em 1 hora
                 tokenType: 'Bearer'
             },
             success: true,

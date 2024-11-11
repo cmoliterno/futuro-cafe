@@ -50,6 +50,33 @@ export async function getTalhaoById(req: Request, res: Response) {
     }
 }
 
+export async function getTalhoesByFazenda(req: Request, res: Response) {
+    try {
+        console.log("ENTROU");
+
+        const { fazendaId } = req.params; // Pegando o fazendaId da rota
+
+        console.log("Chegou e a fazenda é: ",fazendaId);
+
+        // Verifica se a fazenda existe
+        const fazenda = await Fazenda.findByPk(fazendaId);
+        if (!fazenda) {
+            return res.status(404).json({ message: 'Fazenda não encontrada' });
+        }
+        console.log("Buscando Talhoes com fazenda: ",fazendaId);
+
+        // Busca os talhões associados à fazenda
+        const talhoes = await Talhao.findAll({
+            where: { fazendaId }
+        });
+
+        res.json(talhoes);
+    } catch (error) {
+        console.error('Erro ao buscar talhões por fazenda:', error);
+        res.status(500).json({ message: 'Erro ao buscar talhões por fazenda', error });
+    }
+}
+
 export async function createTalhao(req: Request, res: Response) {
     try {
         const { nome, nomeResponsavel, fazendaId, dataPlantio, espacamentoLinhas, espacamentoMudas, cultivarId } = req.body;
@@ -259,4 +286,4 @@ export const getPlotAnalysesChart = async (req: Request, res: Response) => {
     }
 };
 
-export default { getAllTalhoes, getTalhaoById, createTalhao, updateTalhao, deleteTalhao, getPlotAnalyses, addPlotAnalysis, getPlotAnalysesChart };
+export default { getAllTalhoes, getTalhaoById, createTalhao, updateTalhao, deleteTalhao, getPlotAnalyses, addPlotAnalysis, getPlotAnalysesChart, getTalhoesByFazenda };

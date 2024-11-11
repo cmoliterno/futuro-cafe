@@ -47,7 +47,7 @@ const RolesPage: React.FC = () => {
   const [descricao, setDescricao] = useState('');
   const [systemKey, setSystemKey] = useState('');
   const [aplicacao, setAplicacao] = useState('');
-  const [editId, setEditId] = useState<number | null>(null); // ID para editar
+  const [editId, setEditId] = useState<string | null>(null); // ID para editar
 
   useEffect(() => {
     fetchRoles();
@@ -81,7 +81,7 @@ const RolesPage: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     // Função para excluir uma role
     await api.deleteRole(id);
     fetchRoles(); // Atualizando a lista de roles

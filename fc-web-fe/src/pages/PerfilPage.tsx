@@ -46,7 +46,7 @@ const PerfilPage: React.FC = () => {
   const [nome, setNome] = useState('');
   const [descricao, setDescricao] = useState('');
   const [systemKey, setSystemKey] = useState('');
-  const [editId, setEditId] = useState<number | null>(null); // ID para editar
+  const [editId, setEditId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchPerfis();
@@ -78,7 +78,7 @@ const PerfilPage: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     // Função para excluir um perfil
     await api.deletePerfil(id);
     fetchPerfis(); // Atualizando a lista de perfis

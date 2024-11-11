@@ -43,18 +43,15 @@ const refreshToken = async () => {
 api.interceptors.response.use(
     response => response,
     async (error) => {
-        if (error.response && error.response.status === 401) {
-            // Se o token estiver expirado, tenta refresh
+        if (error.response.status === 401) {
             const newToken = await refreshToken();
             if (newToken) {
-                // Se o refresh do token foi bem-sucedido, refaz a requisição original com o novo token
                 error.config.headers['Authorization'] = `Bearer ${newToken}`;
-                return axios(error.config);  // Refaz a requisição com o novo token
+                return axios(error.config);
             } else {
-                // Se o refresh falhou, remove o token e redireciona para login
                 localStorage.removeItem('token');
                 localStorage.removeItem('refreshToken');
-                window.location.href = '/login';  // Redireciona para a tela de login
+                window.location.href = '/login';
                 return Promise.reject(error);
             }
         }
@@ -64,6 +61,7 @@ api.interceptors.response.use(
 
 // Funções da API
 export default {
+    // Funções de autenticação
     loginUser: (data: { email: string; password: string }) =>
         api.post('/auth/token', data),
     refreshAccessToken: (data: { refreshToken: string }) =>
@@ -72,12 +70,22 @@ export default {
         api.post('/registrar', data), // Este endpoint não requer autenticação
     authenticateUser: (data: { email: string; password: string }) =>
         api.post('/auth/token', data), // Este endpoint não requer autenticação
-    updateUser: (id: number, data: { nomeCompleto: string; email: string }) =>
+    updateUser: (id: string, data: { nomeCompleto: string; email: string }) =>
         api.put(`/usuarios/${id}`, data), // Requer autenticação
-    deleteUser: (id: number) =>
+    deleteUser: (id: string) =>
         api.delete(`/usuarios/${id}`), // Requer autenticação
 
-    // Cultivares
+    // Função para obter talhões de uma fazenda (por fazenda)
+    getTalhoesByFazenda: (fazendaId: string) =>
+        api.get(`/talhoes/fazenda/${fazendaId}`), // Requer autenticação
+
+    // Estatísticas e Dashs
+    getEstatisticas: () => api.get('/estatisticas'), // Requer autenticação
+
+    getDataToChartBy: (data: { farmId: string, plotId: string, startDate: string, endDate: string, reportType: string }) =>
+        api.get('/chart', { params: data }),
+
+    // Funcionalidades de CRUD para Cultivares
     getAllCultivares: () => api.get('/cultivares'), // Requer autenticação
     getCultivarById: (id: number) => api.get(`/cultivares/${id}`), // Requer autenticação
     createCultivar: (data: { nome: string; especie: string }) =>
@@ -89,74 +97,60 @@ export default {
 
     // Fazendas
     getAllFazendas: () => api.get('/fazendas'), // Requer autenticação
-    getFazendaById: (id: number) => api.get(`/fazendas/${id}`), // Requer autenticação
+    getFazendaById: (id: string) => api.get(`/fazendas/${id}`), // Requer autenticação
     createFazenda: (data: { nome: string }) =>
         api.post('/fazendas', data), // Requer autenticação
-    updateFazenda: (id: number, data: { nome: string }) =>
+    updateFazenda: (id: string, data: { nome: string }) =>
         api.put(`/fazendas/${id}`, data), // Requer autenticação
-    deleteFazenda: (id: number) =>
+    deleteFazenda: (id: string) =>
         api.delete(`/fazendas/${id}`), // Requer autenticação
 
     // Talhões
     getAllTalhoes: () => api.get('/talhoes'), // Requer autenticação
-    getTalhaoById: (id: number) => api.get(`/talhoes/${id}`), // Requer autenticação
-    createTalhao: (data: {
-        nome: string;
-        fazendaId: string;
-        dataPlantio: string; // Data do plantio
-        espacamentoLinhas: number; // Espaçamento entre linhas
-        espacamentoMudas: number; // Espaçamento entre mudas
-        cultivarId: number; // ID do cultivar
-    }) => api.post('/talhoes', data), // Requer autenticação
-    updateTalhao: (id: string, data: {
-        nome: string;
-        fazendaId: string;
-        dataPlantio: string; // Data do plantio
-        espacamentoLinhas: number; // Espaçamento entre linhas
-        espacamentoMudas: number; // Espaçamento entre mudas
-        cultivarId: number; // ID do cultivar
-    }) => api.put(`/talhoes/${id}`, data), // Requer autenticação
+    getTalhaoById: (id: string) => api.get(`/talhoes/${id}`), // Requer autenticação
+    createTalhao: (data: { nome: string; fazendaId: string; dataPlantio: string; espacamentoLinhas: number; espacamentoMudas: number; cultivarId: number }) =>
+        api.post('/talhoes', data), // Requer autenticação
+    updateTalhao: (id: string, data: { nome: string; fazendaId: string; dataPlantio: string; espacamentoLinhas: number; espacamentoMudas: number; cultivarId: number }) =>
+        api.put(`/talhoes/${id}`, data), // Requer autenticação
     deleteTalhao: (id: string) => api.delete(`/talhoes/${id}`), // Requer autenticação
-    // Estatísticas
-    getEstatisticas: () => api.get('/estatisticas'), // Requer autenticação
 
     // Perfis
     getAllPerfis: () => api.get('/perfis'), // Requer autenticação
-    getPerfilById: (id: number) => api.get(`/perfis/${id}`), // Requer autenticação
+    getPerfilById: (id: string) => api.get(`/perfis/${id}`), // Requer autenticação
     createPerfil: (data: { nome: string; descricao: string; systemKey: string }) =>
         api.post('/perfis', data), // Requer autenticação
-    updatePerfil: (id: number, data: { nome: string; descricao: string; systemKey: string }) =>
+    updatePerfil: (id: string, data: { nome: string; descricao: string; systemKey: string }) =>
         api.put(`/perfis/${id}`, data), // Requer autenticação
-    deletePerfil: (id: number) =>
+    deletePerfil: (id: string) =>
         api.delete(`/perfis/${id}`), // Requer autenticação
 
     // Roles
     getAllRoles: () => api.get('/roles'), // Requer autenticação
-    getRoleById: (id: number) => api.get(`/roles/${id}`), // Requer autenticação
+    getRoleById: (id: string) => api.get(`/roles/${id}`), // Requer autenticação
     createRole: (data: { nome: string; descricao: string; systemKey: string; aplicacao: string }) =>
         api.post('/roles', data), // Requer autenticação
-    updateRole: (id: number, data: { nome: string; descricao: string; systemKey: string; aplicacao: string }) =>
+    updateRole: (id: string, data: { nome: string; descricao: string; systemKey: string; aplicacao: string }) =>
         api.put(`/roles/${id}`, data), // Requer autenticação
-    deleteRole: (id: number) =>
+    deleteRole: (id: string) =>
         api.delete(`/roles/${id}`), // Requer autenticação
 
     // Grupos
     getAllGrupos: () => api.get('/grupos'), // Requer autenticação
-    getGrupoById: (id: number) => api.get(`/grupos/${id}`), // Requer autenticação
+    getGrupoById: (id: string) => api.get(`/grupos/${id}`), // Requer autenticação
     createGrupo: (data: { nome: string; descricao: string }) =>
         api.post('/grupos', data), // Requer autenticação
-    updateGrupo: (id: number, data: { nome: string; descricao: string }) =>
+    updateGrupo: (id: string, data: { nome: string; descricao: string }) =>
         api.put(`/grupos/${id}`, data), // Requer autenticação
-    deleteGrupo: (id: number) =>
+    deleteGrupo: (id: string) =>
         api.delete(`/grupos/${id}`), // Requer autenticação
 
     // Projetos
     getAllProjetos: () => api.get('/projetos'), // Requer autenticação
-    getProjetoById: (id: number) => api.get(`/projetos/${id}`), // Requer autenticação
-    createProjeto: (data: { nome: string; descricao: string; dataInicio: Date; dataFim: Date; grupoId: number }) =>
+    getProjetoById: (id: string) => api.get(`/projetos/${id}`), // Requer autenticação
+    createProjeto: (data: { nome: string; descricao: string; dataInicio: Date; dataFim: Date; grupoId: string }) =>
         api.post('/projetos', data), // Requer autenticação
-    updateProjeto: (id: number, data: { nome: string; descricao: string; dataInicio: Date; dataFim: Date; grupoId: number }) =>
+    updateProjeto: (id: string, data: { nome: string; descricao: string; dataInicio: Date; dataFim: Date; grupoId: string }) =>
         api.put(`/projetos/${id}`, data), // Requer autenticação
-    deleteProjeto: (id: number) =>
+    deleteProjeto: (id: string) =>
         api.delete(`/projetos/${id}`), // Requer autenticação
 };

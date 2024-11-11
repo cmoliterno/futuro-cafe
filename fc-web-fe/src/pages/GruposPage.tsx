@@ -45,7 +45,7 @@ const GruposPage: React.FC = () => {
   const [grupos, setGrupos] = useState([]);
   const [nome, setNome] = useState('');
   const [descricao, setDescricao] = useState('');
-  const [editId, setEditId] = useState<number | null>(null); // ID para editar
+  const [editId, setEditId] = useState<string | null>(null); // ID para editar
 
   useEffect(() => {
     fetchGrupos();
@@ -75,7 +75,7 @@ const GruposPage: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     // Função para excluir um grupo
     await api.deleteGrupo(id);
     fetchGrupos(); // Atualizando a lista de grupos
