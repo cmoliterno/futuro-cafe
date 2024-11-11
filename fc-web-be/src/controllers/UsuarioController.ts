@@ -1,11 +1,12 @@
 import { Request, Response } from 'express';
 import { sequelize } from '../services/DatabaseService';
 import crypto from 'crypto';
-import Pessoa from '../models/Pessoa'; // Importe o modelo de Pessoa
+import Pessoa from '../models/Pessoa';
 import PessoaFisica from '../models/PessoaFisica';
 import Login from '../models/Login';
-import Perfil from '../models/Perfil';
 import { AuthService } from "../services/AuthService";
+
+const authService = new AuthService();
 
 // Função para criar hash da senha com a PassPhrase
 function createPasswordHash(password: string, salt: string): string {
@@ -19,6 +20,21 @@ function createPasswordHash(password: string, salt: string): string {
         .digest('hex');
     return hash;
 }
+
+export const refreshAccessToken = (req: Request, res: Response) => {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+        return res.status(403).json({ message: 'Refresh token não fornecido' });
+    }
+
+    const newAccessToken = authService.refreshAccessToken(refreshToken);
+    if (!newAccessToken) {
+        return res.status(401).json({ message: 'Refresh token inválido ou expirado' });
+    }
+
+    return res.json({ accessToken: newAccessToken });
+};
 
 export async function registerUser(req: Request, res: Response) {
     const transaction = await sequelize.transaction(); // Inicia a transação
@@ -77,7 +93,6 @@ export async function registerUser(req: Request, res: Response) {
     }
 }
 
-
 // Autenticação de usuário
 export async function authenticateUser(req: Request, res: Response) {
     try {
@@ -123,7 +138,6 @@ export async function authenticateUser(req: Request, res: Response) {
         }
 
         // Gerar token
-        const authService = new AuthService();
         const token = authService.generateToken(pessoaFisica.id);
 
         // Formatar a resposta
@@ -197,4 +211,4 @@ export async function deleteUser(req: Request, res: Response) {
     }
 }
 
-export default { registerUser, authenticateUser, updateUser, deleteUser };
+export default { registerUser, authenticateUser, updateUser, deleteUser, refreshAccessToken };

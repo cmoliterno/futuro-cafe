@@ -5,6 +5,8 @@ import PessoaFisica from './PessoaFisica';
 export class Grupo extends Model {
     public id!: string;
     public nome!: string;
+    public createdAt!: Date;
+    public lastUpdatedAt!: Date;
 }
 
 Grupo.init({
@@ -18,6 +20,18 @@ Grupo.init({
         type: DataTypes.STRING(500), // STRING(500) para corresponder ao DBO
         allowNull: false,
         field: 'Nome'
+    },
+    createdAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+        field: 'CreatedAt'
+    },
+    lastUpdatedAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+        field: 'LastUpdatedAt'
     }
 }, {
     sequelize,

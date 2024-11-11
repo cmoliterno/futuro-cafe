@@ -1,13 +1,34 @@
 import { Request, Response } from 'express';
 import { Fazenda } from '../models/Fazenda';
 import Talhao from '../models/Talhao';
-import Analise from '../models/Analise';
+import Plantio from '../models/Plantio'; // Importando o modelo Plantio
+import jwt from 'jsonwebtoken';
+import Analise from "../models/Analise";
+import PessoaFisicaFazenda from '../models/PessoaFisicaFazenda';
+import {Op, Sequelize} from "sequelize"; // Para vincular Fazenda à Pessoa
 
 export async function getAllTalhoes(req: Request, res: Response) {
     try {
-        const talhoes = await Talhao.findAll({ include: [{ model: Fazenda }] });
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ message: 'Token não fornecido' });
+        }
+
+        const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'default_secret');
+        const pessoaId = decoded.userId;
+
+        // Busca apenas os talhões que pertencem ao usuário através da Fazenda
+        const talhoes = await Talhao.findAll({
+            where: {
+                fazendaId: {
+                    [Op.in]: Sequelize.literal(`(SELECT FazendaId FROM tbPessoaFisicaFazenda WHERE PessoaFisicaId = '${pessoaId}')`)
+                }
+            }
+        });
+
         res.json(talhoes);
     } catch (error) {
+        console.error('Erro ao buscar talhões:', error);
         res.status(500).json({ message: 'Erro ao buscar talhões', error });
     }
 }
@@ -31,9 +52,8 @@ export async function getTalhaoById(req: Request, res: Response) {
 
 export async function createTalhao(req: Request, res: Response) {
     try {
-        const { nome, fazendaId } = req.body;
+        const { nome, nomeResponsavel, fazendaId, dataPlantio, espacamentoLinhas, espacamentoMudas, cultivarId } = req.body;
 
-        // Validação
         if (!nome || !fazendaId) {
             return res.status(400).json({ message: 'Nome e Fazenda ID são obrigatórios' });
         }
@@ -43,9 +63,32 @@ export async function createTalhao(req: Request, res: Response) {
             return res.status(404).json({ message: 'Fazenda não encontrada' });
         }
 
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ message: 'Token não fornecido' });
+        }
+
+        const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'default_secret');
+        const pessoaId = decoded.userId;
+
         const talhao = await Talhao.create({ nome, fazendaId });
+
+        // Cadastro do Plantio
+        if (dataPlantio && espacamentoLinhas && espacamentoMudas && cultivarId) {
+            await Plantio.create({
+                data: dataPlantio,
+                espacamentoLinhasMetros: espacamentoLinhas,
+                espacamentoMudasMetros: espacamentoMudas,
+                cultivarId,
+                talhaoId: talhao.id,
+                createdAt: new Date(),
+                lastUpdatedAt: new Date(),
+            });
+        }
+
         res.status(201).json(talhao);
     } catch (error) {
+        console.error('Erro ao criar talhão:', error);
         res.status(500).json({ message: 'Erro ao criar talhão', error });
     }
 }
@@ -53,14 +96,13 @@ export async function createTalhao(req: Request, res: Response) {
 export async function updateTalhao(req: Request, res: Response) {
     try {
         const { id } = req.params;
-        const { nome, fazendaId } = req.body;
+        const { nome, nomeResponsavel, fazendaId } = req.body;
 
         const talhao = await Talhao.findByPk(id);
         if (!talhao) {
             return res.status(404).json({ message: 'Talhão não encontrado' });
         }
 
-        // Validação
         if (!nome || !fazendaId) {
             return res.status(400).json({ message: 'Nome e Fazenda ID são obrigatórios' });
         }
@@ -83,18 +125,22 @@ export async function updateTalhao(req: Request, res: Response) {
 export async function deleteTalhao(req: Request, res: Response) {
     try {
         const { id } = req.params;
-        const talhao = await Talhao.findByPk(id);
 
+        // Excluir todos os registros associados na tabela Plantio
+        await Plantio.destroy({ where: { talhaoId: id } });
+
+        const talhao = await Talhao.findByPk(id);
         if (!talhao) {
             return res.status(404).json({ message: 'Talhão não encontrado' });
         }
 
         await talhao.destroy();
-        res.json({ message: 'Talhão excluído com sucesso' });
+        res.json({ message: 'Talhão e seus plantios associados excluídos com sucesso' });
     } catch (error) {
         res.status(500).json({ message: 'Erro ao excluir talhão', error });
     }
 }
+
 
 // Obter análises de um talhão
 export const getPlotAnalyses = async (req: Request, res: Response) => {
@@ -170,12 +216,12 @@ export const getPlotAnalysesChart = async (req: Request, res: Response) => {
         const groupedByDay: { [key: string]: GroupedData } = analyses.reduce((acc: { [key: string]: GroupedData }, analysis) => {
             const date = analysis.createdAt.toISOString().split('T')[0]; // Data sem hora
             if (!acc[date]) {
-                acc[date] = { 
-                    Green: 0, 
-                    GreenYellow: 0, 
-                    Cherry: 0, 
-                    Raisin: 0, 
-                    Dry: 0 
+                acc[date] = {
+                    Green: 0,
+                    GreenYellow: 0,
+                    Cherry: 0,
+                    Raisin: 0,
+                    Dry: 0
                 };
             }
 
@@ -212,6 +258,5 @@ export const getPlotAnalysesChart = async (req: Request, res: Response) => {
         res.status(500).json({ message: 'Erro ao obter dados para gráfico', error });
     }
 };
-
 
 export default { getAllTalhoes, getTalhaoById, createTalhao, updateTalhao, deleteTalhao, getPlotAnalyses, addPlotAnalysis, getPlotAnalysesChart };

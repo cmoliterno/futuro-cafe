@@ -11,6 +11,7 @@ import ProjetosPage from '../pages/ProjetosPage';
 import EstatisticasPage from '../pages/EstatisticasPage';
 import DashboardPage from '../pages/DashboardPage';
 import ProtectedRoute from './ProtectedRoute';
+import GruposPage from "../pages/GruposPage";
 
 function AppRoutes() {
   return (
@@ -19,12 +20,13 @@ function AppRoutes() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/cadastro" element={<CadastroPage />} />
       <Route path="/recuperar-senha" element={<ForgotPasswordPage />} />
-      
+
       {/* Rotas protegidas */}
       <Route path="/talhoes" element={<ProtectedRoute element={<TalhoesPage />} />} />
       <Route path="/cultivares" element={<ProtectedRoute element={<CultivaresPage />} />} />
       <Route path="/fazendas" element={<ProtectedRoute element={<FazendasPage />} />} />
       <Route path="/projetos" element={<ProtectedRoute element={<ProjetosPage />} />} />
+      <Route path="/grupos" element={<ProtectedRoute element={<GruposPage />} />} />
       <Route path="/estatisticas" element={<ProtectedRoute element={<EstatisticasPage />} />} />
       <Route path="/dashboard" element={<ProtectedRoute element={<DashboardPage />} />} />
     </Routes>

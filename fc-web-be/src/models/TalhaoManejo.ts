@@ -29,6 +29,18 @@ TalhaoManejo.init({
         type: DataTypes.INTEGER,
         allowNull: false,
         field: 'ManejoId'
+    },
+    createdAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+        field: 'CreatedAt'
+    },
+    lastUpdatedAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+        field: 'LastUpdatedAt'
     }
 }, {
     sequelize,

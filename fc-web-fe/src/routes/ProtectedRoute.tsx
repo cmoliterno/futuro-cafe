@@ -6,13 +6,13 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ element }) => {
-  const isAuthenticated = !!localStorage.getItem('token'); // Verifica se o token está presente
+  const isAuthenticated = !!localStorage.getItem('token');
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />; // Redireciona para a página de login se não autenticado
+    return <Navigate to="/login" replace />;
   }
 
-  return <>{element}</>; // Renderiza o elemento protegido
+  return <>{element}</>;
 };
 
 export default ProtectedRoute;

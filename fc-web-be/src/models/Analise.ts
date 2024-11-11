@@ -9,14 +9,14 @@ export class Analise extends Model {
     public greenYellow!: number;
     public raisin!: number;
     public total!: number;
-    public talhaoId!: string; // Relacionamento com Talhao
+    public talhaoId!: string;
     public grupoId?: string;
     public projetoId?: string;
     public coordenadas?: string;
-    public imagemUrl!: string; // Agora é obrigatório
+    public imagemUrl!: string;
     public imagemResultadoUrl?: string;
-    public createdAt!: Date; // Adicionando createdAt
-    public lastUpdatedAt!: Date; // Adicionando lastUpdatedAt
+    public createdAt!: Date;
+    public lastUpdatedAt!: Date;
 }
 
 Analise.init({
@@ -89,11 +89,13 @@ Analise.init({
     createdAt: {
         type: DataTypes.DATE,
         allowNull: false,
+        defaultValue: DataTypes.NOW,
         field: 'CreatedAt'
     },
     lastUpdatedAt: {
         type: DataTypes.DATE,
         allowNull: false,
+        defaultValue: DataTypes.NOW,
         field: 'LastUpdatedAt'
     }
 }, {

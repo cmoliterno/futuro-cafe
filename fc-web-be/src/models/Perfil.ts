@@ -35,13 +35,15 @@ Perfil.init({
     createdAt: {
         type: DataTypes.DATE,
         allowNull: false,
+        defaultValue: DataTypes.NOW,
         field: 'CreatedAt'
     },
     lastUpdatedAt: {
         type: DataTypes.DATE,
         allowNull: false,
+        defaultValue: DataTypes.NOW,
         field: 'LastUpdatedAt'
-    },
+    }
 }, {
     sequelize,
     modelName: 'Perfil',

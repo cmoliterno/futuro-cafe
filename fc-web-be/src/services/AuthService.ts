@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 
 const saltRounds = 10;
 const jwtSecret = process.env.JWT_SECRET || 'default_secret';
+const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET || 'default_refresh_secret';
 
 export class AuthService {
     public async hashPassword(password: string): Promise<string> {
@@ -22,6 +23,18 @@ export class AuthService {
             return jwt.verify(token, jwtSecret) as { userId: string };
         } catch (error) {
             console.error('Token inválido ou expirado');
+            return null;
+        }
+    }
+
+    // Função para gerar um novo access token usando o refresh token
+    public refreshAccessToken(refreshToken: string): string | null {
+        try {
+            const decoded = jwt.verify(refreshToken, jwtRefreshSecret);
+            const userId = (decoded as any).userId;
+            return this.generateToken(userId);
+        } catch (error) {
+            console.error('Erro ao verificar o refresh token:', error);
             return null;
         }
     }

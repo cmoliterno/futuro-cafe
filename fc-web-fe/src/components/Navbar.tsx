@@ -1,44 +1,46 @@
-// Navbar.tsx
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 
-const Navbar: React.FC<{ isAuthenticated: boolean }> = ({ isAuthenticated }) => {
-  return (
-    <nav style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', backgroundColor: '#333' }}>
-      <div>
-        <Link to="/" style={{ color: '#fff', margin: '0 1rem' }}>Home</Link>
-        {isAuthenticated && (
-          <>
-            <Link to="/perfil" style={{ color: '#fff', margin: '0 1rem' }}>Perfil</Link>
-            <Link to="/cultivares" style={{ color: '#fff', margin: '0 1rem' }}>Cultivares</Link>
-            <Link to="/fazendas" style={{ color: '#fff', margin: '0 1rem' }}>Fazendas</Link>
-            <Link to="/talhoes" style={{ color: '#fff', margin: '0 1rem' }}>Talhões</Link>
-            <Link to="/projetos" style={{ color: '#fff', margin: '0 1rem' }}>Projetos</Link>
-            <Link to="/estatisticas" style={{ color: '#fff', margin: '0 1rem' }}>Estatísticas</Link>
-            <Link to="/dashboard" style={{ color: '#fff', margin: '0 1rem' }}>Dashboard</Link>
-          </>
-        )}
-        {!isAuthenticated && (
-          <>
-            <Link to="/login" style={{ color: '#fff', margin: '0 1rem' }}>Login</Link>
-            <Link to="/cadastro" style={{ color: '#fff', margin: '0 1rem' }}>Cadastro</Link>
-            <Link to="/recuperar-senha" style={{ color: '#fff', margin: '0 1rem' }}>Esqueci a Senha</Link>
-          </>
-        )}
-      </div>
-      {isAuthenticated && (
-        <button
-          onClick={() => {
-            localStorage.removeItem('token'); // Logout action
-            window.location.reload(); // Reload to update UI
-          }}
-          style={{ backgroundColor: '#f00', color: '#fff', border: 'none', padding: '0.5rem 1rem' }}
-        >
-          Sair
-        </button>
-      )}
-    </nav>
-  );
+const Navbar: React.FC = () => {
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const location = useLocation(); // Obtém a localização atual
+
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        setIsAuthenticated(!!token);
+    }, [location]); // Dependência em `location` para verificar quando a rota mudar
+
+    const handleLogout = () => {
+        localStorage.removeItem('token'); // Remover token
+        setIsAuthenticated(false);
+        window.location.href = '/login'; // Redireciona para a página de login
+    };
+
+    return (
+        <nav className="navbar">
+            <div className="navbar-links">
+                <Link to="/" className="navbar-link">Home</Link>
+                {isAuthenticated && (
+                    <>
+                        <Link to="/perfil" className="navbar-link">Perfil</Link>
+                        <Link to="/cultivares" className="navbar-link">Cultivares</Link>
+                        <Link to="/fazendas" className="navbar-link">Fazendas</Link>
+                        <Link to="/talhoes" className="navbar-link">Talhões</Link>
+                        <Link to="/projetos" className="navbar-link">Projetos</Link>
+                        <Link to="/grupos" className="navbar-link">Grupos</Link>
+                        <Link to="/estatisticas" className="navbar-link">Estatísticas</Link>
+                        <Link to="/dashboard" className="navbar-link">Dashboard</Link>
+                    </>
+                )}
+                {!isAuthenticated && (
+                    <Link to="/login" className="navbar-link">Login</Link>
+                )}
+            </div>
+            {isAuthenticated && (
+                <button onClick={handleLogout} className="logout-button">Sair</button>
+            )}
+        </nav>
+    );
 };
 
 export default Navbar;

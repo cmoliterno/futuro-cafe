@@ -1,10 +1,9 @@
 import { Request, Response } from 'express';
 import { Analise } from '../models/Analise';
 import Talhao from '../models/Talhao';
-import Fazenda from '../models/Fazenda';
 import PessoaFisicaFazenda from '../models/PessoaFisicaFazenda'; // Importando o modelo do vínculo
 import { Op } from 'sequelize';
-import jwt from 'jsonwebtoken'; // Para decodificar o token
+import jwt from 'jsonwebtoken';
 
 export async function getEstatisticas(req: Request, res: Response) {
     try {
@@ -16,19 +15,29 @@ export async function getEstatisticas(req: Request, res: Response) {
         const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'default_secret'); // Decodifica o token
         const pessoaId = decoded.userId; // Extraindo o userId do token
 
+        console.log('Pessoa ID:', pessoaId); // Log para verificar o ID da pessoa
+
         // Verifica se existem fazendas cadastradas através do vínculo
-        const fazendasAssociadas = await PessoaFisicaFazenda.count({
-            where: { PessoaFisicaId: pessoaId } // Relacionamento com PessoaFisica
+        const fazendasAssociadas = await PessoaFisicaFazenda.findAll({
+            where: { PessoaFisicaId: pessoaId },
+            attributes: ['fazendaId']
         });
 
-        if (fazendasAssociadas === 0) {
+        console.log('Fazendas associadas:', fazendasAssociadas); // Log para verificar as fazendas associadas
+
+        if (fazendasAssociadas.length === 0) {
             return res.status(400).json({ message: 'Você precisa criar uma Fazenda antes de continuar.' });
         }
 
+        const fazendaIds = fazendasAssociadas.map(f => f.fazendaId); // Extrair IDs das fazendas
+        console.log('IDs das fazendas:', fazendaIds); // Log para verificar os IDs das fazendas
+
         // Verifica se existem talhões cadastrados
         const totalTalhoes = await Talhao.count({
-            where: { PessoaId: pessoaId } // Ajuste conforme necessário
+            where: { fazendaId: { [Op.in]: fazendaIds } }
         });
+
+        console.log('Total de talhões:', totalTalhoes); // Log para verificar o total de talhões
 
         if (totalTalhoes === 0) {
             return res.status(400).json({ message: 'Você precisa criar um Talhão antes de continuar.' });
@@ -42,8 +51,13 @@ export async function getEstatisticas(req: Request, res: Response) {
         const ultimoDiaDoMesPassado = new Date(dataAtual.getFullYear(), dataAtual.getMonth(), 0);
 
         // Obter IDs dos talhões relacionados ao usuário
-        const talhoes = await Talhao.findAll({ where: { PessoaId: pessoaId }, attributes: ['id'] });
+        const talhoes = await Talhao.findAll({
+            where: { fazendaId: { [Op.in]: fazendaIds } },
+            attributes: ['id']
+        });
         const talhaoIds = talhoes.map(t => t.id); // Agora é seguro usar map
+
+        console.log('IDs dos talhões:', talhaoIds); // Log para verificar os IDs dos talhões
 
         // Total de análises do mês atual
         const totalAnalisesMesAtual = await Analise.count({

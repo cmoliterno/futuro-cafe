@@ -41,11 +41,32 @@ const TableData = styled.td`
   padding: 8px;
 `;
 
+const Modal = styled.div`
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 20px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+`;
+
+const Overlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+`;
+
 const FazendasPage: React.FC = () => {
   const [fazendas, setFazendas] = useState([]);
   const [nome, setNome] = useState('');
-  const [area, setArea] = useState<number>(0); // Inicializando como 0
   const [editId, setEditId] = useState<number | null>(null); // ID para editar
+  const [showModal, setShowModal] = useState(false); // Controle do modal
 
   useEffect(() => {
     fetchFazendas();
@@ -54,23 +75,26 @@ const FazendasPage: React.FC = () => {
   const fetchFazendas = async () => {
     const response = await api.getAllFazendas(); // Buscando todas as fazendas
     setFazendas(response.data);
+
+    // Verifica se não há fazendas cadastradas e exibe o modal
+    if (response.data.length === 0) {
+      setShowModal(true);
+    }
   };
 
   const handleCreate = async () => {
     // Função para criar uma nova fazenda
-    await api.createFazenda({ nome, area });
+    await api.createFazenda({ nome });
     setNome(''); // Resetando o campo de nome
-    setArea(0); // Resetando o campo de área para 0
     fetchFazendas(); // Atualizando a lista de fazendas
   };
 
   const handleEdit = async () => {
     // Função para editar uma fazenda existente
     if (editId) {
-      await api.updateFazenda(editId, { nome, area });
+      await api.updateFazenda(editId, { nome });
       setEditId(null); // Resetando o ID de edição
       setNome(''); // Resetando o campo de nome
-      setArea(0); // Resetando o campo de área para 0
       fetchFazendas(); // Atualizando a lista de fazendas
     }
   };
@@ -82,50 +106,53 @@ const FazendasPage: React.FC = () => {
   };
 
   return (
-    <FazendasContainer>
-      <Title>Fazendas</Title>
-      <Input
-        type="text"
-        value={nome}
-        placeholder="Nome da Fazenda"
-        onChange={(e) => setNome(e.target.value)} // Atualizando o nome da fazenda
-      />
-      <Input
-        type="number"
-        value={area}
-        placeholder="Área da Fazenda"
-        onChange={(e) => setArea(Number(e.target.value))} // Atualizando a área da fazenda
-      />
-      <Button onClick={editId ? handleEdit : handleCreate}>
-        {editId ? 'Salvar Alterações' : 'Adicionar Fazenda'}
-      </Button>
-      <Table>
-        <thead>
+      <FazendasContainer>
+        <Title>Fazendas</Title>
+        <Input
+            type="text"
+            value={nome}
+            placeholder="Nome da Fazenda"
+            onChange={(e) => setNome(e.target.value)} // Atualizando o nome da fazenda
+        />
+        <Button onClick={editId ? handleEdit : handleCreate}>
+          {editId ? 'Salvar Alterações' : 'Adicionar Fazenda'}
+        </Button>
+        <Table>
+          <thead>
           <tr>
             <TableHeader>Nome</TableHeader>
-            <TableHeader>Área</TableHeader>
             <TableHeader>Ações</TableHeader>
           </tr>
-        </thead>
-        <tbody>
+          </thead>
+          <tbody>
           {fazendas.map((fazenda: any) => (
-            <TableRow key={fazenda.id}>
-              <TableData>{fazenda.nome}</TableData>
-              <TableData>{fazenda.area}</TableData>
-              <TableData>
-                <Button onClick={() => {
-                  // Preparando para editar
-                  setEditId(fazenda.id);
-                  setNome(fazenda.nome);
-                  setArea(fazenda.area);
-                }}>Editar</Button>
-                <Button onClick={() => handleDelete(fazenda.id)}>Excluir</Button>
-              </TableData>
-            </TableRow>
+              <TableRow key={fazenda.id}>
+                <TableData>{fazenda.nome}</TableData>
+                <TableData>
+                  <Button onClick={() => {
+                    // Preparando para editar
+                    setEditId(fazenda.id);
+                    setNome(fazenda.nome);
+                  }}>Editar</Button>
+                  <Button onClick={() => handleDelete(fazenda.id)}>Excluir</Button>
+                </TableData>
+              </TableRow>
           ))}
-        </tbody>
-      </Table>
-    </FazendasContainer>
+          </tbody>
+        </Table>
+
+        {/* Modal para mensagem de erro */}
+        {showModal && (
+            <>
+              <Overlay onClick={() => setShowModal(false)} />
+              <Modal>
+                <h2>Nenhuma Fazenda Encontrada</h2>
+                <p>É necessário cadastrar uma nova fazenda para continuar.</p>
+                <Button onClick={() => setShowModal(false)}>Fechar</Button>
+              </Modal>
+            </>
+        )}
+      </FazendasContainer>
   );
 };
 

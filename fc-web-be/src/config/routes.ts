@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { registerUser, authenticateUser, updateUser, deleteUser } from '../controllers/UsuarioController';
+import { registerUser, authenticateUser, updateUser, deleteUser, refreshAccessToken } from '../controllers/UsuarioController';
 import { getAllCultivares, getCultivarById, createCultivar, updateCultivar, deleteCultivar } from '../controllers/CultivaresController';
 import { getAllFazendas, getFazendaById, createFazenda, updateFazenda, deleteFazenda } from '../controllers/FazendaController';
 import { getAllTalhoes, getTalhaoById, createTalhao, updateTalhao, deleteTalhao } from '../controllers/TalhaoController';
@@ -16,6 +16,7 @@ const router = Router();
 // Definição das rotas de usuários (sem autenticação)
 router.post('/registrar', registerUser);
 router.post('/auth/token', authenticateUser);
+router.post('/auth/refresh-token', refreshAccessToken);
 
 // Todas as outras rotas requerem autenticação
 router.use(authenticateJWT); // Aplica o middleware a todas as rotas a seguir

@@ -4,26 +4,30 @@ import api from '../services/api';
 
 const DashboardContainer = styled.div`
   padding: 20px;
-  background-color: #f4f4f4;
+  background-color: #EEDCC8; /* Cor de fundo */
 `;
 
 const Title = styled.h1`
-  color: #333;
+  color: #230C02; /* Cor do título */
+  text-align: center;
 `;
 
 const Stats = styled.div`
   display: flex;
-  justify-content: space-between;
+  justify-content: space-around; /* Distribui os cards uniformemente */
+  flex-wrap: wrap; /* Permite que os cards se movam para a próxima linha se não houver espaço */
   margin-bottom: 20px;
 `;
 
 const Card = styled.div`
   background: white;
-  padding: 15px;
+  padding: 20px;
   border-radius: 8px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   flex: 1;
-  margin: 0 10px;
+  margin: 10px; /* Adiciona espaço entre os cards */
+  min-width: 200px; /* Define uma largura mínima para os cards */
+  text-align: center; /* Centraliza o texto dentro do card */
 `;
 
 const ErrorMessage = styled.p`
@@ -33,9 +37,10 @@ const ErrorMessage = styled.p`
 
 const DashboardPage: React.FC = () => {
   const [data, setData] = useState({
+    totalAnalisesMesAtual: 0,
+    aumentoAnalisesRelacaoMesPassado: 0,
+    totalAnalisesHoje: 0,
     totalTalhoes: 0,
-    totalCultivares: 0,
-    totalConexoes: 0,
   });
   const [error, setError] = useState(''); // Estado para armazenar mensagens de erro
 
@@ -63,12 +68,16 @@ const DashboardPage: React.FC = () => {
             <p>{data.totalTalhoes}</p>
           </Card>
           <Card>
-            <h2>Total de Cultivares</h2>
-            <p>{data.totalCultivares}</p>
+            <h2>Total de Análises do Mês Atual</h2>
+            <p>{data.totalAnalisesMesAtual}</p>
           </Card>
           <Card>
-            <h2>Total de Conexões</h2>
-            <p>{data.totalConexoes}</p>
+            <h2>Aumento de Análises em Relação ao Mês Passado (%)</h2>
+            <p>{data.aumentoAnalisesRelacaoMesPassado}</p>
+          </Card>
+          <Card>
+            <h2>Total de Análises Hoje</h2>
+            <p>{data.totalAnalisesHoje}</p>
           </Card>
         </Stats>
         {/* Outros componentes e informações adicionais */}

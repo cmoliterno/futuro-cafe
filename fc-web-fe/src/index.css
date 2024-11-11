@@ -1,17 +1,100 @@
+/* global.css */
+
 body {
+  font-family: 'Poppins', sans-serif;
   margin: 0;
-  font-family: Arial, sans-serif;
-  background-color: #eaeaea;
+  background-color: #EEDCC8; /* Cor de fundo */
 }
 
-h1, h2, h3 {
-  color: #333;
-}
-
-input, button {
-  border-radius: 4px;
+h1, h2, h3, h4, h5, h6, p {
+  color: #230C02; /* Cor do texto */
 }
 
 button {
-  cursor: pointer;
+  background-color: #047502; /* Cor do botão */
+  color: #ffffff; /* Cor do texto do botão */
+  border: none; /* Remove borda padrão */
+  padding: 10px 20px; /* Espaçamento interno */
+  border-radius: 5px; /* Bordas arredondadas */
+  cursor: pointer; /* Muda o cursor para indicar clicável */
+  transition: background-color 0.3s; /* Animação para a mudança de cor */
+  margin-right: 10px; /* Adiciona espaço entre os botões */
 }
+
+button:hover {
+  background-color: #035f02; /* Cor ao passar o mouse */
+}
+
+/* Estilos específicos para cabeçalho, rodapé e outros componentes */
+.header {
+  background-color: #230C02;
+  color: #ffffff;
+}
+
+.footer {
+  background-color: #230C02;
+  color: #ffffff;
+}
+
+/* Exemplo de estilo para a tabela do Ant Design */
+.ant-table {
+  border: 2px solid #4CAF50; /* Borda da tabela */
+}
+
+.ant-table th {
+  background-color: #f2f2f2; /* Cor de fundo dos cabeçalhos */
+  color: #333; /* Cor do texto nos cabeçalhos */
+}
+
+.ant-table td {
+  padding: 16px; /* Padding nas células */
+  font-size: 16px; /* Tamanho da fonte */
+}
+
+/* Efeito ao passar o mouse sobre as linhas da tabela */
+.ant-table tr:hover {
+  background-color: #e7f3fe; /* Cor ao passar o mouse */
+}
+
+/* Aumentando a especificidade */
+.my-custom-class .ant-table th {
+  background-color: #4CAF50; /* Cor de fundo dos cabeçalhos */
+}
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: #230C02; /* Cor de fundo da Navbar */
+}
+
+.navbar-links {
+  display: flex;
+}
+
+.navbar-link {
+  color: #fff; /* Cor do texto */
+  margin: 0 1rem;
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.navbar-link:hover {
+  color: #047502; /* Cor ao passar o mouse */
+}
+
+.logout-button {
+  background-color: #f00; /* Cor do botão de logout */
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 5px; /* Bordas arredondadas */
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.logout-button:hover {
+  background-color: #c00; /* Cor ao passar o mouse */
+}
+

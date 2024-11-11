@@ -29,11 +29,13 @@ Talhao.init({
     createdAt: {
         type: DataTypes.DATE,
         allowNull: false,
+        defaultValue: DataTypes.NOW, // Preencher automaticamente
         field: 'CreatedAt'
     },
     lastUpdatedAt: {
         type: DataTypes.DATE,
         allowNull: false,
+        defaultValue: DataTypes.NOW, // Preencher automaticamente
         field: 'LastUpdatedAt'
     }
 }, {

@@ -19,14 +19,44 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
+// Função para tentar o refresh do token
+const refreshToken = async () => {
+    try {
+        const refreshToken = localStorage.getItem('refreshToken');
+        if (!refreshToken) {
+            throw new Error('Refresh token não encontrado.');
+        }
+
+        const response = await api.post('/auth/refresh-token', { refreshToken });
+        const { accessToken, refreshToken: newRefreshToken } = response.data.result;
+        localStorage.setItem('token', accessToken);
+        localStorage.setItem('refreshToken', newRefreshToken);
+
+        return accessToken;
+    } catch (err) {
+        console.error('Erro ao tentar refresh do token:', err);
+        return null;
+    }
+};
+
 // Interceptor para tratar erros de resposta
 api.interceptors.response.use(
     response => response,
-    error => {
+    async (error) => {
         if (error.response && error.response.status === 401) {
-            // Se a resposta for 401, redirecionar para o login
-            localStorage.removeItem('token'); // Remover o token do armazenamento
-            window.location.href = '/login'; // Redirecionar para a página de login
+            // Se o token estiver expirado, tenta refresh
+            const newToken = await refreshToken();
+            if (newToken) {
+                // Se o refresh do token foi bem-sucedido, refaz a requisição original com o novo token
+                error.config.headers['Authorization'] = `Bearer ${newToken}`;
+                return axios(error.config);  // Refaz a requisição com o novo token
+            } else {
+                // Se o refresh falhou, remove o token e redireciona para login
+                localStorage.removeItem('token');
+                localStorage.removeItem('refreshToken');
+                window.location.href = '/login';  // Redireciona para a tela de login
+                return Promise.reject(error);
+            }
         }
         return Promise.reject(error);
     }
@@ -34,9 +64,10 @@ api.interceptors.response.use(
 
 // Funções da API
 export default {
-    // Usuários
     loginUser: (data: { email: string; password: string }) =>
-        api.post('/auth/token', data), // Este endpoint não requer autenticação
+        api.post('/auth/token', data),
+    refreshAccessToken: (data: { refreshToken: string }) =>
+        api.post('/auth/refresh-token', data),
     registerUser: (data: { nomeCompleto: string; email: string; password: string }) =>
         api.post('/registrar', data), // Este endpoint não requer autenticação
     authenticateUser: (data: { email: string; password: string }) =>
@@ -59,9 +90,9 @@ export default {
     // Fazendas
     getAllFazendas: () => api.get('/fazendas'), // Requer autenticação
     getFazendaById: (id: number) => api.get(`/fazendas/${id}`), // Requer autenticação
-    createFazenda: (data: { nome: string; area: number }) =>
+    createFazenda: (data: { nome: string }) =>
         api.post('/fazendas', data), // Requer autenticação
-    updateFazenda: (id: number, data: { nome: string; area: number }) =>
+    updateFazenda: (id: number, data: { nome: string }) =>
         api.put(`/fazendas/${id}`, data), // Requer autenticação
     deleteFazenda: (id: number) =>
         api.delete(`/fazendas/${id}`), // Requer autenticação
@@ -69,13 +100,23 @@ export default {
     // Talhões
     getAllTalhoes: () => api.get('/talhoes'), // Requer autenticação
     getTalhaoById: (id: number) => api.get(`/talhoes/${id}`), // Requer autenticação
-    createTalhao: (data: { nome: string; nomeResponsavel: string; fazendaId: number }) =>
-        api.post('/talhoes', data), // Requer autenticação
-    updateTalhao: (id: number, data: { nome: string; nomeResponsavel: string; fazendaId: number }) =>
-        api.put(`/talhoes/${id}`, data), // Requer autenticação
-    deleteTalhao: (id: number) =>
-        api.delete(`/talhoes/${id}`), // Requer autenticação
-
+    createTalhao: (data: {
+        nome: string;
+        fazendaId: string;
+        dataPlantio: string; // Data do plantio
+        espacamentoLinhas: number; // Espaçamento entre linhas
+        espacamentoMudas: number; // Espaçamento entre mudas
+        cultivarId: number; // ID do cultivar
+    }) => api.post('/talhoes', data), // Requer autenticação
+    updateTalhao: (id: string, data: {
+        nome: string;
+        fazendaId: string;
+        dataPlantio: string; // Data do plantio
+        espacamentoLinhas: number; // Espaçamento entre linhas
+        espacamentoMudas: number; // Espaçamento entre mudas
+        cultivarId: number; // ID do cultivar
+    }) => api.put(`/talhoes/${id}`, data), // Requer autenticação
+    deleteTalhao: (id: string) => api.delete(`/talhoes/${id}`), // Requer autenticação
     // Estatísticas
     getEstatisticas: () => api.get('/estatisticas'), // Requer autenticação
 

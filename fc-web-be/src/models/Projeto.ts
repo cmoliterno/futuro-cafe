@@ -6,6 +6,8 @@ export class Projeto extends Model {
     public id!: string;
     public nome!: string;
     public descricao!: string;
+    public createdAt!: Date;
+    public lastUpdatedAt!: Date;
 }
 
 Projeto.init({
@@ -24,6 +26,18 @@ Projeto.init({
         type: DataTypes.STRING(1000), // STRING(1000) para corresponder ao DBO
         allowNull: true,
         field: 'Descricao'
+    },
+    createdAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+        field: 'CreatedAt'
+    },
+    lastUpdatedAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+        field: 'LastUpdatedAt'
     }
 }, {
     sequelize,
