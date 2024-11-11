@@ -209,8 +209,8 @@ const EstatisticasPage: React.FC = () => {
     // Limpar os campos ao trocar o tipo de relatório
     const handleToggleReportType = (isFarm: boolean) => {
         setIsFarmReport(isFarm);
-        setSelectedTalhao('');  // Limpar talhão quando mudar para gráfico por fazenda
-        setStartDate('');       // Limpar data quando mudar para gráfico por fazenda
+        setSelectedTalhao('');
+        setStartDate('');
         setEndDate('');
     };
 
