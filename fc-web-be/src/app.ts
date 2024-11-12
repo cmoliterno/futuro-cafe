@@ -4,9 +4,17 @@ import routes from './config/routes'; // Ajuste o caminho se necessário
 
 const app = express();
 
+const allowedOrigins = ['http://localhost:3000', 'http://localhost:8080', 'http://52.91.164.75:3001', process.env.FRONTEND_URL];
+
 // Configuração do CORS
 app.use(cors({
-  origin: 'http://localhost:3001', // URL do seu frontend
+  origin: function (origin, callback) {
+    if (allowedOrigins.includes(origin) || !origin) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
