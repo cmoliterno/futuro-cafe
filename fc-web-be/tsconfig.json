@@ -9,5 +9,5 @@
     "outDir": "./dist",
     "typeRoots": ["./node_modules/@types", "./src/@types"]
   },
-  "include": ["./src/**/*", "./src/config/config.js"],
+  "include": ["./**/**/*", "./src/config/config.js"],
 }
