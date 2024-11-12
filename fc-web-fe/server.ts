@@ -2,17 +2,16 @@ import express from 'express';
 import path from 'path';
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 
-// Serve os arquivos estáticos da pasta build
-app.use(express.static(path.join(__dirname, 'build')));
+// Serve os arquivos da pasta build (frontend)
+app.use(express.static(path.join(__dirname, 'fc-web-fe/build')));
 
-// Rota para retornar o index.html
+// Redireciona todas as rotas para o index.html do React
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'build', 'index.html'));
+    res.sendFile(path.join(__dirname, 'fc-web-fe/build', 'index.html'));
 });
 
-// Inicia o servidor
 app.listen(PORT, () => {
-    console.log(`Servidor rodando na porta ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
