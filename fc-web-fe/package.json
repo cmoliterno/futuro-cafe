@@ -1,6 +1,7 @@
 {
   "name": "futurocafe-frontend",
   "version": "1.0.0",
+  "type": "module",
   "scripts": {
     "startdev": "react-scripts start",
     "builddev": "react-scripts build",
