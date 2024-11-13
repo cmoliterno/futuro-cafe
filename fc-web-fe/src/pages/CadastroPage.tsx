@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
+import { useNavigate } from 'react-router-dom'; // Importando o hook para navegação
 import api from '../services/api'; // Importando o serviço de API
 
 const CadastroContainer = styled.div`
@@ -33,47 +34,76 @@ const ErrorMessage = styled.p`
   text-align: center;
 `;
 
-const CadastroPage: React.FC = () => {
-  const [nomeCompleto, setNomeCompleto] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  
-  const handleRegister = async () => {
-    try {
-      const response = await api.registerUser({ nomeCompleto, email, password });
-      // Aqui você pode redirecionar para a página de login ou exibir uma mensagem de sucesso
-      console.log(response.data);
-    } catch (err) {
-      setError('Erro ao cadastrar. Verifique os dados e tente novamente.');
-    }
-  };
+const SuccessMessage = styled.p`
+  color: green;
+  text-align: center;
+`;
 
-  return (
-    <CadastroContainer>
-      <Title>Cadastro</Title>
-      <Input
-        type="text"
-        value={nomeCompleto}
-        placeholder="Nome Completo"
-        onChange={(e) => setNomeCompleto(e.target.value)} // Atualizando o nome completo
-      />
-      <Input
-        type="email"
-        value={email}
-        placeholder="Email"
-        onChange={(e) => setEmail(e.target.value)} // Atualizando o email
-      />
-      <Input
-        type="password"
-        value={password}
-        placeholder="Senha"
-        onChange={(e) => setPassword(e.target.value)} // Atualizando a senha
-      />
-      {error && <ErrorMessage>{error}</ErrorMessage>}
-      <Button onClick={handleRegister}>Cadastrar</Button>
-    </CadastroContainer>
-  );
+const CadastroPage: React.FC = () => {
+    const [nomeCompleto, setNomeCompleto] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [cpf, setCpf] = useState(''); // Adicionando estado para CPF
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState(''); // Estado para mensagem de sucesso
+
+    const navigate = useNavigate(); // Usando o hook de navegação
+
+    const handleRegister = async () => {
+        try {
+            const response = await api.registerUser({
+                nomeCompleto,
+                email,
+                password,
+                cpf,
+            });
+
+            // Exibe a mensagem de sucesso
+            setSuccess('Cadastro realizado com sucesso! Redirecionando...');
+
+            // Redireciona para a tela de Dashboard após 2 segundos
+            setTimeout(() => {
+                navigate('/dashboard'); // Ajuste conforme o caminho da sua tela de Dashboard
+            }, 2000);
+
+            console.log(response.data);
+        } catch (err) {
+            setError('Erro ao cadastrar. Verifique os dados e tente novamente.');
+        }
+    };
+
+    return (
+        <CadastroContainer>
+            <Title>Cadastro</Title>
+            <Input
+                type="text"
+                value={nomeCompleto}
+                placeholder="Nome Completo"
+                onChange={(e) => setNomeCompleto(e.target.value)} // Atualizando o nome completo
+            />
+            <Input
+                type="email"
+                value={email}
+                placeholder="Email"
+                onChange={(e) => setEmail(e.target.value)} // Atualizando o email
+            />
+            <Input
+                type="password"
+                value={password}
+                placeholder="Senha"
+                onChange={(e) => setPassword(e.target.value)} // Atualizando a senha
+            />
+            <Input
+                type="text"
+                value={cpf}
+                placeholder="CPF"
+                onChange={(e) => setCpf(e.target.value)} // Atualizando o CPF
+            />
+            {error && <ErrorMessage>{error}</ErrorMessage>}
+            {success && <SuccessMessage>{success}</SuccessMessage>} {/* Exibindo a mensagem de sucesso */}
+            <Button onClick={handleRegister}>Cadastrar</Button>
+        </CadastroContainer>
+    );
 };
 
 export default CadastroPage;

@@ -39,7 +39,7 @@ export const refreshAccessToken = (req: Request, res: Response) => {
 export async function registerUser(req: Request, res: Response) {
     const transaction = await sequelize.transaction(); // Inicia a transação
     try {
-        const { nomeCompleto, email, documento, senha, cpf } = req.body;
+        const { nomeCompleto, email, documento, password, cpf } = req.body;
 
         console.log('Dados recebidos para registro:', req.body);
 
@@ -47,18 +47,28 @@ export async function registerUser(req: Request, res: Response) {
             return res.status(400).json({ message: 'CPF é obrigatório' });
         }
 
+        // Limpeza do CPF
+        const cpfLimpo = cpf.replace(/\D/g, '');  // Remove todos os caracteres não numéricos
+
+        console.log('CPF limpo para consulta:', cpfLimpo);
+
         const existingUser = await Login.findOne({ where: { providerValue: email }, transaction });
         if (existingUser) {
             return res.status(400).json({ message: 'Email já está em uso' });
         }
 
-        const existingCpf = await PessoaFisica.findOne({ where: { CPF: cpf }, transaction });
+        const existingCpf = await PessoaFisica.findOne({ where: { CPF: cpfLimpo }, transaction });
         if (existingCpf) {
             return res.status(400).json({ message: 'CPF já está em uso' });
         }
 
+        // Verifica se a senha está vazia ou não
+        if (!password) {
+            return res.status(400).json({ message: 'Senha é obrigatória' });
+        }
+
         const salt = crypto.randomUUID(); // Gera um salt
-        const hashedPassword = createPasswordHash(senha, salt); // Cria hash da senha
+        const hashedPassword = createPasswordHash(password, salt); // Cria hash da senha
 
         // Cria uma nova instância de Pessoa
         const pessoaId = crypto.randomUUID(); // Gera um novo ID para a Pessoa
@@ -73,7 +83,7 @@ export async function registerUser(req: Request, res: Response) {
             nomeCompleto,
             email,
             documento,
-            cpf,
+            cpf: cpfLimpo,  // Passando o CPF limpo
             passwordHash: JSON.stringify({ Hash: hashedPassword, Salt: salt }),
         }, { transaction });
 
@@ -145,7 +155,7 @@ export async function authenticateUser(req: Request, res: Response) {
             result: {
                 accessToken: token,
                 refreshToken: storedHash, // Ajuste se necessário
-               // expiresIn: new Date(Date.now() + 3600 * 1000).toISOString(), // Exemplo de expiração em 1 hora
+                // expiresIn: new Date(Date.now() + 3600 * 1000).toISOString(), // Exemplo de expiração em 1 hora
                 tokenType: 'Bearer'
             },
             success: true,

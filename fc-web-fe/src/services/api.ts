@@ -66,7 +66,7 @@ export default {
         api.post('/auth/token', data),
     refreshAccessToken: (data: { refreshToken: string }) =>
         api.post('/auth/refresh-token', data),
-    registerUser: (data: { nomeCompleto: string; email: string; password: string }) =>
+    registerUser: (data: { nomeCompleto: string; email: string; password: string, cpf: string }) =>
         api.post('/registrar', data), // Este endpoint não requer autenticação
     authenticateUser: (data: { email: string; password: string }) =>
         api.post('/auth/token', data), // Este endpoint não requer autenticação
