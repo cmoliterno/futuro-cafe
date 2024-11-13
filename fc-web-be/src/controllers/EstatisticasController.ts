@@ -14,7 +14,7 @@ export async function getEstatisticas(req: Request, res: Response) {
             return res.status(401).json({ message: 'Token não fornecido' });
         }
 
-        const pessoaId = authService.verifyToken(token);
+        const pessoaId = authService.verifyToken(token)?.userId;
 
         console.log('Pessoa ID:', pessoaId); // Log para verificar o ID da pessoa
 

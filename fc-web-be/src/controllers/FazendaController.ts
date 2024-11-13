@@ -13,7 +13,7 @@ export async function getAllFazendas(req: Request, res: Response) {
             return res.status(401).json({ message: 'Token não fornecido' });
         }
 
-        const pessoaId = authService.verifyToken(token);
+        const pessoaId = authService.verifyToken(token)?.userId;
 
         // Obtém as fazendas associadas ao usuário
         const fazendasAssociadas = await PessoaFisicaFazenda.findAll({
@@ -62,7 +62,7 @@ export async function createFazenda(req: Request, res: Response) {
             return res.status(401).json({ message: 'Token não fornecido' });
         }
 
-        const pessoaId = authService.verifyToken(token);
+        const pessoaId = authService.verifyToken(token)?.userId;
 
         // Criar a fazenda com as datas
         const fazenda = await Fazenda.create({
