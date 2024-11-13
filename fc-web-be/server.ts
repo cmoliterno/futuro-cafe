@@ -1,4 +1,4 @@
-import app from './src/app'; // Importa o app configurado
+import app from './src/app';
 import dotenv from 'dotenv';
 
 dotenv.config();
