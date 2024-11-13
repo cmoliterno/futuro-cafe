@@ -5,7 +5,7 @@
   "scripts": {
     "start": "tsc && node dist/server.js",
     "dev": "nodemon --watch src --exec ts-node server.ts",
-    "build": "tsc && mkdir dist/src && mkdir dist/src/config && cp server.ts dist/server.ts && cp src/config/config.js dist/src/config/config.js",
+    "build": "tsc && cp src/config/config.js dist/src/config/config.js",
     "watch": "tsc -w",
     "migrate": "sequelize-cli db:migrate"
   },
