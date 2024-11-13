@@ -1,10 +1,27 @@
 import { Request, Response } from 'express';
 import { Grupo } from '../models/Grupo';
-import Login from '../models/Login';
+import { AuthService } from '../services/AuthService';
+import Login from "../models/Login";
+
+const authService = new AuthService();
 
 export async function getAllGrupos(req: Request, res: Response) {
     try {
-        const grupos = await Grupo.findAll();
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ message: 'Token não fornecido' });
+        }
+
+        const decoded = authService.verifyToken(token);
+        if (!decoded) {
+            return res.status(401).json({ message: 'Token inválido ou expirado' });
+        }
+        const pessoaId = decoded.userId;
+
+        const grupos = await Grupo.findAll({
+            where: { pessoaFisicaId: pessoaId }
+        });
+
         res.json(grupos);
     } catch (error) {
         res.status(500).json({ message: 'Erro ao buscar grupos', error });
@@ -31,7 +48,23 @@ export async function getGrupoById(req: Request, res: Response) {
 export async function createGrupo(req: Request, res: Response) {
     try {
         const { nome, descricao } = req.body;
-        const grupo = await Grupo.create({ nome, descricao });
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ message: 'Token não fornecido' });
+        }
+
+        const decoded = authService.verifyToken(token);
+        if (!decoded) {
+            return res.status(401).json({ message: 'Token inválido ou expirado' });
+        }
+        const pessoaId = decoded.userId;
+
+        const grupo = await Grupo.create({
+            nome,
+            descricao,
+            pessoaFisicaId: pessoaId
+        });
+
         res.status(201).json(grupo);
     } catch (error) {
         res.status(500).json({ message: 'Erro ao criar grupo', error });

@@ -4,8 +4,9 @@ import PessoaFisicaFazenda from '../models/PessoaFisicaFazenda'; // Importando o
 import Talhao from '../models/Talhao';
 import Fazenda from '../models/Fazenda'; // Para validar a fazenda
 import { Op, Sequelize } from 'sequelize';
-import jwt from 'jsonwebtoken';
+import { AuthService } from '../services/AuthService';
 
+const authService = new AuthService();
 export async function getEstatisticas(req: Request, res: Response) {
     try {
         const token = req.headers.authorization?.split(' ')[1]; // Pega o token do cabeçalho
@@ -13,8 +14,7 @@ export async function getEstatisticas(req: Request, res: Response) {
             return res.status(401).json({ message: 'Token não fornecido' });
         }
 
-        const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'default_secret'); // Decodifica o token
-        const pessoaId = decoded.userId; // Extraindo o userId do token
+        const pessoaId = authService.verifyToken(token);
 
         console.log('Pessoa ID:', pessoaId); // Log para verificar o ID da pessoa
 

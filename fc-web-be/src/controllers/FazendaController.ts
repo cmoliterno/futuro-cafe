@@ -3,7 +3,9 @@ import { Fazenda } from '../models/Fazenda';
 import Talhao from '../models/Talhao';
 import jwt from 'jsonwebtoken';
 import PessoaFisicaFazenda from "../models/PessoaFisicaFazenda";
+import { AuthService } from '../services/AuthService';
 
+const authService = new AuthService();
 export async function getAllFazendas(req: Request, res: Response) {
     try {
         const token = req.headers.authorization?.split(' ')[1]; // Pega o token do cabeçalho
@@ -11,8 +13,7 @@ export async function getAllFazendas(req: Request, res: Response) {
             return res.status(401).json({ message: 'Token não fornecido' });
         }
 
-        const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'default_secret') as { userId: string }; // Decodifica o token
-        const pessoaId = decoded.userId; // Extraindo o userId do token
+        const pessoaId = authService.verifyToken(token);
 
         // Obtém as fazendas associadas ao usuário
         const fazendasAssociadas = await PessoaFisicaFazenda.findAll({
@@ -61,8 +62,7 @@ export async function createFazenda(req: Request, res: Response) {
             return res.status(401).json({ message: 'Token não fornecido' });
         }
 
-        const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'default_secret');
-        const pessoaId = decoded.userId; // Extraindo o userId do token
+        const pessoaId = authService.verifyToken(token);
 
         // Criar a fazenda com as datas
         const fazenda = await Fazenda.create({

@@ -9,14 +9,13 @@ import { AuthService } from "../services/AuthService";
 const authService = new AuthService();
 
 
-// Função para registrar um novo usuário
 export async function registerUser(req: Request, res: Response) {
     const transaction = await sequelize.transaction();
     try {
         const { nomeCompleto, email, documento, password, cpf } = req.body;
 
-        if (!cpf) {
-            return res.status(400).json({ message: 'CPF é obrigatório' });
+        if (!cpf || !password) {
+            return res.status(400).json({ message: 'CPF e senha são obrigatórios' });
         }
 
         const cpfLimpo = cpf.replace(/\D/g, '');
@@ -31,27 +30,17 @@ export async function registerUser(req: Request, res: Response) {
             return res.status(400).json({ message: 'CPF já está em uso' });
         }
 
-        if (!password) {
-            return res.status(400).json({ message: 'Senha é obrigatória' });
-        }
-
-        // Gera o salt e o hash da senha usando AuthService
-        const salt = authService.generateSalt();
-        const hashedPassword = authService.hashPassword(password, salt);
-
+        const hashedPassword = await authService.hashPassword(password);
         const pessoaId = crypto.randomUUID();
-        await Pessoa.create({
-            id: pessoaId,
-            natureza: 'Física'
-        }, { transaction });
 
+        await Pessoa.create({ id: pessoaId, natureza: 'Física' }, { transaction });
         const pessoaFisica = await PessoaFisica.create({
             id: pessoaId,
             nomeCompleto,
             email,
             documento,
             cpf: cpfLimpo,
-            passwordHash: JSON.stringify({ Hash: hashedPassword, Salt: salt }),
+            passwordHash: hashedPassword,
         }, { transaction });
 
         await Login.create({
@@ -69,60 +58,45 @@ export async function registerUser(req: Request, res: Response) {
     }
 }
 
-// Função para autenticar o usuário
+// Função para autenticar o usuário e gerar tokens
 export async function authenticateUser(req: Request, res: Response) {
     try {
         const { email, password } = req.body;
 
         const pessoaFisica = await PessoaFisica.findOne({ where: { email } });
-        if (!pessoaFisica) {
+        if (!pessoaFisica || !pessoaFisica.passwordHash) {
             return res.status(404).json({ message: 'Usuário não encontrado' });
         }
 
-        if (!pessoaFisica.passwordHash) {
-            return res.status(500).json({ message: 'Dados de senha inválidos' });
-        }
-
-        let storedPasswordData;
-        try {
-            storedPasswordData = JSON.parse(pessoaFisica.passwordHash);
-        } catch (error) {
-            return res.status(500).json({ message: 'Erro ao analisar os dados de senha' });
-        }
-
-        const storedHash = storedPasswordData.Hash;
-        const storedSalt = storedPasswordData.Salt;
-
-        // Compara a senha fornecida com o hash armazenado
-        const isPasswordValid = authService.comparePassword(password, storedSalt, storedHash);
+        const isPasswordValid = await authService.comparePassword(password, pessoaFisica.passwordHash);
         if (!isPasswordValid) {
             return res.status(401).json({ message: 'Senha incorreta' });
         }
 
-        // Gera o token JWT compatível com o legado
-        const token = authService.generateToken(pessoaFisica.id);
+        const accessToken = authService.generateToken(pessoaFisica.id);
+        const refreshToken = authService.generateRefreshToken(pessoaFisica.id);
 
-        const responseData = {
-            result: {
-                accessToken: token,
-                refreshToken: storedHash, // Ajuste se necessário
-                // expiresIn: new Date(Date.now() + 3600 * 1000).toISOString(), // Exemplo de expiração em 1 hora
-                tokenType: 'Bearer'
-            },
-            success: true,
-            messages: [],
-            hasErrors: false,
-            hasImpediments: false,
-            hasWarnings: false
-        };
-
-        console.log('Autenticação bem-sucedida para o usuário:', email);
-        res.json(responseData);
+        res.json({ accessToken, refreshToken, tokenType: 'Bearer' });
     } catch (error) {
-        console.error('Erro ao autenticar usuário:', error);
         res.status(500).json({ message: 'Erro ao autenticar usuário', error });
     }
 }
+
+// Função para renovar o token de acesso
+export const refreshAccessToken = (req: Request, res: Response) => {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+        return res.status(403).json({ message: 'Refresh token não fornecido' });
+    }
+
+    const newAccessToken = authService.refreshAccessToken(refreshToken);
+    if (!newAccessToken) {
+        return res.status(401).json({ message: 'Refresh token inválido ou expirado' });
+    }
+
+    return res.json({ accessToken: newAccessToken });
+};
 
 // Atualizar dados do usuário
 export async function updateUser(req: Request, res: Response) {
@@ -171,22 +145,5 @@ export async function deleteUser(req: Request, res: Response) {
         res.status(500).json({ message: 'Erro ao excluir usuário', error });
     }
 }
-
-// Função refreshAccessToken no controlador
-export const refreshAccessToken = (req: Request, res: Response) => {
-    const { refreshToken } = req.body;
-
-    if (!refreshToken) {
-        return res.status(403).json({ message: 'Refresh token não fornecido' });
-    }
-
-    const newAccessToken = authService.refreshAccessToken(refreshToken);
-    if (!newAccessToken) {
-        return res.status(401).json({ message: 'Refresh token inválido ou expirado' });
-    }
-
-    return res.json({ accessToken: newAccessToken });
-};
-
 
 export default { registerUser, authenticateUser, updateUser, deleteUser, refreshAccessToken };
