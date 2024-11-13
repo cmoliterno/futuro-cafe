@@ -1,11 +1,11 @@
 {
   "name": "futurocafe-backend",
   "version": "1.0.0",
-  "main": "dist/server.js",
+  "main": "server.ts",
   "scripts": {
-    "start": "tsc && node dist/server.js",
+    "start": "tsc && node server.ts",
     "dev": "nodemon --watch src --exec ts-node server.ts",
-    "build": "tsc && cp src/config/config.js dist/src/config/config.js",
+    "build": "tsc && mkdir dist/src && mkdir dist/src/config && cp src/config/config.js dist/src/config/config.js",
     "watch": "tsc -w",
     "migrate": "sequelize-cli db:migrate"
   },
