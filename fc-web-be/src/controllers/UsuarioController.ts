@@ -163,4 +163,67 @@ export async function deleteUser(req: Request, res: Response) {
     }
 }
 
-export default { registerUser, authenticateUser, updateUser, deleteUser, refreshAccessToken };
+// Função para obter os detalhes do usuário logado
+export async function getUserDetails(req: Request, res: Response) {
+    try {
+        // Extrai o token e verifica sua validade
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ message: 'Token não fornecido' });
+        }
+
+        // Verifica o token e extrai o ID do usuário
+        const pessoaId = authService.verifyToken(token)?.userId;
+        if (!pessoaId) {
+            return res.status(401).json({ message: 'Token inválido ou expirado' });
+        }
+
+        // Busca os detalhes do usuário usando o ID
+        const pessoaFisica = await PessoaFisica.findOne({
+            where: { id: pessoaId },
+            attributes: [
+                'nomeCompleto',
+                'email',
+                'enderecoCep',
+                'enderecoLogradouro',
+                'enderecoCidade',
+                'enderecoComplemento',
+                'enderecoBairro',
+                'enderecoNumero',
+                'enderecoEstado'
+            ]
+        });
+
+        if (!pessoaFisica) {
+            return res.status(404).json({ message: 'Usuário não encontrado' });
+        }
+
+        // Formata a resposta no padrão solicitado
+        const responseData = {
+            result: {
+                nomeCompleto: pessoaFisica.nomeCompleto,
+                email: pessoaFisica.email,
+                enderecoCep: pessoaFisica.enderecoCep,
+                enderecoLogradouro: pessoaFisica.enderecoLogradouro,
+                enderecoCidade: pessoaFisica.enderecoCidade,
+                enderecoComplemento: pessoaFisica.enderecoComplemento,
+                enderecoBairro: pessoaFisica.enderecoBairro,
+                enderecoNumero: pessoaFisica.enderecoNumero,
+                enderecoEstado: pessoaFisica.enderecoEstado
+            },
+            success: true,
+            messages: [],
+            hasErrors: false,
+            hasImpediments: false,
+            hasWarnings: false
+        };
+
+        res.json(responseData);
+    } catch (error) {
+        console.error('Erro ao obter detalhes do usuário:', error);
+        res.status(500).json({ message: 'Erro ao obter detalhes do usuário', error });
+    }
+}
+
+
+export default { registerUser, authenticateUser, updateUser, deleteUser, refreshAccessToken, getUserDetails };

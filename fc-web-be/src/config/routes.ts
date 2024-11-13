@@ -1,5 +1,12 @@
 import { Router } from 'express';
-import { registerUser, authenticateUser, updateUser, deleteUser, refreshAccessToken } from '../controllers/UsuarioController';
+import {
+    registerUser,
+    authenticateUser,
+    updateUser,
+    deleteUser,
+    refreshAccessToken,
+    getUserDetails
+} from '../controllers/UsuarioController';
 import { getAllCultivares, getCultivarById, createCultivar, updateCultivar, deleteCultivar } from '../controllers/CultivaresController';
 import { getAllFazendas, getFazendaById, createFazenda, updateFazenda, deleteFazenda } from '../controllers/FazendaController';
 import {
@@ -31,6 +38,7 @@ router.use(authenticateJWT); // Aplica o middleware a todas as rotas a seguir
 // Rotas de usuários
 router.put('/usuarios/:id', updateUser);
 router.delete('/usuarios/:id', deleteUser);
+router.get('/conta', getUserDetails);
 
 // Cultivares
 router.get('/cultivares', getAllCultivares);
