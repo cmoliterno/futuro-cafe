@@ -5,7 +5,6 @@ import PessoaFisica from './PessoaFisica';
 export class Projeto extends Model {
     public id!: string;
     public nome!: string;
-    public descricao!: string;
     public createdAt!: Date;
     public lastUpdatedAt!: Date;
 }
@@ -21,11 +20,6 @@ Projeto.init({
         type: DataTypes.STRING(500), // STRING(500) para corresponder ao DBO
         allowNull: false,
         field: 'Nome'
-    },
-    descricao: {
-        type: DataTypes.STRING(1000), // STRING(1000) para corresponder ao DBO
-        allowNull: true,
-        field: 'Descricao'
     },
     createdAt: {
         type: DataTypes.DATE,

@@ -12,11 +12,10 @@ export async function getAllProjetos(req: Request, res: Response) {
             return res.status(401).json({ message: 'Token não fornecido' });
         }
 
-        const decoded = authService.verifyToken(token);
-        if (!decoded) {
+        const pessoaId = authService.verifyToken(token)?.userId;
+        if (!pessoaId) {
             return res.status(401).json({ message: 'Token inválido ou expirado' });
         }
-        const pessoaId = decoded.userId;
 
         const projetos = await Projeto.findAll({
             where: { pessoaFisicaId: pessoaId }
@@ -53,11 +52,10 @@ export async function createProjeto(req: Request, res: Response) {
             return res.status(401).json({ message: 'Token não fornecido' });
         }
 
-        const decoded = authService.verifyToken(token);
-        if (!decoded) {
+        const pessoaId = authService.verifyToken(token)?.userId;
+        if (!pessoaId) {
             return res.status(401).json({ message: 'Token inválido ou expirado' });
         }
-        const pessoaId = decoded.userId;
 
         const projeto = await Projeto.create({
             nome,
