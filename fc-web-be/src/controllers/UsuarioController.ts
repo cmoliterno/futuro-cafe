@@ -9,6 +9,7 @@ import { AuthService } from "../services/AuthService";
 const authService = new AuthService();
 
 
+// Função para registrar um novo usuário
 export async function registerUser(req: Request, res: Response) {
     const transaction = await sequelize.transaction();
     try {
@@ -58,7 +59,7 @@ export async function registerUser(req: Request, res: Response) {
     }
 }
 
-// Função para autenticar o usuário e gerar tokens
+// Função para autenticar o usuário
 export async function authenticateUser(req: Request, res: Response) {
     try {
         const { email, password } = req.body;
@@ -76,8 +77,24 @@ export async function authenticateUser(req: Request, res: Response) {
         const accessToken = authService.generateToken(pessoaFisica.id);
         const refreshToken = authService.generateRefreshToken(pessoaFisica.id);
 
-        res.json({ accessToken, refreshToken, tokenType: 'Bearer' });
+        const responseData = {
+            result: {
+                accessToken: accessToken,
+                refreshToken: refreshToken, // Ajuste se necessário
+                // expiresIn: new Date(Date.now() + 3600 * 1000).toISOString(), // Exemplo de expiração em 1 hora
+                tokenType: 'Bearer'
+            },
+            success: true,
+            messages: [],
+            hasErrors: false,
+            hasImpediments: false,
+            hasWarnings: false
+        };
+
+        console.log('Autenticação bem-sucedida para o usuário:', email);
+        res.json(responseData);
     } catch (error) {
+        console.error('Erro ao autenticar usuário:', error);
         res.status(500).json({ message: 'Erro ao autenticar usuário', error });
     }
 }
