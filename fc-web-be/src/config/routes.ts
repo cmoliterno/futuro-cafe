@@ -15,7 +15,7 @@ import {
     createTalhao,
     updateTalhao,
     deleteTalhao,
-    getTalhoesByFazenda
+    getTalhoesByFazenda, addPlotAnalysis, getPlotAnalyses
 } from '../controllers/TalhaoController';
 import {getDataToChartBy, getEstatisticas} from '../controllers/EstatisticasController';
 import { getAllPerfis, getPerfilById, createPerfil, updatePerfil, deletePerfil } from '../controllers/PerfisController';
@@ -23,6 +23,7 @@ import { getAllRoles, getRoleById, createRole, updateRole, deleteRole } from '..
 import { getAllGrupos, getGrupoById, createGrupo, updateGrupo, deleteGrupo } from '../controllers/GrupoController';
 import { getAllProjetos, getProjetoById, createProjeto, updateProjeto, deleteProjeto } from '../controllers/ProjetoController';
 import { authenticateJWT } from '../middlewares/authenticateJWT';
+import multer from "multer";
 
 
 const router = Router();
@@ -61,6 +62,11 @@ router.post('/talhoes', createTalhao);
 router.put('/talhoes/:id', updateTalhao);
 router.delete('/talhoes/:id', deleteTalhao);
 router.get('/talhoes/fazenda/:fazendaId', getTalhoesByFazenda);
+
+const upload = multer({ storage: multer.memoryStorage() });
+
+router.post('/talhoes/:talhaoId/analises', upload.single('formFile'), addPlotAnalysis);
+router.get('/talhoes/:talhaoId/analises', getPlotAnalyses);
 
 
 // Estatísticas

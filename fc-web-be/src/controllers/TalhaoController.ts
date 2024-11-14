@@ -1,11 +1,34 @@
 import { Request, Response } from 'express';
 import { Fazenda } from '../models/Fazenda';
 import Talhao from '../models/Talhao';
-import Plantio from '../models/Plantio'; // Importando o modelo Plantio
+import Plantio from '../models/Plantio';
 import jwt from 'jsonwebtoken';
 import Analise from "../models/Analise";
-import PessoaFisicaFazenda from '../models/PessoaFisicaFazenda';
-import {Op, Sequelize} from "sequelize"; // Para vincular Fazenda à Pessoa
+import {Op, Sequelize} from "sequelize";
+import axios from "axios";
+import FormData from 'form-data';
+import { BlobServiceClient } from '@azure/storage-blob';
+import { v4 as uuidv4 } from 'uuid';
+import { AuthService } from '../services/AuthService';
+
+const authService = new AuthService();
+
+// Configuração do cliente Azure Blob
+const AZURE_STORAGE_CONNECTION_STRING = process.env.AZURE_STORAGE_CONNECTION_STRING || "teste";
+const containerName = 'futurocafe';
+const blobServiceClient = BlobServiceClient.fromConnectionString(AZURE_STORAGE_CONNECTION_STRING);
+
+async function uploadToAzure(fileBuffer: Buffer, fileName: string): Promise<string> {
+    const blobName = `analises/${uuidv4()}_${fileName}`;
+    const containerClient = blobServiceClient.getContainerClient(containerName);
+    const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+
+    await blockBlobClient.uploadData(fileBuffer, {
+        blobHTTPHeaders: { blobContentType: "image/jpeg" },
+    });
+
+    return blockBlobClient.url;
+}
 
 export async function getAllTalhoes(req: Request, res: Response) {
     try {
@@ -14,8 +37,7 @@ export async function getAllTalhoes(req: Request, res: Response) {
             return res.status(401).json({ message: 'Token não fornecido' });
         }
 
-        const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'default_secret');
-        const pessoaId = decoded.userId;
+        const pessoaId = authService.verifyToken(token)?.userId;
 
         // Busca apenas os talhões que pertencem ao usuário através da Fazenda
         const talhoes = await Talhao.findAll({
@@ -95,8 +117,7 @@ export async function createTalhao(req: Request, res: Response) {
             return res.status(401).json({ message: 'Token não fornecido' });
         }
 
-        const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'default_secret');
-        const pessoaId = decoded.userId;
+        const pessoaId = authService.verifyToken(token)?.userId;
 
         const talhao = await Talhao.create({ nome, fazendaId });
 
@@ -172,42 +193,139 @@ export async function deleteTalhao(req: Request, res: Response) {
 // Obter análises de um talhão
 export const getPlotAnalyses = async (req: Request, res: Response) => {
     const { talhaoId } = req.params;
+    const { projetoId, grupoId } = req.body; // Agora usando o body para receber os IDs
+
     try {
+        // Verifica se o talhão existe
         const talhaoExists = await Talhao.findByPk(talhaoId);
         if (!talhaoExists) {
             return res.status(404).json({ message: 'Talhão não encontrado' });
         }
 
-        const analyses = await Analise.findAll({ where: { TalhaoId: talhaoId } });
-        res.json(analyses);
+        // Define as condições de filtro para o banco de dados
+        const whereConditions: any = { TalhaoId: talhaoId };
+
+        if (projetoId) {
+            whereConditions.projetoId = projetoId;
+        }
+
+        if (grupoId) {
+            whereConditions.grupoId = grupoId;
+        }
+
+        // Obtém todas as análises do talhão com os filtros aplicados
+        const analyses = await Analise.findAll({
+            where: whereConditions,
+            attributes: [
+                'id', 'cherry', 'coordenadas', 'dry', 'green', 'greenYellow',
+                'grupoId', 'imagemResultadoUrl', 'imagemUrl', 'projetoId',
+                'raisin', 'total', 'createdAt', 'lastUpdatedAt'
+            ],
+        });
+
+        // Estrutura do retorno conforme solicitado
+        res.json({
+            page: 1,            // Definido como 1 por padrão, já que não haverá paginação
+            pages: 1,           // Definido como 1 por padrão
+            pageSize: analyses.length,
+            result: analyses,
+            success: true,
+            messages: [],
+            hasErrors: false,
+            hasImpediments: false,
+            hasWarnings: false
+        });
     } catch (error) {
-        res.status(500).json({ message: 'Erro ao obter análises do talhão', error });
+        console.error('Erro ao obter análises do talhão:', error);
+        res.status(500).json({
+            message: 'Erro ao obter análises do talhão',
+            success: false,
+            hasErrors: true
+        });
     }
 };
 
-// Adicionar uma nova análise a um talhão
+
 export const addPlotAnalysis = async (req: Request, res: Response) => {
     const { talhaoId } = req.params;
-    const { argsString, formFile } = req.body; // Ajuste para sua estrutura de request
+    const formFile = req.file;
+
+    if (!formFile) {
+        console.log('Erro: Arquivo de imagem não detectado');
+        return res.status(400).json({ message: 'Arquivo de imagem não detectado' });
+    }
 
     try {
         const talhaoExists = await Talhao.findByPk(talhaoId);
         if (!talhaoExists) {
+            console.log(`Erro: Talhão com ID ${talhaoId} não encontrado`);
             return res.status(404).json({ message: 'Talhão não encontrado' });
         }
 
-        if (!formFile) {
-            return res.status(400).json({ message: 'Arquivo de imagem não detectado' });
+        const originalImageUrl = await uploadToAzure(formFile.buffer, formFile.originalname);
+        console.log(`URL da imagem original: ${originalImageUrl}`);
+
+        const formData = new FormData();
+        formData.append('image', formFile.buffer, formFile.originalname);
+
+        const predictionResponse = await axios.post(
+            `${process.env.PREDICTION_REQUEST_URL}`,
+            formData,
+            {
+                headers: formData.getHeaders(),
+            }
+        );
+        const predictionResult = predictionResponse.data;
+        console.log('Resultado da previsão:', predictionResult);
+
+        const { cherry, dry, green, greenYellow, raisin, total } = predictionResult.dataframe;
+
+        if (cherry == null || dry == null || green == null || greenYellow == null || raisin == null || total == null) {
+            console.log('Erro: Dados incompletos recebidos da API externa.');
+            return res.status(500).json({ message: 'A API externa retornou dados incompletos.' });
         }
 
-        // Lógica para upload de imagem e predição de resultados (a ser implementada)
-        const newAnalysis = await Analise.create({
-            TalhaoId: talhaoId,
-            // Inclua outras propriedades com base no seu modelo
+        let processedImageUrl = null;
+        if (predictionResult.image) {
+            const processedImageBuffer = Buffer.from(predictionResult.image, 'base64');
+            processedImageUrl = await uploadToAzure(processedImageBuffer, `resultado_${formFile.originalname}`);
+            console.log(`URL da imagem processada: ${processedImageUrl}`);
+        }
+
+        // Log dos valores que serão enviados para o banco de dados
+        console.log("Criando análise no banco de dados com os seguintes dados:", {
+            talhaoId: talhaoId,
+            cherry: predictionResult.dataframe.cherry,
+            dry: predictionResult.dataframe.dry,
+            green: predictionResult.dataframe.green,
+            greenYellow: predictionResult.dataframe.greenYellow,
+            raisin: predictionResult.dataframe.raisin,
+            total: predictionResult.dataframe.total,
+            imagemUrl: originalImageUrl,
+            imagemResultadoUrl: processedImageUrl
         });
 
-        res.status(201).json(newAnalysis);
+
+        const newAnalysis = await Analise.create({
+            talhaoId: talhaoId,
+            cherry: predictionResult.dataframe.cherry,
+            dry: predictionResult.dataframe.dry,
+            green: predictionResult.dataframe.green,
+            greenYellow: predictionResult.dataframe.greenYellow,
+            raisin: predictionResult.dataframe.raisin,
+            total: predictionResult.dataframe.total,
+            imagemUrl: originalImageUrl,
+            imagemResultadoUrl: processedImageUrl
+        });
+
+        console.log('Análise criada com sucesso no banco de dados:', newAnalysis);
+
+        res.status(200).json({
+            message: "Análise efetuada.",
+            analiseId: newAnalysis.id,
+        });
     } catch (error) {
+        console.error('Erro ao adicionar análise ao talhão:', error);
         res.status(500).json({ message: 'Erro ao adicionar análise ao talhão', error });
     }
 };

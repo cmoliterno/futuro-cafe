@@ -102,7 +102,7 @@ Analise.init({
     sequelize,
     modelName: 'Analise',
     tableName: 'tbAnalise',
-    timestamps: false // Removido
+    timestamps: false
 });
 
 export default Analise;
