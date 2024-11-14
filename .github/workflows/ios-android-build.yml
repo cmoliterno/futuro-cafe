@@ -51,6 +51,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           java-version: '17'
+          distribution: 'adoptopenjdk'
 
       - name: Give execute permission to gradlew
         run: chmod +x fc-mobile/android/gradlew
