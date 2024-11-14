@@ -4,7 +4,7 @@ import routes from './config/routes'; // Ajuste o caminho se necessário
 
 const app = express();
 
-const allowedOrigins = ['http://localhost:3001', 'http://localhost:8080', 'http://52.91.164.75:3001', process.env.FRONTEND_URL];
+const allowedOrigins = ['http://localhost:3001', 'http://localhost:8080', 'http://52.91.164.75/', 'http://52.91.164.75:3001', process.env.FRONTEND_URL];
 
 // Configuração do CORS
 app.use(cors({
