@@ -39,9 +39,9 @@ const PhotoCollectionScreen = () => {
         const projectsResponse = await getProjects();
         const groupsResponse = await getGroups();
 
-        setPlots(plotsResponse.result);
-        setProjects(projectsResponse.result);
-        setGroups(groupsResponse.result);
+        setPlots(plotsResponse);
+        setProjects(projectsResponse);
+        setGroups(groupsResponse);
       } catch (e) {
         console.error('Erro ao obter dados iniciais:', e);
       }
@@ -105,7 +105,7 @@ const PhotoCollectionScreen = () => {
         const formData = new FormData();
         const photo = photos[i];
 
-        formData.append('imagem', {
+        formData.append('formFile', {
           uri: photo.uri,
           type: photo.type,
           name: photo.name,

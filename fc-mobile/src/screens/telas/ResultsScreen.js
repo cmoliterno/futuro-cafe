@@ -85,7 +85,7 @@ const ResultsScreen = () => {
   const fetchFarmsAndPlots = async () => {
     try {
       const farmsResponse = await getFarms();
-      setFarms(farmsResponse.result);
+      setFarms(farmsResponse);
     } catch (e) {
       console.error('Erro ao obter fazendas:', e);
     }
@@ -94,7 +94,7 @@ const ResultsScreen = () => {
   const fetchPlots = async (farmId) => {
     try {
       const plotsResponse = await getPlots(farmId);
-      setPlots(plotsResponse.result);
+      setPlots(plotsResponse);
     } catch (e) {
       console.error('Erro ao obter talhões:', e);
     }
@@ -104,8 +104,8 @@ const ResultsScreen = () => {
     try {
       const groupsResponse = await getGroups();
       const projectsResponse = await getProjects();
-      setGroups(groupsResponse.result);
-      setProjects(projectsResponse.result);
+      setGroups(groupsResponse);
+      setProjects(projectsResponse);
     } catch (e) {
       console.error('Erro ao obter grupos e projetos:', e);
     }

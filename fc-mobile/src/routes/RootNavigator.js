@@ -48,9 +48,9 @@ const RootNavigator = () => {
   return (
     <NavigationContainer theme={colorValue}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name={RouteName.LOGIN_SCREEN} component={LoginScreen} />
         <Stack.Screen name={RouteName.HOME_SCREEN} component={SideNavigator} />
         <Stack.Screen name={RouteName.EDIT_PROFILE_SCREEN} component={EditProfileScreen} />
-        <Stack.Screen name={RouteName.LOGIN_SCREEN} component={LoginScreen} />
         <Stack.Screen name={RouteName.REGISTER_SCREEN} component={RegisterScreen} />
         <Stack.Screen name={RouteName.REGISTRATION_SUCCESSFUL } component={RegistrationSuccessful} />
         <Stack.Screen name={RouteName.SWIPER_SCREEN} component={SwiperScreen} />

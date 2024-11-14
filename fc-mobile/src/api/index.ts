@@ -6,7 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 
 // Configuração inicial do Axios
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_BASE_URL || 'https://futurocafe-prod-mobile-api.azurewebsites.net',  //'http://localhost:3000/api',
+  baseURL: process.env.REACT_APP_API_BASE_URL2 || 'http://52.91.164.75:3000/api/',  //'http://localhost:3000/api',
   timeout: parseInt(process.env.REACT_APP_API_TIMEOUT || '10000'),
   headers: {
     'Content-Type': 'application/json',
@@ -14,46 +14,39 @@ const api = axios.create({
   },
 });
 
-// Adicione um interceptor de requisição para adicionar o token
+// Adicionando interceptor de requisição para api
 api.interceptors.request.use(async request => {
   const token = await AsyncStorage.getItem('accessToken');
   if (token) {
     request.headers.Authorization = `Bearer ${token}`;
   }
-  console.log('Iniciando requisição', request);
+  console.log('Requisição API:', request); // Log de requisição da api
   return request;
 }, error => {
-  console.error('Erro na requisição', error);
+  console.error('Erro na requisição API:', error);
   return Promise.reject(error);
 });
 
-// Adicione um interceptor de resposta para lidar com erros de autenticação
-api.interceptors.response.use(
-  response => response,
-  async error => {
-    if (error.response && error.response.data && error.response.data.messages) {
-      const messages = error.response.data.messages;
-      const unauthorizedMessage = messages.find(
-        message => message.systemKey === 'Unauthorized'
-      );
-      if (unauthorizedMessage) {
-        const navigation = useNavigation();
-        Alert.alert('Sessão expirada', 'Por favor, faça login novamente.');
-        await AsyncStorage.removeItem('accessToken');
-        navigation.navigate(RouteName.LOGIN_SCREEN);
-      }
-    }
-    return Promise.reject(error);
+// Adicionando interceptor de requisição para api
+api.interceptors.request.use(async request => {
+  const token = await AsyncStorage.getItem('accessToken');
+  if (token) {
+    request.headers.Authorization = `Bearer ${token}`;
   }
-);
+  console.log('Requisição api:', request); // Log de requisição da api
+  return request;
+}, error => {
+  console.error('Erro na requisição api:', error);
+  return Promise.reject(error);
+});
 
 // Função de Registro de Usuário
-export const register = async (email, nomeCompleto, cpf, senha) => {
+export const register = async (email, nomeCompleto, cpf, password) => {
   try {
-    const response = await api.post('/registrar', { email, nomeCompleto, cpf, senha });
+    console.log("Chamando a API Nova no endpoint /registrar"); // Log de chamada da api
+    const response = await api.post('/registrar', { nomeCompleto, email, password, cpf });
 
-    // Se o status for 204, considera como sucesso, mesmo sem conteúdo
-    if (response.status === 204) {
+    if (response.status === 204 || response.status === 201) {
       return { success: true };
     }
 
@@ -64,30 +57,29 @@ export const register = async (email, nomeCompleto, cpf, senha) => {
   }
 };
 
-
 // Função de Login de Usuário
 export const login = async (email, password) => {
   try {
-    const formData = new FormData();
-    formData.append('user', email);
-    formData.append('password', password);
-    formData.append('grantType', 'password');
+    // Criando o objeto com os dados
+    const data = { email, password };
 
-    console.log('Dados do FormData:', formData);
+    console.log("Chamando a API Nova no endpoint /auth/token");
 
-    const response = await api.post('/auth/token', formData, {
+    // Fazendo a requisição com o objeto de dados
+    const response = await api.post('/auth/token', data, {
       headers: {
-        'Content-Type': 'multipart/form-data',
-        Accept: 'application/json, text/plain, */*',
+        'Content-Type': 'application/json',
       },
     });
-    console.log('Resposta de login:', response.data); // Adicione este log para verificar a resposta
-    return response.data; // Retorna a resposta completa
+
+    console.log('Resposta de login:', response.data);
+    return response.data;
   } catch (error) {
-    console.error('Erro no servico login:', error.response ? error.response.data : error.message);
+    console.error('Erro no serviço de login:', error.response ? error.response.data : error.message);
     throw error;
   }
 };
+
 
 // Função para Obter Projetos
 export const getProjectsByFilter = async (page, pageSize, searchString) => {
@@ -102,22 +94,32 @@ export const getProjectsByFilter = async (page, pageSize, searchString) => {
   }
 };
 
-// Função para Obter Fazendas
+// Função para Obter Fazendas com paginação
 export const getFarms = async (page, pageSize, searchString) => {
   try {
-    const response = await api.get('/fazendas', {
-      params: { page, pageSize, searchString },
-    });
+    const response = await api.get('/fazendas'); // Não precisa de parâmetros adicionais
     return response.data;
   } catch (error) {
-    console.error('Erro ao obter fazendas:', error.response ? error.response.data : error.message);
+    console.error('Erro ao obter todas as fazendas:', error.response ? error.response.data : error.message);
     throw error;
   }
 };
 
-// Função para Adicionar Fazenda
+// Função para Obter Fazenda por ID
+export const getFazendaById = async (id) => {
+  try {
+    const response = await api.get(`/fazendas/${id}`); // Passando ID diretamente
+    return response.data;
+  } catch (error) {
+    console.error('Erro ao obter fazenda por ID:', error.response ? error.response.data : error.message);
+    throw error;
+  }
+};
+
+// Função para Adicionar Fazenda (ajustada para padrão)
 export const addFarm = async (nome) => {
   try {
+    // Agora esta função também segue a estrutura de passar um objeto com o nome da fazenda
     const response = await api.post('/fazendas', { nome });
     return response.data;
   } catch (error) {
@@ -125,6 +127,30 @@ export const addFarm = async (nome) => {
     throw error;
   }
 };
+
+// Função para Atualizar Fazenda
+export const updateFazenda = async (id, data) => {
+  try {
+    // Dados para atualização devem ser passados no formato { nome: "Novo Nome da Fazenda" }
+    const response = await api.put(`/fazendas/${id}`, data);
+    return response.data;
+  } catch (error) {
+    console.error('Erro ao atualizar fazenda:', error.response ? error.response.data : error.message);
+    throw error;
+  }
+};
+
+// Função para Excluir Fazenda
+export const deleteFazenda = async (id) => {
+  try {
+    const response = await api.delete(`/fazendas/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Erro ao excluir fazenda:', error.response ? error.response.data : error.message);
+    throw error;
+  }
+};
+
 
 // Função para Adicionar Grupo
 export const addGroup = async (nome) => {
@@ -188,18 +214,6 @@ export const addProject = async (nome) => {
 };
 
 // Função para Obter Cultivares
-export const getCultivars = async (page, pageSize, searchString) => {
-  try {
-    const response = await api.get('/cultivares', {
-      params: { page, pageSize, searchString },
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Erro ao obter cultivares:', error.response ? error.response.data : error.message);
-    throw error;
-  }
-};
-
 export const getAllCultivars = async () => {
   try {
     const response = await api.get('/cultivares', {
@@ -215,7 +229,6 @@ export const getAllCultivars = async () => {
 export const getPlots = async (page, pageSize, searchString) => {
   try {
     const response = await api.get('/talhoes', {
-      params: { page, pageSize, searchString },
     });
     return response.data;
   } catch (error) {

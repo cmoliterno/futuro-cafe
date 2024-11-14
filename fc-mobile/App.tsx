@@ -11,7 +11,8 @@ export default function App() {
   const isDarkMode = useColorScheme() === 'dark';
 
   return (
-    <NavigationContainer theme={isDarkMode ? DarkTheme : DefaultTheme}>
+    //<NavigationContainer theme={isDarkMode ? DarkTheme : DefaultTheme}>
+    <NavigationContainer theme={DefaultTheme}>
       <SideNavigator />
     </NavigationContainer>
   );

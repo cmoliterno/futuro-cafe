@@ -21,6 +21,7 @@ import { getFarms, getPlots, getPlotAnalyses } from '../../api/index';
 import { StackedBarChart, XAxis, YAxis, Grid } from 'react-native-svg-charts';
 import { Text as SvgText } from 'react-native-svg';
 import * as scale from 'd3-scale';
+import RouteName from "../../routes/RouteName";
 
 const colors = ['#34A853', '#FFD700', '#FF6347', '#8B4513', '#A9A9A9']; // Cores das colunas
 const keys = ['green', 'greenYellow', 'cherry', 'raisin', 'dry'];
@@ -49,7 +50,7 @@ const TalhaoWizardScreen = () => {
     const fetchFarms = async () => {
       try {
         const farmsResponse = await getFarms();
-        setFarms(farmsResponse.result);
+        setFarms(farmsResponse);
       } catch (e) {
         console.error('Erro ao obter fazendas:', e);
       }
@@ -60,7 +61,7 @@ const TalhaoWizardScreen = () => {
   const fetchPlots = async (farmId) => {
     try {
       const plotsResponse = await getPlots(farmId);
-      setPlots(plotsResponse.result);
+      setPlots(plotsResponse);
     } catch (e) {
       console.error('Erro ao obter talhões:', e);
     }
@@ -90,8 +91,8 @@ const TalhaoWizardScreen = () => {
         // Consulta por Fazenda
         // Obter todos os talhões da fazenda selecionada
         const plotsResponse = await getPlots(selectedFarm.id);
-        if (plotsResponse.success) {
-          const allPlots = plotsResponse.result;
+        if (plotsResponse) {
+          const allPlots = plotsResponse;
           // Obter análises de todos os talhões para o mês corrente
           const currentMonthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
           const currentDate = new Date();
@@ -99,7 +100,7 @@ const TalhaoWizardScreen = () => {
 
           for (const plot of allPlots) {
             const analysisResponse = await getPlotAnalyses(plot.id, currentMonthStart, currentDate);
-            if (analysisResponse.success) {
+            if (analysisResponse) {
               allAnalyses = allAnalyses.concat(
                 analysisResponse.result.map((analysis) => ({ ...analysis, plotName: plot.nome }))
               );
@@ -308,7 +309,7 @@ const TalhaoWizardScreen = () => {
       <AppHeader />
       <ScrollView contentContainerStyle={dynamicStyles.content}>
         <View style={dynamicStyles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={dynamicStyles.backButton}>
+          <TouchableOpacity onPress={() => navigation.navigate(RouteName.HOME_SCREEN)} style={dynamicStyles.backButton}>
             <Icon name="arrow-left" size={25} color="#fff" />
           </TouchableOpacity>
           <Text style={dynamicStyles.title}>Previsão Data Colheita</Text>

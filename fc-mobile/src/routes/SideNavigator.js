@@ -16,7 +16,8 @@ import ResultsScreen from '../screens/telas/ResultsScreen';
 import TalhaoWizardScreen from '../screens/telas/TalhaoWizardScreen';
 import EditProfileScreen from '../screens/EditProfile/EditProfileScreen';
 
-import RouteName from '../routes/RouteName'; // Importar as rotas
+import RouteName from '../routes/RouteName';
+import LoginScreen from "../screens/Authantication/LoginScreen/LoginScreen"; // Importar as rotas
 
 const Drawer = createDrawerNavigator();
 
@@ -36,6 +37,7 @@ const SideNavigator = () => {
       drawerContent={props => <CustomSidebarMenu {...props} />}
       screenOptions={{ headerShown: false }}
     >
+      <Drawer.Screen name={RouteName.LOGIN_SCREEN} component={LoginScreen} />
       <Drawer.Screen name={RouteName.HOME_SCREEN} component={HomeScreen} />
       <Drawer.Screen name={RouteName.EDIT_PROFILE_SCREEN} component={EditProfileScreen} />
       <Drawer.Screen name={RouteName.FAZENDA_SCREEN} component={FazendaScreen} />

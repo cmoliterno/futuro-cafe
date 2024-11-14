@@ -27,22 +27,29 @@ const LoginScreen = (props) => {
 
   const handleLogin = async () => {
     try {
+      // Realizando o login e recebendo a resposta
       const response = await login(email, TextInputPassword);
       console.log('Resposta de login:', response);
+
+      // Verificando a resposta de login
       if (response && response.result && response.result.accessToken) {
         const accessToken = response.result.accessToken;
+
+        // Salvando o token de acesso no AsyncStorage
         await AsyncStorage.setItem('accessToken', accessToken);
         Alert.alert('Login bem-sucedido');
 
-        // Verifique se há fazendas cadastradas
-        const farmsResponse = await getFarms(accessToken, 1, 25, '');
-        if (farmsResponse.result.length === 0) {
-          navigation.navigate(RouteName.FAZENDA_SCREEN); // Redireciona para tela de cadastro de fazenda
+        // Verificando se há fazendas cadastradas
+        const farmsResponse = await getFarms(1, 25, '');
+        console.log(farmsResponse);
+        if (farmsResponse && farmsResponse.length === 0) {
+          navigation.navigate(RouteName.FAZENDA_SCREEN); // Redireciona para a tela de cadastro de fazenda
         } else {
-          // Verifique se há talhões cadastrados
-          const plotsResponse = await getPlots(accessToken, 1, 25, '');
-          if (plotsResponse.result.length === 0) {
-            navigation.navigate(RouteName.TALHAO_SCREEN); // Redireciona para tela de cadastro de talhão
+          // Verificando se há talhões cadastrados
+          const plotsResponse = await getPlots(1, 25, '');
+          console.log(plotsResponse);
+          if (plotsResponse && plotsResponse.length === 0) {
+            navigation.navigate(RouteName.TALHAO_SCREEN); // Redireciona para a tela de cadastro de talhão
           } else {
             navigation.navigate(RouteName.HOME_SCREEN); // Redireciona para a tela principal
           }
@@ -52,9 +59,11 @@ const LoginScreen = (props) => {
       }
     } catch (error) {
       console.error('Erro no login:', error);
-      Alert.alert('Erro no Login', error.response ? error.response.data.messages[0].message : error.message);
+      // Ajuste para acessar a mensagem de erro na nova estrutura de resposta
+      Alert.alert('Erro no Login', error?.response?.data?.messages?.[0]?.message || error.message);
     }
   };
+
 
   return (
     <View style={styles.container}>

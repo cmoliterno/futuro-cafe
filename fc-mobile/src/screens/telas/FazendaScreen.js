@@ -8,7 +8,7 @@ import {
   useColorScheme,
   Alert
 } from 'react-native';
-import { addFarm, getFarms } from '../../api/index';
+import {addFarm, getFarms, getPlots} from '../../api/index';
 import BottomMenu from '../../components/commonComponents/BottomMenu';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AppHeader from '../../components/commonComponents/AppHeader';
@@ -28,8 +28,8 @@ const FazendaScreen = () => {
       try {
         const token = await AsyncStorage.getItem('accessToken');
         const response = await getFarms(token, 1, 25, '');
-        setFarms(response.result);
-        if (response.result.length === 0) {
+        setFarms(response);
+        if (response.length === 0) {
           Alert.alert(
             'Bem-vindo!',
             'Para prosseguir, você precisa cadastrar sua primeira fazenda.',
@@ -57,18 +57,17 @@ const FazendaScreen = () => {
     }
 
     try {
-      const token = await AsyncStorage.getItem('accessToken');
       await addFarm(farmName);
       setFarmName('');
       setMessage('Fazenda adicionada com sucesso.');
 
       // Atualizar a lista de fazendas
-      const response = await getFarms(token, 1, 25, '');
-      setFarms(response.result);
+      const response = await getFarms( 1, 25, '');
+      setFarms(response);
 
       // Verificar se há talhões cadastrados
-      const plotsResponse = await getPlots(token, 1, 25, '');
-      if (plotsResponse.result.length === 0) {
+      const plotsResponse = await getPlots( 1, 25, '');
+      if (plotsResponse.length === 0) {
         // Redirecionar para a tela de talhão, pois não existem talhões cadastrados
         Alert.alert(
           'Próximo Passo',

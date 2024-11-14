@@ -1,15 +1,15 @@
 // src/screens/TalhaoScreen.js
 import React, { useState, useEffect } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  Modal,
-  useColorScheme,
-  FlatList,
+    View,
+    Text,
+    TextInput,
+    StyleSheet,
+    TouchableOpacity,
+    ScrollView,
+    Modal,
+    useColorScheme,
+    FlatList, Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { getFarms, getPlots, addPlot, getAllCultivars } from "../../api/index";
@@ -50,9 +50,9 @@ const TalhaoScreen = () => {
         const farmsResponse = await getFarms();
         const plotsResponse = await getPlots();
         const cultivarsResponse = await getAllCultivars();
-        setFarms(farmsResponse.result);
-        setPlots(plotsResponse.result);
-        setCultivars(cultivarsResponse.result);
+        setFarms(farmsResponse);
+        setPlots(plotsResponse);
+        setCultivars(cultivarsResponse);
       } catch (e) {
         console.error('Erro ao obter fazendas, talhões ou cultivares:', e);
       }
@@ -121,7 +121,13 @@ const TalhaoScreen = () => {
       setMessage('Talhão adicionado com sucesso.');
       setShowNewPlotForm(false);
       const plotsResponse = await getPlots();
-      setPlots(plotsResponse.result);
+      setPlots(plotsResponse);
+
+        Alert.alert(
+            'Próximo Passo',
+            'Agora, você esta preparado para coletar as imagens.',
+            [{ text: 'OK', onPress: () => navigation.navigate(RouteName.PHOTO_COLLECTION_SCREEN) }]
+        );
     } catch (e) {
       console.error('Erro ao adicionar talhão:', e);
       setMessage('Erro ao adicionar talhão.');
