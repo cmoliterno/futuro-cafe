@@ -68,5 +68,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v3
         with:
-          name: FuturoCafe.apk
-          path: fc-mobile/android/app/build/outputs/apk/release/FuturoCafe.apk  # Ajuste para o caminho correto do seu .apk
+          name: app-release.apk
+          path: fc-mobile/android/app/build/outputs/apk/release/app-release.apk

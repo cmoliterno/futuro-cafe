@@ -67,10 +67,13 @@ const CadastroPage: React.FC = () => {
             }, 2000);
 
             console.log(response.data);
-        } catch (err) {
-            setError('Erro ao cadastrar. Verifique os dados e tente novamente.');
+        } catch (err: any) {
+            // Acessa a mensagem de erro do back-end, se disponível
+            const errorMessage = err.response?.data?.message || 'Houve um problema ao fazer o cadastro. Tente novamente.';
+            setError(errorMessage);
         }
     };
+
 
     return (
         <CadastroContainer>

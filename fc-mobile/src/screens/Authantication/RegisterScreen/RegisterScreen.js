@@ -94,13 +94,8 @@ const Register = (props) => {
         navigation.navigate(RouteName.REGISTRATION_SUCCESSFUL);
       }
     } catch (error) {
-      // Tratando caso específico de pessoa já registrada ou outro erro
-      if (error.response?.data?.messages?.[0]?.message === "Pessoa já registrada") {
-        Alert.alert('Erro no Cadastro', 'O CPF ou email informado já está registrado.');
-      } else {
-        // Exibe um erro genérico se não for o caso de CPF ou email duplicado
-        Alert.alert('Erro no Cadastro', error.response?.data?.message || 'Houve um problema ao fazer o cadastro. Tente novamente.');
-      }
+      // Exibe um erro genérico se não for o caso de CPF ou email duplicado
+      Alert.alert('Erro no Cadastro', error.message || 'Houve um problema ao fazer o cadastro. Tente novamente.');
     }
   };
 

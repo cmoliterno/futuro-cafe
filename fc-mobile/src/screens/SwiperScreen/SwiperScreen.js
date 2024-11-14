@@ -68,19 +68,17 @@ const SwiperScreen = (props) => {
   );
 
   const _renderDoneButton = () => (
-    <View style={{ flexDirection: 'row', justifyContent: 'center', width: '100%' }}>
-      <View style={{ width: widthPercent(90), top: SH(10) }}>
+    <View style={SwiperStyles.ButtonCircle}>
         <Button
           title={t('Get_Started')}
           onPress={() => navigation.navigate(RouteName.LOGIN_SCREEN)}
         />
-      </View>
     </View>
   );
 
   const _renderNextButton = () => {
     return (
-      <View style={SwiperStyles.BgButtonView}>
+      <View style={SwiperStyles.ButtonCircle}>
         {/* <Spacing space={SH(12)} />
         <Text style={SwiperStyles.NextTextStyle}>{t("Next_Text")}</Text> */}
       </View>
@@ -88,13 +86,11 @@ const SwiperScreen = (props) => {
   };
   const _renderSkipButton = () => {
     return (
-      <View style={SwiperStyles.BgButtonView}>
-        <View style={{ width: widthPercent(90), top: SH(10) }}>
+      <View style={SwiperStyles.ButtonCircle}>
           <Button
             title={t('Skip_Text')}
             onPress={() => navigation.navigate(RouteName.LOGIN_SCREEN)}
           />
-        </View>
       </View>
     );
   };

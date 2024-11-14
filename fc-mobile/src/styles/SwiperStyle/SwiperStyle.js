@@ -1,4 +1,4 @@
-import { Fonts, SH, SW, SF, fontPercent } from "../../utils";
+import {Fonts, SH, SW, SF, fontPercent, widthPercent} from "../../utils";
 import { StyleSheet } from 'react-native';
 
 export default SwiperStyle = Colors =>
@@ -67,7 +67,18 @@ export default SwiperStyle = Colors =>
       textAlign: 'center',
       fontWeight: '700',
     },
-    ButtonCircle: {},
+    ButtonCircle: {
+        width: widthPercent(90),
+        top: SH(10),
+        backgroundColor: '#34A853',
+        borderRadius: 25,
+        alignItems: 'center',
+    },
+    ButtonText: {
+        color: '#FFF',
+        fontSize: SF(18),
+        fontWeight: 'bold',
+    },
     StartedBtn: {
       backgroundColor: Colors.theme_background,
       width: SH(360),
@@ -121,3 +132,4 @@ export default SwiperStyle = Colors =>
       height: SH(300),
     },
   });
+
