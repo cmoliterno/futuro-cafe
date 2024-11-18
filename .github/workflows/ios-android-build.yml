@@ -47,6 +47,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Set up Java 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'adoptopenjdk'
+
       - name: Give execute permission to gradlew
         run: chmod +x fc-mobile/android/gradlew
 
