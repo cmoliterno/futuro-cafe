@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = process.env.BASE_URL || 'http://52.91.164.75:3000/api/'; //'https://api-futurocafe.qwize.io/api/';
+const API_URL = process.env.BASE_URL || 'https://futurocafe.qwize.io/api/';
 
 const api = axios.create({
     baseURL: API_URL,
