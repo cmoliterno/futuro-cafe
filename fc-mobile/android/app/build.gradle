@@ -80,8 +80,8 @@ android {
         applicationId "com.onexlinternational.futurocafe"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode 101
+        versionName "1.0.1"
     }
     signingConfigs {
         debug {
@@ -91,10 +91,12 @@ android {
             keyPassword 'android'
         }
         release {
-            storeFile file('futuro-cafe-key.keystore')
-            storePassword 'carol004'
-            keyAlias 'futuro-cafe'
-            keyPassword 'carol004'
+            if (project.hasProperty('MYAPP_UPLOAD_STORE_FILE')) {
+                storeFile file(MYAPP_UPLOAD_STORE_FILE)
+                storePassword MYAPP_UPLOAD_STORE_PASSWORD
+                keyAlias MYAPP_UPLOAD_KEY_ALIAS
+                keyPassword MYAPP_UPLOAD_KEY_PASSWORD
+            }
         }
     }
     buildTypes {
