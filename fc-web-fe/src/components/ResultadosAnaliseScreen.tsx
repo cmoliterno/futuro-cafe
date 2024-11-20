@@ -134,7 +134,7 @@ const Modal = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 999;
+  z-index: 9999;
 `;
 
 const ModalImage = styled.img`
@@ -162,6 +162,9 @@ const ChartContainer = styled.div`
   width: 80%;
   height: 60%;
   background-color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 `;
 
 const SideBySideContainer = styled.div`
@@ -491,7 +494,7 @@ const ResultadosAnaliseScreen: React.FC = () => {
             {modalVisible && (
                 <Modal>
                     <CloseButton onClick={closeModal}>×</CloseButton>
-                    <ModalImage src={modalImage || ''} alt="Imagem ampliada" />
+                    <ModalImage src={modalImage || ''} />
                 </Modal>
             )}
 
