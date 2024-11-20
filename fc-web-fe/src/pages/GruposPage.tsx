@@ -44,7 +44,6 @@ const TableData = styled.td`
 const GruposPage: React.FC = () => {
   const [grupos, setGrupos] = useState([]);
   const [nome, setNome] = useState('');
-  const [descricao, setDescricao] = useState('');
   const [editId, setEditId] = useState<string | null>(null); // ID para editar
 
   useEffect(() => {
@@ -58,19 +57,17 @@ const GruposPage: React.FC = () => {
 
   const handleCreate = async () => {
     // Função para criar um novo grupo
-    await api.createGrupo({ nome, descricao });
+    await api.createGrupo({ nome });
     setNome(''); // Resetando o campo de nome
-    setDescricao(''); // Resetando o campo de descrição
     fetchGrupos(); // Atualizando a lista de grupos
   };
 
   const handleEdit = async () => {
     // Função para editar um grupo existente
     if (editId) {
-      await api.updateGrupo(editId, { nome, descricao });
+      await api.updateGrupo(editId, { nome });
       setEditId(null); // Resetando o ID de edição
       setNome(''); // Resetando o campo de nome
-      setDescricao(''); // Resetando o campo de descrição
       fetchGrupos(); // Atualizando a lista de grupos
     }
   };
@@ -82,50 +79,41 @@ const GruposPage: React.FC = () => {
   };
 
   return (
-    <GruposContainer>
-      <Title>Grupos</Title>
-      <Input
-        type="text"
-        value={nome}
-        placeholder="Nome do Grupo"
-        onChange={(e) => setNome(e.target.value)} // Atualizando o nome do grupo
-      />
-      <Input
-        type="text"
-        value={descricao}
-        placeholder="Descrição"
-        onChange={(e) => setDescricao(e.target.value)} // Atualizando a descrição
-      />
-      <Button onClick={editId ? handleEdit : handleCreate}>
-        {editId ? 'Salvar Alterações' : 'Adicionar Grupo'}
-      </Button>
-      <Table>
-        <thead>
+      <GruposContainer>
+        <Title>Grupos</Title>
+        <Input
+            type="text"
+            value={nome}
+            placeholder="Nome do Grupo"
+            onChange={(e) => setNome(e.target.value)} // Atualizando o nome do grupo
+        />
+        <Button onClick={editId ? handleEdit : handleCreate}>
+          {editId ? 'Salvar Alterações' : 'Adicionar Grupo'}
+        </Button>
+        <Table>
+          <thead>
           <tr>
             <TableHeader>Nome</TableHeader>
-            <TableHeader>Descrição</TableHeader>
             <TableHeader>Ações</TableHeader>
           </tr>
-        </thead>
-        <tbody>
+          </thead>
+          <tbody>
           {grupos.map((grupo: any) => (
-            <TableRow key={grupo.id}>
-              <TableData>{grupo.nome}</TableData>
-              <TableData>{grupo.descricao}</TableData>
-              <TableData>
-                <Button onClick={() => {
-                  // Preparando para editar
-                  setEditId(grupo.id);
-                  setNome(grupo.nome);
-                  setDescricao(grupo.descricao);
-                }}>Editar</Button>
-                <Button onClick={() => handleDelete(grupo.id)}>Excluir</Button>
-              </TableData>
-            </TableRow>
+              <TableRow key={grupo.id}>
+                <TableData>{grupo.nome}</TableData>
+                <TableData>
+                  <Button onClick={() => {
+                    // Preparando para editar
+                    setEditId(grupo.id);
+                    setNome(grupo.nome);
+                  }}>Editar</Button>
+                  {/*<Button onClick={() => handleDelete(grupo.id)}>Excluir</Button>*/}
+                </TableData>
+              </TableRow>
           ))}
-        </tbody>
-      </Table>
-    </GruposContainer>
+          </tbody>
+        </Table>
+      </GruposContainer>
   );
 };
 

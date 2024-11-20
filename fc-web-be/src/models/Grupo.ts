@@ -17,7 +17,7 @@ Grupo.init({
         field: 'Id'
     },
     nome: {
-        type: DataTypes.STRING(500), // STRING(500) para corresponder ao DBO
+        type: DataTypes.STRING(500),
         allowNull: false,
         field: 'Nome'
     },

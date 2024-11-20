@@ -46,7 +46,7 @@ export async function getProjetoById(req: Request, res: Response) {
 
 export async function createProjeto(req: Request, res: Response) {
     try {
-        const { nome, descricao, dataInicio, dataFim } = req.body;
+        const { nome } = req.body;
         const token = req.headers.authorization?.split(' ')[1];
         if (!token) {
             return res.status(401).json({ message: 'Token não fornecido' });
@@ -59,9 +59,6 @@ export async function createProjeto(req: Request, res: Response) {
 
         const projeto = await Projeto.create({
             nome,
-            descricao,
-            dataInicio,
-            dataFim,
             pessoaFisicaId: pessoaId
         });
 

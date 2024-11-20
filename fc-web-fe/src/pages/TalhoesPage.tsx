@@ -89,6 +89,10 @@ const TalhoesPage: React.FC = () => {
         fetchCultivares();
     }, []);
 
+    const navigateToPhotoCollection = (talhaoId: string) => {
+        window.location.href = `/coleta-imagens/${talhaoId}`;
+    };
+
     const fetchTalhoes = async () => {
         const response = await api.getAllTalhoes();
         setTalhoes(response.data);
@@ -250,7 +254,7 @@ const TalhoesPage: React.FC = () => {
                             <ActionButton onClick={() => handleDelete(talhao.id)}>
                                 <FaTrash size={20} title="Excluir" />
                             </ActionButton>
-                            <ActionButton onClick={() => {/* lógica para coletar imagem */}}>
+                            <ActionButton onClick={() => navigateToPhotoCollection(talhao.id)}>
                                 <FaCamera size={20} title="Coletar Imagem" />
                             </ActionButton>
                         </TableData>

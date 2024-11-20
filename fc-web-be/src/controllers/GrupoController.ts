@@ -46,7 +46,7 @@ export async function getGrupoById(req: Request, res: Response) {
 
 export async function createGrupo(req: Request, res: Response) {
     try {
-        const { nome, descricao } = req.body;
+        const { nome } = req.body;
         const token = req.headers.authorization?.split(' ')[1];
         if (!token) {
             return res.status(401).json({ message: 'Token não fornecido' });
@@ -59,7 +59,6 @@ export async function createGrupo(req: Request, res: Response) {
 
         const grupo = await Grupo.create({
             nome,
-            descricao,
             pessoaFisicaId: pessoaId
         });
 

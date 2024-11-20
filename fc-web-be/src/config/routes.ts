@@ -15,7 +15,7 @@ import {
     createTalhao,
     updateTalhao,
     deleteTalhao,
-    getTalhoesByFazenda, addPlotAnalysis, getPlotAnalyses
+    getTalhoesByFazenda, addPlotAnalysis, getPlotAnalyses, getFilteredAnalyses
 } from '../controllers/TalhaoController';
 import {getDataToChartBy, getEstatisticas} from '../controllers/EstatisticasController';
 import { getAllPerfis, getPerfilById, createPerfil, updatePerfil, deletePerfil } from '../controllers/PerfisController';
@@ -67,6 +67,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 router.post('/talhoes/:talhaoId/analises', upload.single('formFile'), addPlotAnalysis);
 router.get('/talhoes/:talhaoId/analises', getPlotAnalyses);
+router.get('/analises', getFilteredAnalyses);
 
 
 // Estatísticas

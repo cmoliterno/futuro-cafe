@@ -245,6 +245,64 @@ export const getPlotAnalyses = async (req: Request, res: Response) => {
     }
 };
 
+// Obter análises com filtros
+export const getFilteredAnalyses = async (req: Request, res: Response) => {
+    const { fazendaId, talhaoId, grupoId, projetoId, startDate, endDate, page = 1, pageSize = 9 } = req.query;
+
+    try {
+        const whereConditions: any = {};
+
+        if (talhaoId) {
+            whereConditions.TalhaoId = talhaoId;
+        }
+
+        if (grupoId) {
+            whereConditions.grupoId = grupoId;
+        }
+
+        if (projetoId) {
+            whereConditions.projetoId = projetoId;
+        }
+
+        if (startDate && endDate) {
+            whereConditions.createdAt = {
+                [Op.between]: [startDate, endDate]
+            };
+        }
+
+        const { count, rows } = await Analise.findAndCountAll({
+            where: whereConditions,
+            attributes: [
+                'id', 'cherry', 'coordenadas', 'dry', 'green', 'greenYellow',
+                'grupoId', 'imagemResultadoUrl', 'imagemUrl', 'projetoId',
+                'raisin', 'total', 'createdAt', 'lastUpdatedAt'
+            ],
+            limit: Number(pageSize),
+            offset: (Number(page) - 1) * Number(pageSize),
+        });
+
+        res.json({
+            page: Number(page),
+            pages: Math.ceil(count / Number(pageSize)),
+            pageSize: Number(pageSize),
+            result: rows,
+            success: true,
+            messages: [],
+            hasErrors: false,
+            hasImpediments: false,
+            hasWarnings: false
+        });
+    } catch (error) {
+        console.error('Erro ao obter análises com filtros:', error);
+        res.status(500).json({
+            message: 'Erro ao obter análises com filtros',
+            success: false,
+            hasErrors: true
+        });
+    }
+};
+
+
 
 export const addPlotAnalysis = async (req: Request, res: Response) => {
     const { talhaoId } = req.params;
@@ -404,4 +462,4 @@ export const getPlotAnalysesChart = async (req: Request, res: Response) => {
     }
 };
 
-export default { getAllTalhoes, getTalhaoById, createTalhao, updateTalhao, deleteTalhao, getPlotAnalyses, addPlotAnalysis, getPlotAnalysesChart, getTalhoesByFazenda };
+export default { getAllTalhoes, getTalhaoById, createTalhao, updateTalhao, deleteTalhao, getPlotAnalyses, addPlotAnalysis, getPlotAnalysesChart, getTalhoesByFazenda, getFilteredAnalyses };

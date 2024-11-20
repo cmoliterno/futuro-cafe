@@ -114,6 +114,22 @@ export default {
         api.put(`/talhoes/${id}`, data), // Requer autenticação
     deleteTalhao: (id: string) => api.delete(`/talhoes/${id}`), // Requer autenticação
 
+    // Análises de talhões
+    addPlotAnalysis: (talhaoId: string, formData: any) =>
+        api.post(`/talhoes/${talhaoId}/analises`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        }), // Requer autenticação
+
+    getPlotAnalyses: (talhaoId: string) =>
+        api.get(`/talhoes/${talhaoId}/analises`), // Requer autenticação
+
+    getFilteredAnalyses : (filters: any) =>
+        api.get('/analises', { params: filters }), // Requer autenticação
+
+
+
     // Perfis
     getAllPerfis: () => api.get('/perfis'), // Requer autenticação
     getPerfilById: (id: string) => api.get(`/perfis/${id}`), // Requer autenticação
@@ -137,9 +153,9 @@ export default {
     // Grupos
     getAllGrupos: () => api.get('/grupos'), // Requer autenticação
     getGrupoById: (id: string) => api.get(`/grupos/${id}`), // Requer autenticação
-    createGrupo: (data: { nome: string; descricao: string }) =>
+    createGrupo: (data: { nome: string; }) =>
         api.post('/grupos', data), // Requer autenticação
-    updateGrupo: (id: string, data: { nome: string; descricao: string }) =>
+    updateGrupo: (id: string, data: { nome: string; }) =>
         api.put(`/grupos/${id}`, data), // Requer autenticação
     deleteGrupo: (id: string) =>
         api.delete(`/grupos/${id}`), // Requer autenticação
@@ -147,9 +163,9 @@ export default {
     // Projetos
     getAllProjetos: () => api.get('/projetos'), // Requer autenticação
     getProjetoById: (id: string) => api.get(`/projetos/${id}`), // Requer autenticação
-    createProjeto: (data: { nome: string; descricao: string; dataInicio: Date; dataFim: Date; grupoId: string }) =>
+    createProjeto: (data: { nome: string;  grupoId: string }) =>
         api.post('/projetos', data), // Requer autenticação
-    updateProjeto: (id: string, data: { nome: string; descricao: string; dataInicio: Date; dataFim: Date; grupoId: string }) =>
+    updateProjeto: (id: string, data: { nome: string; grupoId: string }) =>
         api.put(`/projetos/${id}`, data), // Requer autenticação
     deleteProjeto: (id: string) =>
         api.delete(`/projetos/${id}`), // Requer autenticação
