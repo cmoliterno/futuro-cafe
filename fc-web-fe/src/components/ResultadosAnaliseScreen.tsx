@@ -3,17 +3,20 @@ import styled from 'styled-components';
 import { useParams } from 'react-router-dom';
 import api from '../services/api';
 import { FaDownload, FaRedo, FaImage, FaCheck, FaExpand, FaChartBar, FaColumns } from 'react-icons/fa';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts';
+import {BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid, LabelList} from 'recharts';
 
 const Container = styled.div`
   padding: 20px;
   background-color: #3E2723;
+  min-height: 100vh; /* Ajusta o mínimo da altura da tela */
 `;
 
 const Title = styled.h1`
-  color: #fff;
+  color: #ffffff;
   text-align: center;
   margin-bottom: 20px;
+  font-size: 26px;
+  font-weight: bold;
 `;
 
 const FilterSection = styled.div`
@@ -22,14 +25,17 @@ const FilterSection = styled.div`
   gap: 15px;
   justify-content: center;
   margin-bottom: 20px;
+  background-color: #42210b;
+  padding: 20px;
+  border-radius: 10px;
 `;
 
 const FilterLabel = styled.label`
-  font-size: 14px;
+  font-size: 16px;
   font-weight: bold;
   margin-bottom: 5px;
   display: block;
-  color: #fff;
+  color: #f5f5f5;
 `;
 
 const Actions = styled.div`
@@ -38,12 +44,20 @@ const Actions = styled.div`
   margin-top: 15px;
 `;
 
+const FiltersWrapper = styled.div`
+  background-color: #4E342E;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 30px;
+`;
+
 const FilterSelect = styled.select`
-  width: 200px;
-  padding: 8px;
+  width: 220px;
+  padding: 10px;
   border-radius: 5px;
-  border: 1px solid #ddd;
+  border: 1px solid #ccc;
   font-size: 14px;
+  background-color: #ffffff;
 `;
 
 const FilterButton = styled.button`
@@ -54,28 +68,42 @@ const FilterButton = styled.button`
   cursor: pointer;
   font-size: 14px;
   margin-top: 15px;
+  border: none;
+
+  &:hover {
+    background-color: #218838;
+  }
 `;
 
 const ResultsContainer = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Ajuste dinâmico */
+  max-width: 1200px; /* Limita a largura do grid */
+  gap: 30px;
   justify-content: center;
+  padding: 20px;
+  margin: 0 auto; /* Centraliza horizontalmente */
 `;
 
 const ResultCard = styled.div`
-  background-color: #4E342E;
-  padding: 15px;
-  border-radius: 5px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-  width: 280px;
+  background-color: #ffffff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  max-width: 320px;
   text-align: center;
-  color: #fff;
+  color: #333;
+  border: 1px solid #ddd;
+
+  &:hover {
+    transform: scale(1.03); /* Efeito de hover */
+    transition: 0.3s;
+  }
 `;
 
 const ResultImage = styled.img`
   width: 100%;
-  height: 150px;
+  height: 200px; /* Altura maior para melhorar o layout */
   object-fit: cover;
   border-radius: 5px;
   margin-bottom: 15px;
@@ -85,6 +113,7 @@ const ResultImage = styled.img`
 const ResultInfo = styled.div`
   margin-top: 10px;
   text-align: left;
+  padding: 10px;
 `;
 
 const ColorLabel = styled.div<{ color: string }>`
@@ -107,6 +136,14 @@ const PaginationSection = styled.div`
   display: flex;
   justify-content: center;
   margin-top: 20px;
+  align-items: center;
+  gap: 10px;
+
+  span {
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: bold;
+  }
 `;
 
 const PaginationButton = styled.button`
@@ -114,17 +151,47 @@ const PaginationButton = styled.button`
   color: white;
   padding: 10px 15px;
   border-radius: 5px;
-  margin: 0 5px;
   cursor: pointer;
   font-size: 14px;
+  border: none;
+
+  &:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+  }
+
+  &:hover:not(:disabled) {
+    background-color: #0056b3;
+  }
 `;
 
-const CheckboxContainer = styled.div`
-  display: flex;
-  align-items: center;
+const FloatingButton = styled.button`
+  position: fixed;
+  bottom: 40px;
+  right: 40px;
+  background-color: #28a745;
+  color: white;
+  padding: 15px;
+  border-radius: 50%;
+  border: none;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  font-size: 18px;
+  z-index: 1000;
+
+  &:hover {
+    background-color: #218838;
+  }
 `;
 
-const Modal = styled.div`
+const Loading = styled.div`
+  color: #fff;
+  text-align: center;
+  margin-top: 50px;
+  font-size: 18px;
+`;
+
+const ChartModal = styled.div`
   position: fixed;
   top: 0;
   left: 0;
@@ -135,36 +202,53 @@ const Modal = styled.div`
   justify-content: center;
   align-items: center;
   z-index: 9999;
+  flex-direction: column; /* Mantém a flexibilidade */
+`;
+
+const ChartContainer = styled.div`
+  width: 80%;
+  height: 60%;
+  background-color: #ffffff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  padding: 20px;
+`;
+
+const CloseButton = styled.button`
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: transparent;
+  color: #ffffff;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+
+  &:hover {
+    color: #ff0000; /* Efeito de hover no botão de fechar */
+  }
+`;
+
+const Modal = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8); /* Fundo escuro transparente */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
 `;
 
 const ModalImage = styled.img`
   max-width: 90%;
   max-height: 90%;
   border-radius: 10px;
-`;
-
-const CloseButton = styled.button`
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: transparent;
-  color: #fff;
-  border: none;
-  font-size: 20px;
-  cursor: pointer;
-`;
-
-const ChartModal = styled(Modal)`
-  flex-direction: column;
-`;
-
-const ChartContainer = styled.div`
-  width: 80%;
-  height: 60%;
-  background-color: #fff;
-  display: flex;
-  justify-content: center;
-  align-items: center;
 `;
 
 const SideBySideContainer = styled.div`
@@ -180,7 +264,6 @@ const SideBySideImage = styled.img`
   border-radius: 10px;
   object-fit: cover;
 `;
-
 const ResultadosAnaliseScreen: React.FC = () => {
     const { talhaoId } = useParams<{ talhaoId: string }>();
 
@@ -205,6 +288,8 @@ const ResultadosAnaliseScreen: React.FC = () => {
     const [isSideBySide, setIsSideBySide] = useState(false); // Para comparar lado a lado
     const [selectedOriginalImage, setSelectedOriginalImage] = useState<string | null>(null);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
+
 
     useEffect(() => {
         const fetchFilters = async () => {
@@ -245,6 +330,11 @@ const ResultadosAnaliseScreen: React.FC = () => {
     }, [talhaoId]);
 
     const fetchAnalyses = async (page: number) => {
+        if (page < 1 || page > pagination.totalPages) {
+            return; // Evita buscar páginas inválidas
+        }
+
+        setLoading(true);
         try {
             const params = {
                 fazendaId: selectedFazenda,
@@ -256,12 +346,26 @@ const ResultadosAnaliseScreen: React.FC = () => {
                 page,
             };
             const { data } = await api.getFilteredAnalyses(params);
+
             setAnalyses(data.result || []);
-            setPagination({ currentPage: data.page, totalPages: data.totalPages });
+            setSelectedFarmName(
+                fazendas.find((f) => f.id === selectedFazenda)?.nome || "Fazenda não selecionada"
+            );
+            setSelectedPlotName(
+                talhoes.find((t) => t.id === selectedTalhao)?.nome || "Talhão não selecionado"
+            );
+            setPagination({
+                currentPage: data.page,
+                totalPages: data.pages, // O total de páginas vem no campo "pages"
+            });
         } catch (error) {
-            console.error('Erro ao carregar análises:', error);
+            console.error("Erro ao carregar análises:", error);
+        } finally {
+            setLoading(false);
         }
     };
+
+
 
     const handleImageClick = (image: string) => {
         setModalImage(image);
@@ -276,21 +380,27 @@ const ResultadosAnaliseScreen: React.FC = () => {
 
     const handleSelectImage = (analysis: any) => {
         setSelectedImages((prev) => {
-            if (prev.includes(analysis)) {
-                return prev.filter((item) => item !== analysis);
+            const isAlreadySelected = prev.some((item) => item.id === analysis.id);
+
+            if (isAlreadySelected) {
+                // Remove a imagem caso já esteja selecionada
+                return prev.filter((item) => item.id !== analysis.id);
             } else {
-                return [...prev, analysis];
+                // Adiciona a imagem com o próximo nome (A, B, C...)
+                const nextName = String.fromCharCode(65 + prev.length); // Gera A, B, C, etc.
+                return [...prev, { ...analysis, name: nextName }];
             }
         });
     };
 
     const openComparisonChart = () => {
-        if (selectedImages.length > 1) {
-            setChartVisible(true);
-        } else {
-            alert('Selecione pelo menos duas imagens para comparar.');
+        if (selectedImages.length === 0) {
+            alert('Selecione pelo menos uma imagem para exibir o gráfico.');
+            return;
         }
+        setChartVisible(true);
     };
+
 
     const handleReanalyzeImage = async (imageId: string) => {
         try {
@@ -326,89 +436,94 @@ const ResultadosAnaliseScreen: React.FC = () => {
         <Container>
             <Title>Resultados da Análise</Title>
 
-            <FilterSection>
-                <div>
-                    <FilterLabel>Fazenda</FilterLabel>
-                    <FilterSelect
-                        value={selectedFazenda}
-                        onChange={(e) => {
-                            setSelectedFazenda(e.target.value);
-                            setSelectedFarmName(e.target.name);
-                        }}
-                    >
-                        <option value="">Selecione</option>
-                        {fazendas.map((fazenda) => (
-                            <option key={fazenda.id} value={fazenda.id}>
-                                {fazenda.nome}
-                            </option>
-                        ))}
-                    </FilterSelect>
-                </div>
+            <FiltersWrapper>
+                <FilterSection>
+                    <div>
+                        <FilterLabel>Fazenda</FilterLabel>
+                        <FilterSelect
+                            value={selectedFazenda}
+                            onChange={(e) => {
+                                setSelectedFazenda(e.target.value);
+                                setSelectedFarmName(e.target.name);
+                            }}
+                        >
+                            <option value="">Selecione</option>
+                            {fazendas.map((fazenda) => (
+                                <option key={fazenda.id} value={fazenda.id}>
+                                    {fazenda.nome}
+                                </option>
+                            ))}
+                        </FilterSelect>
+                    </div>
 
-                <div>
-                    <FilterLabel>Talhão</FilterLabel>
-                    <FilterSelect
-                        value={selectedTalhao}
-                        onChange={(e) => {
-                            setSelectedTalhao(e.target.value);
-                            setSelectedPlotName(e.target.name);
-                        }}
-                        disabled={!selectedFazenda}
-                    >
-                        <option value="">Selecione</option>
-                        {talhoes.map((talhao) => (
-                            <option key={talhao.id} value={talhao.id}>
-                                {talhao.nome}
-                            </option>
-                        ))}
-                    </FilterSelect>
-                </div>
+                    <div>
+                        <FilterLabel>Talhão</FilterLabel>
+                        <FilterSelect
+                            value={selectedTalhao}
+                            onChange={(e) => {
+                                setSelectedTalhao(e.target.value);
+                                setSelectedPlotName(e.target.name);
+                            }}
+                            disabled={!selectedFazenda}
+                        >
+                            <option value="">Selecione</option>
+                            {talhoes.map((talhao) => (
+                                <option key={talhao.id} value={talhao.id}>
+                                    {talhao.nome}
+                                </option>
+                            ))}
+                        </FilterSelect>
+                    </div>
 
-                <div>
-                    <FilterLabel>Grupo</FilterLabel>
-                    <FilterSelect
-                        value={selectedGrupo}
-                        onChange={(e) => setSelectedGrupo(e.target.value)}
-                    >
-                        <option value="">Selecione</option>
-                        {grupos.map((grupo) => (
-                            <option key={grupo.id} value={grupo.id}>
-                                {grupo.nome}
-                            </option>
-                        ))}
-                    </FilterSelect>
-                </div>
+                    <div>
+                        <FilterLabel>Grupo</FilterLabel>
+                        <FilterSelect
+                            value={selectedGrupo}
+                            onChange={(e) => setSelectedGrupo(e.target.value)}
+                        >
+                            <option value="">Selecione</option>
+                            {grupos.map((grupo) => (
+                                <option key={grupo.id} value={grupo.id}>
+                                    {grupo.nome}
+                                </option>
+                            ))}
+                        </FilterSelect>
+                    </div>
 
-                <div>
-                    <FilterLabel>Projeto</FilterLabel>
-                    <FilterSelect
-                        value={selectedProjeto}
-                        onChange={(e) => setSelectedProjeto(e.target.value)}
-                    >
-                        <option value="">Selecione</option>
-                        {projetos.map((projeto) => (
-                            <option key={projeto.id} value={projeto.id}>
-                                {projeto.nome}
-                            </option>
-                        ))}
-                    </FilterSelect>
-                </div>
+                    <div>
+                        <FilterLabel>Projeto</FilterLabel>
+                        <FilterSelect
+                            value={selectedProjeto}
+                            onChange={(e) => setSelectedProjeto(e.target.value)}
+                        >
+                            <option value="">Selecione</option>
+                            {projetos.map((projeto) => (
+                                <option key={projeto.id} value={projeto.id}>
+                                    {projeto.nome}
+                                </option>
+                            ))}
+                        </FilterSelect>
+                    </div>
 
-                <div>
-                    <FilterLabel>Data Início</FilterLabel>
-                    <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-                </div>
+                    <div>
+                        <FilterLabel>Data Início</FilterLabel>
+                        <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                    </div>
 
-                <div>
-                    <FilterLabel>Data Fim</FilterLabel>
-                    <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-                </div>
+                    <div>
+                        <FilterLabel>Data Fim</FilterLabel>
+                        <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                    </div>
 
-                <FilterButton onClick={() => fetchAnalyses(1)}>Buscar Análises</FilterButton>
-            </FilterSection>
+                    <FilterButton onClick={() => fetchAnalyses(1)}>Buscar Análises</FilterButton>
+                </FilterSection>
+            </FiltersWrapper>
+
+
+            {loading && <Loading>Carregando análises...</Loading>}
 
             <ResultsContainer>
-                {analyses.map((analysis) => (
+                {analyses.slice((pagination.currentPage - 1) * 6, pagination.currentPage * 6).map((analysis) => (
                     <ResultCard key={analysis.id}>
                         <ResultImage
                             src={analysis.imagemResultadoUrl}
@@ -441,7 +556,7 @@ const ResultadosAnaliseScreen: React.FC = () => {
                         <Actions>
                             <input
                                 type="checkbox"
-                                checked={selectedImages.includes(analysis)}
+                                checked={selectedImages.some((item) => item.id === analysis.id)}
                                 onChange={() => handleSelectImage(analysis)}
                             />
                             <button onClick={() => handleReanalyzeImage(analysis.id)}>
@@ -453,32 +568,46 @@ const ResultadosAnaliseScreen: React.FC = () => {
                             <button onClick={() => handleImagePressSideBySide(analysis)}>
                                 <FaColumns color="#FFF" />
                             </button>
+                            {selectedImages.some((item) => item.id === analysis.id) && (
+                                <span>{selectedImages.find((item) => item.id === analysis.id)?.name}</span>
+                            )}
                         </Actions>
+
                     </ResultCard>
                 ))}
 
-                <button onClick={openComparisonChart}>
-                    <FaChartBar color="#FFF" />
-                </button>
             </ResultsContainer>
 
             <PaginationSection>
                 <PaginationButton
-                    onClick={() => fetchAnalyses(pagination.currentPage - 1)}
+                    onClick={() => {
+                        if (pagination.currentPage > 1) {
+                            fetchAnalyses(pagination.currentPage - 1);
+                        }
+                    }}
                     disabled={pagination.currentPage === 1}
                 >
                     Anterior
                 </PaginationButton>
                 <span>
-                    Página {pagination.currentPage} de {pagination.totalPages}
-                </span>
+        Página {pagination.currentPage} de {pagination.totalPages}
+    </span>
                 <PaginationButton
-                    onClick={() => fetchAnalyses(pagination.currentPage + 1)}
+                    onClick={() => {
+                        if (pagination.currentPage < pagination.totalPages) {
+                            fetchAnalyses(pagination.currentPage + 1);
+                        }
+                    }}
                     disabled={pagination.currentPage === pagination.totalPages}
                 >
                     Próximo
                 </PaginationButton>
             </PaginationSection>
+
+
+            <FloatingButton onClick={openComparisonChart}>
+                <FaChartBar />
+            </FloatingButton>
 
             {/* Modal de Comparação lado a lado */}
             {modalVisible && isSideBySide && (
@@ -502,17 +631,65 @@ const ResultadosAnaliseScreen: React.FC = () => {
                 <ChartModal>
                     <CloseButton onClick={() => setChartVisible(false)}>×</CloseButton>
                     <ChartContainer>
-                        <BarChart width={500} height={300} data={selectedImages}>
+                        <BarChart
+                            width={800} // Aumenta a largura do gráfico
+                            height={500} // Aumenta a altura do gráfico
+                            data={selectedImages.map((image) => ({
+                                ...image,
+                                nome: image.name, // Nome atribuído (A, B, C...)
+                                greenPercent: ((image.green / image.total) * 100).toFixed(2),
+                                greenYellowPercent: ((image.greenYellow / image.total) * 100).toFixed(2),
+                                cherryPercent: ((image.cherry / image.total) * 100).toFixed(2),
+                                raisinPercent: ((image.raisin / image.total) * 100).toFixed(2),
+                                dryPercent: ((image.dry / image.total) * 100).toFixed(2),
+                            }))}
+                            margin={{ top: 20, right: 30, left: 20, bottom: 30 }} // Ajusta as margens do gráfico
+                        >
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="nome" />
                             <YAxis />
                             <Tooltip />
                             <Legend />
-                            <Bar dataKey="green" stackId="a" fill="#34A853" />
-                            <Bar dataKey="greenYellow" stackId="a" fill="#FFD700" />
-                            <Bar dataKey="cherry" stackId="a" fill="#FF6347" />
-                            <Bar dataKey="raisin" stackId="a" fill="#8B4513" />
-                            <Bar dataKey="dry" stackId="a" fill="#A9A9A9" />
+                            <Bar dataKey="green" stackId="a" fill="#34A853">
+                                <LabelList
+                                    dataKey="greenPercent"
+                                    position="inside"
+                                    formatter={(value: string | number) => `${value}%`}
+                                    style={{ fontSize: 14, fontWeight: 'bold', fill: 'black' }} // Percentuais em preto
+                                />
+                            </Bar>
+                            <Bar dataKey="greenYellow" stackId="a" fill="#FFD700">
+                                <LabelList
+                                    dataKey="greenYellowPercent"
+                                    position="inside"
+                                    formatter={(value: string | number) => `${value}%`}
+                                    style={{ fontSize: 14, fontWeight: 'bold', fill: 'black' }}
+                                />
+                            </Bar>
+                            <Bar dataKey="cherry" stackId="a" fill="#FF6347">
+                                <LabelList
+                                    dataKey="cherryPercent"
+                                    position="inside"
+                                    formatter={(value: string | number) => `${value}%`}
+                                    style={{ fontSize: 14, fontWeight: 'bold', fill: 'black' }}
+                                />
+                            </Bar>
+                            <Bar dataKey="raisin" stackId="a" fill="#8B4513">
+                                <LabelList
+                                    dataKey="raisinPercent"
+                                    position="inside"
+                                    formatter={(value: string | number) => `${value}%`}
+                                    style={{ fontSize: 14, fontWeight: 'bold', fill: 'black' }}
+                                />
+                            </Bar>
+                            <Bar dataKey="dry" stackId="a" fill="#A9A9A9">
+                                <LabelList
+                                    dataKey="dryPercent"
+                                    position="inside"
+                                    formatter={(value: string | number) => `${value}%`}
+                                    style={{ fontSize: 14, fontWeight: 'bold', fill: 'black' }}
+                                />
+                            </Bar>
                         </BarChart>
                     </ChartContainer>
                 </ChartModal>
