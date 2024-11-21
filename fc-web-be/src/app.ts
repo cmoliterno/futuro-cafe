@@ -4,7 +4,7 @@ import routes from './config/routes'; // Ajuste o caminho se necessário
 
 const app = express();
 
-const allowedOrigins = ['https://painelfuturocafe.qwize.io/', process.env.FRONTEND_URL];
+const allowedOrigins = ['https://painelfuturocafe.qwize.io', process.env.FRONTEND_URL];
 
 // Configuração do CORS
 app.use(cors({
