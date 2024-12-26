@@ -29,8 +29,10 @@ const Navbar: React.FC = () => {
                         <Link to="/grupos" className="navbar-link">Grupos</Link>
                         <Link to="/projetos" className="navbar-link">Projetos</Link>
                         <Link to="/resultados-analise" className="navbar-link">Análises</Link>
+                        <Link to="/comparacao" className="navbar-link">Comparação</Link>
                         <Link to="/estatisticas" className="navbar-link">Estatísticas</Link>
                         <Link to="/dashboard" className="navbar-link">Dashboard</Link>
+                        <Link to="/analise-rapida" className="navbar-link">Análise Rápida</Link>
                     </>
                 )}
                 {!isAuthenticated && (

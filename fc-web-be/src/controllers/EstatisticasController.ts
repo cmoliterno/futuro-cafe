@@ -5,6 +5,7 @@ import Talhao from '../models/Talhao';
 import Fazenda from '../models/Fazenda'; // Para validar a fazenda
 import { Op, Sequelize } from 'sequelize';
 import { AuthService } from '../services/AuthService';
+import { GrainWeight } from '../enums/GrainWeight';
 
 const authService = new AuthService();
 export async function getEstatisticas(req: Request, res: Response) {
@@ -293,4 +294,117 @@ const getDataForPlot = async (fazenda: any, plotId: string, start: Date, end: Da
     }
 }
 
-export default { getEstatisticas, getDataToChartBy };
+/**
+ * Recebe 2 grupos de filtros no corpo da requisição,
+ * faz 2 buscas separadas no banco,
+ * consolida/agrupa os resultados e devolve um único objeto JSON
+ * com leftData e rightData.
+ */
+export async function compareAnalyses(req: Request, res: Response) {
+    try {
+        const { filtersLeft, filtersRight } = req.body;
+
+        console.log('filtersLeft:', filtersLeft);
+        console.log('filtersRight:', filtersRight);
+
+
+        // -- 1) Busca e agrega para o "lado esquerdo"
+        const leftData = await fetchAggregateData(filtersLeft);
+
+        // -- 2) Busca e agrega para o "lado direito"
+        const rightData = await fetchAggregateData(filtersRight);
+
+        return res.status(200).json({
+            leftData,
+            rightData,
+        });
+    } catch (error) {
+        console.error('Erro ao comparar análises:', error);
+        return res.status(500).json({
+            message: 'Erro ao comparar análises',
+            success: false,
+            hasErrors: true
+        });
+    }
+}
+
+/**
+ * Função auxiliar para montar o "where" e somar os campos (green, dry etc.)
+ * de acordo com os filtros recebidos.
+ */
+async function fetchAggregateData(filters: any) {
+    const whereConditions: any = {};
+
+    console.log('whereConditions => ', whereConditions);
+
+    // Desestrutura o objeto de filtros
+    const { fazenda, talhao, grupo, projeto, startDate, endDate } = filters || {};
+
+    // Monta o where (sem associations, usando subqueries se precisar filtrar por fazenda)
+    if (talhao) {
+        whereConditions.TalhaoId = talhao;
+    }
+    if (grupo) {
+        whereConditions.grupoId = grupo;
+    }
+    if (projeto) {
+        whereConditions.projetoId = projeto;
+    }
+    if (startDate && endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        whereConditions.createdAt = {
+            [Op.between]: [start, end]
+        };
+    }
+    if (fazenda) {
+        whereConditions.TalhaoId = {
+            [Op.in]: Sequelize.literal(`
+        (SELECT "Id" FROM "tbTalhao" WHERE "FazendaId" = '${fazenda}')
+      `)
+        };
+    }
+
+    // Pega todas as análises que batem com os filtros
+    const analyses = await Analise.findAll({
+        where: whereConditions
+    });
+
+    // Agrega (soma) cada campo
+    let green = 0, greenYellow = 0, cherry = 0, raisin = 0, dry = 0, total = 0;
+
+    for (const item of analyses) {
+        green += item.green ?? 0;
+        greenYellow += item.greenYellow ?? 0;
+        cherry += item.cherry ?? 0;
+        raisin += item.raisin ?? 0;
+        dry += item.dry ?? 0;
+        total += item.total ?? 0;
+    }
+
+    // Cálculos de peso estimado
+    const greenWeight = green * GrainWeight.GREEN;
+    const greenYellowWeight = greenYellow * GrainWeight.GREEN_YELLOW;
+    const cherryWeight = cherry * GrainWeight.CHERRY;
+    const raisinWeight = raisin * GrainWeight.RAISIN;
+    const dryWeight = dry * GrainWeight.DRY;
+    const totalWeight = greenWeight + greenYellowWeight + cherryWeight + raisinWeight + dryWeight;
+
+    return {
+        green,
+        greenYellow,
+        cherry,
+        raisin,
+        dry,
+        total,
+        // retornamos também o peso:
+        greenWeight,
+        greenYellowWeight,
+        cherryWeight,
+        raisinWeight,
+        dryWeight,
+        totalWeight
+    };
+}
+
+export default { getEstatisticas, getDataToChartBy, fetchAggregateData, compareAnalyses };

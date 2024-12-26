@@ -10,8 +10,39 @@ import FormData from 'form-data';
 import { BlobServiceClient } from '@azure/storage-blob';
 import { v4 as uuidv4 } from 'uuid';
 import { AuthService } from '../services/AuthService';
+import exifReader from 'exifreader';
 
 const authService = new AuthService();
+// Função auxiliar p/ converter Buffer => ArrayBuffer
+function toArrayBuffer(buffer: Buffer): ArrayBuffer {
+    const ab = new ArrayBuffer(buffer.length);
+    const view = new Uint8Array(ab);
+    for (let i = 0; i < buffer.length; ++i) {
+        view[i] = buffer[i];
+    }
+    return ab;
+}
+
+function parseExifDate(dateTimeString: string): Date | null {
+    if (!dateTimeString) return null;
+
+    const parts = dateTimeString.split(' ');
+    if (parts.length !== 2) return null;
+
+    const datePart = parts[0]; // "YYYY:MM:DD"
+    const timePart = parts[1]; // "HH:MM:SS"
+    const [year, month, day] = datePart.split(':');
+    const [hour, minute, second] = timePart.split(':');
+
+    return new Date(
+        Number(year),
+        Number(month) - 1,
+        Number(day),
+        Number(hour),
+        Number(minute),
+        Number(second)
+    );
+}
 
 // Configuração do cliente Azure Blob
 const AZURE_STORAGE_CONNECTION_STRING = process.env.AZURE_STORAGE_CONNECTION_STRING || "teste";
@@ -250,6 +281,10 @@ export const getFilteredAnalyses = async (req: Request, res: Response) => {
     const { fazendaId, talhaoId, grupoId, projetoId, startDate, endDate, page = 1, pageSize = 9 } = req.query;
 
     try {
+        // Certifique-se de que os valores sejam números válidos
+        const currentPage = Math.max(Number(page) || 1, 1);
+        const itemsPerPage = Math.max(Number(pageSize) || 9, 1);
+
         const whereConditions: any = {};
 
         if (talhaoId) {
@@ -277,14 +312,28 @@ export const getFilteredAnalyses = async (req: Request, res: Response) => {
                 'grupoId', 'imagemResultadoUrl', 'imagemUrl', 'projetoId',
                 'raisin', 'total', 'createdAt', 'lastUpdatedAt'
             ],
-            limit: Number(pageSize),
-            offset: (Number(page) - 1) * Number(pageSize),
+            limit: itemsPerPage,
+            offset: (currentPage - 1) * itemsPerPage,
         });
 
+        // Verificar se a página solicitada está além do limite
+        const totalPages = Math.ceil(count / itemsPerPage);
+
+        if (currentPage > totalPages) {
+            return res.status(404).json({
+                message: 'Página não encontrada',
+                success: false,
+                hasErrors: true,
+                result: [],
+                page: currentPage,
+                pages: totalPages,
+            });
+        }
+
         res.json({
-            page: Number(page),
-            pages: Math.ceil(count / Number(pageSize)),
-            pageSize: Number(pageSize),
+            page: currentPage,
+            pages: totalPages,
+            pageSize: itemsPerPage,
             result: rows,
             success: true,
             messages: [],
@@ -302,8 +351,6 @@ export const getFilteredAnalyses = async (req: Request, res: Response) => {
     }
 };
 
-
-
 export const addPlotAnalysis = async (req: Request, res: Response) => {
     const { talhaoId } = req.params;
     const formFile = req.file;
@@ -320,9 +367,43 @@ export const addPlotAnalysis = async (req: Request, res: Response) => {
             return res.status(404).json({ message: 'Talhão não encontrado' });
         }
 
+        // 1) Upload imagem original no Azure
         const originalImageUrl = await uploadToAzure(formFile.buffer, formFile.originalname);
         console.log(`URL da imagem original: ${originalImageUrl}`);
 
+        // 2) Ler metadados EXIF (data e coordenadas)
+        let photoDate: Date | null = null;
+        let photoCoords: string | null = null;
+
+        try {
+            // Converter para ArrayBuffer
+            const arrayBuffer = toArrayBuffer(formFile.buffer);
+            // Carregar tags
+            const tags = exifReader.load(arrayBuffer);
+
+            // Data
+            // exifReader geralmente armazena a data em `tags.DateTimeOriginal.description`
+            const dateTimeOriginal = tags.DateTimeOriginal?.description;
+            if (dateTimeOriginal) {
+                photoDate = parseExifDate(dateTimeOriginal);
+            }
+
+            // GPS
+            // Se existirem, ficam em tags.GPSLatitude, tags.GPSLongitude
+            const gpsLat = tags.GPSLatitude?.description;
+            const gpsLon = tags.GPSLongitude?.description;
+            if (gpsLat && gpsLon) {
+                // ex: "12° 34' 56\" N" e "98° 76' 54\" W"
+                // Você pode armazenar "12° 34' 56\" N,98° 76' 54\" W"
+                // ou tentar converter para decimal; aqui faço algo simples:
+                photoCoords = gpsLat + ',' + gpsLon;
+            }
+        } catch (exifError) {
+            // Se não conseguir ler EXIF, não aborta, só loga
+            console.warn('Não foi possível ler metadados EXIF:', exifError);
+        }
+
+        // 3) Chamar a API de predição
         const formData = new FormData();
         formData.append('image', formFile.buffer, formFile.originalname);
 
@@ -343,44 +424,49 @@ export const addPlotAnalysis = async (req: Request, res: Response) => {
             return res.status(500).json({ message: 'A API externa retornou dados incompletos.' });
         }
 
-        let processedImageUrl = null;
+        // 4) Se tiver imagem processada, subir também
+        let processedImageUrl: string | null = null;
         if (predictionResult.image) {
             const processedImageBuffer = Buffer.from(predictionResult.image, 'base64');
             processedImageUrl = await uploadToAzure(processedImageBuffer, `resultado_${formFile.originalname}`);
             console.log(`URL da imagem processada: ${processedImageUrl}`);
         }
 
-        // Log dos valores que serão enviados para o banco de dados
-        console.log("Criando análise no banco de dados com os seguintes dados:", {
-            talhaoId: talhaoId,
-            cherry: predictionResult.dataframe.cherry,
-            dry: predictionResult.dataframe.dry,
-            green: predictionResult.dataframe.green,
-            greenYellow: predictionResult.dataframe.greenYellow,
-            raisin: predictionResult.dataframe.raisin,
-            total: predictionResult.dataframe.total,
+        console.log('Criando análise no banco de dados com os seguintes dados:', {
+            talhaoId,
+            cherry,
+            dry,
+            green,
+            greenYellow,
+            raisin,
+            total,
             imagemUrl: originalImageUrl,
-            imagemResultadoUrl: processedImageUrl
+            imagemResultadoUrl: processedImageUrl,
+            coordenadas: photoCoords,
+            createdAt: photoDate || new Date() // se não tiver data EXIF, pega data atual
         });
 
-
+        // 5) Inserir no banco (tabela tbAnalise)
         const newAnalysis = await Analise.create({
-            talhaoId: talhaoId,
-            cherry: predictionResult.dataframe.cherry,
-            dry: predictionResult.dataframe.dry,
-            green: predictionResult.dataframe.green,
-            greenYellow: predictionResult.dataframe.greenYellow,
-            raisin: predictionResult.dataframe.raisin,
-            total: predictionResult.dataframe.total,
+            talhaoId,
+            cherry,
+            dry,
+            green,
+            greenYellow,
+            raisin,
+            total,
             imagemUrl: originalImageUrl,
-            imagemResultadoUrl: processedImageUrl
+            imagemResultadoUrl: processedImageUrl,
+            coordenadas: photoCoords,
+            createdAt: photoDate || new Date(),
+            lastUpdatedAt: new Date()
         });
 
         console.log('Análise criada com sucesso no banco de dados:', newAnalysis);
 
         res.status(200).json({
-            message: "Análise efetuada.",
-            analiseId: newAnalysis.id,
+            message: 'Análise efetuada.',
+            analiseId: newAnalysis.id
         });
     } catch (error) {
         console.error('Erro ao adicionar análise ao talhão:', error);

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = process.env.BASE_URL || 'https://futurocafe.qwize.io/api/';
+const API_URL = process.env.BASE_URL || 'http://localhost:3000/api/';
 
 const api = axios.create({
     baseURL: API_URL,
@@ -128,7 +128,18 @@ export default {
     getFilteredAnalyses : (filters: any) =>
         api.get('/analises', { params: filters }), // Requer autenticação
 
+    compareAnalises: (data: { filtersLeft: any, filtersRight: any }) =>
+        api.post('/compare-analises', data),
 
+    // Funções de análise rápida
+    createRapidAnalysisGroup: (data: { nomeGrupo: string; lado: string; imagens: string[] }) =>
+        api.post('/analises-rapidas', data),
+
+    getRapidAnalysisGroup: (grupoId: string) =>
+        api.get(`/analises-rapidas/${grupoId}`),
+
+    compareRapidAnalyses: (data: { grupoEsquerdoId: string; grupoDireitoId: string }) =>
+        api.post('/analises-rapidas/comparar', data),
 
     // Perfis
     getAllPerfis: () => api.get('/perfis'), // Requer autenticação

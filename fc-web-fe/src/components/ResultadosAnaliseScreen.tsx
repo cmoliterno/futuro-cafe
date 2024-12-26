@@ -8,7 +8,6 @@ import {BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid, LabelList} 
 const Container = styled.div`
   padding: 20px;
   background-color: #3E2723;
-  min-height: 100vh; /* Ajusta o mínimo da altura da tela */
 `;
 
 const Title = styled.h1`
@@ -221,49 +220,97 @@ const CloseButton = styled.button`
   position: absolute;
   top: 20px;
   right: 20px;
-  background: transparent;
+  background: #363333;
   color: #ffffff;
   border: none;
   font-size: 24px;
   cursor: pointer;
+  z-index: 1020; /* Garante que o botão fique acima de tudo */
 
   &:hover {
-    color: #ff0000; /* Efeito de hover no botão de fechar */
+    color: #463636; /* Cor ao passar o mouse */
   }
 `;
 
-const Modal = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.8); /* Fundo escuro transparente */
+const ModalContent = styled.div`
+  position: relative;
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
-  z-index: 9999;
-`;
-
-const ModalImage = styled.img`
   max-width: 90%;
   max-height: 90%;
-  border-radius: 10px;
+  overflow: auto; /* Permite rolagem em telas menores */
+  z-index: 1010;
 `;
 
-const SideBySideContainer = styled.div`
+const ImageContainer = styled.div`
   display: flex;
   justify-content: center;
   gap: 20px;
+  margin-top: 20px;
 `;
 
-const SideBySideImage = styled.img`
+const SingleImage = styled.img`
+  max-width: 80%;
+  max-height: 80%;
+  border-radius: 10px;
+  object-fit: contain;
+`;
+
+const DualImage = styled.img`
   max-width: 45%;
   height: auto;
   max-height: 500px;
   border-radius: 10px;
   object-fit: cover;
 `;
+interface ModalProps {
+    isVisible: boolean;
+    isSideBySide: boolean;
+    originalImage?: string | null;
+    analyzedImage?: string | null;
+    onClose: () => void;
+}
+
+const Modal: React.FC<ModalProps> = ({ isVisible, isSideBySide, originalImage, analyzedImage, onClose }) => {
+    if (!isVisible) return null;
+
+    return (
+        <div
+            style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                zIndex: 1000,
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+            }}
+        >
+            <ModalContent>
+                <CloseButton onClick={onClose}>×</CloseButton>
+                <ImageContainer>
+                    {isSideBySide ? (
+                        <>
+                            <DualImage src={originalImage || ''} alt="Imagem Original" />
+                            <DualImage src={analyzedImage || ''} alt="Imagem Analisada" />
+                        </>
+                    ) : (
+                        <SingleImage src={analyzedImage || originalImage || ''} alt="Imagem" />
+                    )}
+                </ImageContainer>
+            </ModalContent>
+        </div>
+    );
+};
+
 const ResultadosAnaliseScreen: React.FC = () => {
     const { talhaoId } = useParams<{ talhaoId: string }>();
 
@@ -294,12 +341,14 @@ const ResultadosAnaliseScreen: React.FC = () => {
     useEffect(() => {
         const fetchFilters = async () => {
             try {
+                setLoading(true)
                 const fazendasData = await api.getAllFazendas();
                 const projetosData = await api.getAllProjetos();
                 const gruposData = await api.getAllGrupos();
                 setFazendas(fazendasData.data);
                 setProjetos(projetosData.data);
                 setGrupos(gruposData.data);
+                setLoading(false)
             } catch (error) {
                 console.error('Erro ao carregar filtros:', error);
             }
@@ -436,6 +485,7 @@ const ResultadosAnaliseScreen: React.FC = () => {
         <Container>
             <Title>Resultados da Análise</Title>
 
+            {/* Filtros */}
             <FiltersWrapper>
                 <FilterSection>
                     <div>
@@ -507,77 +557,106 @@ const ResultadosAnaliseScreen: React.FC = () => {
 
                     <div>
                         <FilterLabel>Data Início</FilterLabel>
-                        <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                        <input
+                            type="date"
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
+                        />
                     </div>
 
                     <div>
                         <FilterLabel>Data Fim</FilterLabel>
-                        <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                        <input
+                            type="date"
+                            value={endDate}
+                            onChange={(e) => setEndDate(e.target.value)}
+                        />
                     </div>
 
-                    <FilterButton onClick={() => fetchAnalyses(1)}>Buscar Análises</FilterButton>
+                    <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
+                        <FilterButton onClick={() => fetchAnalyses(1)}>Buscar Análises</FilterButton>
+                        <FilterButton
+                            style={{ backgroundColor: '#dc3545' }}
+                            onClick={() => {
+                                setSelectedFazenda('');
+                                setSelectedTalhao('');
+                                setSelectedGrupo('');
+                                setSelectedProjeto('');
+                                setStartDate('');
+                                setEndDate('');
+                                setAnalyses([]);
+                                setPagination({ currentPage: 1, totalPages: 1 });
+                            }}
+                        >
+                            Limpar Filtros
+                        </FilterButton>
+                    </div>
                 </FilterSection>
             </FiltersWrapper>
 
+            {/* Carregando */}
+            {loading && <Loading>Carregando, por favor, aguarde...</Loading>}
 
-            {loading && <Loading>Carregando análises...</Loading>}
-
+            {/* Resultados */}
             <ResultsContainer>
-                {analyses.slice((pagination.currentPage - 1) * 6, pagination.currentPage * 6).map((analysis) => (
-                    <ResultCard key={analysis.id}>
-                        <ResultImage
-                            src={analysis.imagemResultadoUrl}
-                            alt={`Análise ${analysis.id}`}
-                            onClick={() => handleImageClick(analysis.imagemResultadoUrl)}
-                        />
-                        <ResultInfo>
-                            <ColorLabel color="#34A853">
-                                <span /> Green: {((analysis.green / analysis.total) * 100).toFixed(2)}%
-                            </ColorLabel>
-                            <ColorLabel color="#FFD700">
-                                <span /> Green-Yellow: {((analysis.greenYellow / analysis.total) * 100).toFixed(2)}%
-                            </ColorLabel>
-                            <ColorLabel color="#FF6347">
-                                <span /> Cherry: {((analysis.cherry / analysis.total) * 100).toFixed(2)}%
-                            </ColorLabel>
-                            <ColorLabel color="#8B4513">
-                                <span /> Raisin: {((analysis.raisin / analysis.total) * 100).toFixed(2)}%
-                            </ColorLabel>
-                            <ColorLabel color="#A9A9A9">
-                                <span /> Dry: {((analysis.dry / analysis.total) * 100).toFixed(2)}%
-                            </ColorLabel>
-                            <ColorLabel color="#FFFFFF">
-                                <span /> Total: {analysis.total}
-                            </ColorLabel>
-                            <p>Data da Análise: {new Date(analysis.createdAt).toLocaleDateString('pt-BR')}</p>
-                            <p>Fazenda: {selectedFarmName}</p>
-                            <p>Talhão: {selectedPlotName}</p>
-                        </ResultInfo>
-                        <Actions>
-                            <input
-                                type="checkbox"
-                                checked={selectedImages.some((item) => item.id === analysis.id)}
-                                onChange={() => handleSelectImage(analysis)}
+                {analyses
+                    .slice((pagination.currentPage - 1) * 6, pagination.currentPage * 6)
+                    .map((analysis) => (
+                        <ResultCard key={analysis.id}>
+                            <ResultImage
+                                src={analysis.imagemResultadoUrl}
+                                alt={`Análise ${analysis.id}`}
+                                onClick={() => handleImageClick(analysis.imagemResultadoUrl)}
                             />
-                            <button onClick={() => handleReanalyzeImage(analysis.id)}>
-                                <FaRedo color="#FFF" />
-                            </button>
-                            <button onClick={() => handleDownloadImage(analysis.imagemResultadoUrl)}>
-                                <FaDownload color="#FFF" />
-                            </button>
-                            <button onClick={() => handleImagePressSideBySide(analysis)}>
-                                <FaColumns color="#FFF" />
-                            </button>
-                            {selectedImages.some((item) => item.id === analysis.id) && (
-                                <span>{selectedImages.find((item) => item.id === analysis.id)?.name}</span>
-                            )}
-                        </Actions>
-
-                    </ResultCard>
-                ))}
-
+                            <ResultInfo>
+                                <ColorLabel color="#34A853">
+                                    <span /> Green: {((analysis.green / analysis.total) * 100).toFixed(2)}%
+                                </ColorLabel>
+                                <ColorLabel color="#FFD700">
+                                    <span /> Green-Yellow: {((analysis.greenYellow / analysis.total) * 100).toFixed(2)}%
+                                </ColorLabel>
+                                <ColorLabel color="#FF6347">
+                                    <span /> Cherry: {((analysis.cherry / analysis.total) * 100).toFixed(2)}%
+                                </ColorLabel>
+                                <ColorLabel color="#8B4513">
+                                    <span /> Raisin: {((analysis.raisin / analysis.total) * 100).toFixed(2)}%
+                                </ColorLabel>
+                                <ColorLabel color="#A9A9A9">
+                                    <span /> Dry: {((analysis.dry / analysis.total) * 100).toFixed(2)}%
+                                </ColorLabel>
+                                <ColorLabel color="#FFFFFF">
+                                    <span /> Total: {analysis.total}
+                                </ColorLabel>
+                                <p>Data da Análise: {new Date(analysis.createdAt).toLocaleDateString('pt-BR')}</p>
+                                <p>Fazenda: {selectedFarmName}</p>
+                                <p>Talhão: {selectedPlotName}</p>
+                            </ResultInfo>
+                            <Actions>
+                                <input
+                                    type="checkbox"
+                                    checked={selectedImages.some((item) => item.id === analysis.id)}
+                                    onChange={() => handleSelectImage(analysis)}
+                                />
+                                <button onClick={() => handleReanalyzeImage(analysis.id)}>
+                                    <FaRedo color="#FFF" />
+                                </button>
+                                <button onClick={() => handleDownloadImage(analysis.imagemResultadoUrl)}>
+                                    <FaDownload color="#FFF" />
+                                </button>
+                                <button onClick={() => handleImagePressSideBySide(analysis)}>
+                                    <FaColumns color="#FFF" />
+                                </button>
+                                {selectedImages.some((item) => item.id === analysis.id) && (
+                                    <span>
+                {selectedImages.find((item) => item.id === analysis.id)?.name}
+              </span>
+                                )}
+                            </Actions>
+                        </ResultCard>
+                    ))}
             </ResultsContainer>
 
+            {/* Paginação */}
             <PaginationSection>
                 <PaginationButton
                     onClick={() => {
@@ -605,26 +684,19 @@ const ResultadosAnaliseScreen: React.FC = () => {
             </PaginationSection>
 
 
+            {/* Botão flutuante */}
             <FloatingButton onClick={openComparisonChart}>
                 <FaChartBar />
             </FloatingButton>
 
-            {/* Modal de Comparação lado a lado */}
-            {modalVisible && isSideBySide && (
-                <Modal>
-                    <CloseButton onClick={closeModal}>×</CloseButton>
-                    <SideBySideContainer>
-                        <SideBySideImage src={selectedOriginalImage || ''} alt="Imagem Original" />
-                        <SideBySideImage src={selectedImage || ''} alt="Imagem Analisada" />
-                    </SideBySideContainer>
-                </Modal>
-            )}
-
             {modalVisible && (
-                <Modal>
-                    <CloseButton onClick={closeModal}>×</CloseButton>
-                    <ModalImage src={modalImage || ''} />
-                </Modal>
+                <Modal
+                    isVisible={modalVisible}
+                    isSideBySide={isSideBySide}
+                    originalImage={selectedOriginalImage}
+                    analyzedImage={selectedImage || modalImage}
+                    onClose={closeModal}
+                />
             )}
 
             {chartVisible && (

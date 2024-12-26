@@ -14,6 +14,8 @@ import ProtectedRoute from './ProtectedRoute';
 import GruposPage from "../pages/GruposPage";
 import ResultadosAnaliseScreen from "../components/ResultadosAnaliseScreen";
 import ColetaImagens from "../components/ColetaImagensScreen";
+import ComparacaoAnaliseScreen from "../components/ComparacaoAnaliseScreen";
+import ComparacaoRapida from "../components/ComparacaoRapida";
 
 function AppRoutes() {
   return (
@@ -33,6 +35,8 @@ function AppRoutes() {
         <Route path="/dashboard" element={<ProtectedRoute element={<DashboardPage />} />} />
         <Route path="/coleta-imagens/:talhaoId" element={<ProtectedRoute element={<ColetaImagens />} />} />
         <Route path="/resultados-analise" element={<ProtectedRoute element={<ResultadosAnaliseScreen />} />} />
+        <Route path="/comparacao" element={<ProtectedRoute element={<ComparacaoAnaliseScreen />} />} />
+        <Route path="/analise-rapida" element={<ProtectedRoute element={<ComparacaoRapida />} />} />
     </Routes>
   );
 }

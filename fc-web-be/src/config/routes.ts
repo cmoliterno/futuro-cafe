@@ -17,13 +17,14 @@ import {
     deleteTalhao,
     getTalhoesByFazenda, addPlotAnalysis, getPlotAnalyses, getFilteredAnalyses
 } from '../controllers/TalhaoController';
-import {getDataToChartBy, getEstatisticas} from '../controllers/EstatisticasController';
+import {compareAnalyses, getDataToChartBy, getEstatisticas} from '../controllers/EstatisticasController';
 import { getAllPerfis, getPerfilById, createPerfil, updatePerfil, deletePerfil } from '../controllers/PerfisController';
 import { getAllRoles, getRoleById, createRole, updateRole, deleteRole } from '../controllers/RolesController';
 import { getAllGrupos, getGrupoById, createGrupo, updateGrupo, deleteGrupo } from '../controllers/GrupoController';
 import { getAllProjetos, getProjetoById, createProjeto, updateProjeto, deleteProjeto } from '../controllers/ProjetoController';
 import { authenticateJWT } from '../middlewares/authenticateJWT';
 import multer from "multer";
+import {buscarAnalisesRapidasPorGrupo, criarAnaliseRapida} from "../controllers/AnaliseRapidaController";
 
 
 const router = Router();
@@ -70,9 +71,15 @@ router.get('/talhoes/:talhaoId/analises', getPlotAnalyses);
 router.get('/analises', getFilteredAnalyses);
 
 
+// Aálise Rapida
+router.post("/analises-rapidas", criarAnaliseRapida);
+router.get("/analises-rapidas/:grupoId", buscarAnalisesRapidasPorGrupo);
+
+
 // Estatísticas
 router.get('/estatisticas', getEstatisticas);
 router.get('/chart', getDataToChartBy);
+router.post('/compare-analises', compareAnalyses);
 
 // Perfis
 router.get('/perfis', getAllPerfis);
