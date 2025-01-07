@@ -132,13 +132,17 @@ export default {
         api.post('/compare-analises', data),
 
     // Funções de análise rápida
-    createRapidAnalysisGroup: (data: { nomeGrupo: string; lado: string; imagens: string[] }) =>
-        api.post('/analises-rapidas', data),
+    createRapidAnalysisGroup: (formData: any) =>
+        api.post('/analises-rapidas', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        }),
 
     getRapidAnalysisGroup: (grupoId: string) =>
         api.get(`/analises-rapidas/${grupoId}`),
 
-    compareRapidAnalyses: (data: { grupoEsquerdoId: string; grupoDireitoId: string }) =>
+    compareRapidAnalyses: (data: { grupoId: string }) =>
         api.post('/analises-rapidas/comparar', data),
 
     // Perfis

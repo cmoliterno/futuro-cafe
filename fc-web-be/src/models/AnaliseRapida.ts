@@ -1,33 +1,65 @@
-import { Model, DataTypes } from "sequelize";
+import { DataTypes, Model } from "sequelize";
 import { sequelize } from '../services/DatabaseService';
 
 class AnaliseRapida extends Model {
     public id!: string;
     public nomeGrupo!: string;
     public lado!: "Esquerdo" | "Direito";
-    public readonly createdAt!: Date;
-    public readonly updatedAt!: Date;
+    public createdAt!: Date;
+    public updatedAt!: Date;
+    public grupoId!: string;
+    public analiseId!: string;
+
 }
 
 AnaliseRapida.init(
     {
         id: {
             type: DataTypes.UUID,
-            primaryKey: true,
             defaultValue: DataTypes.UUIDV4,
+            primaryKey: true,
         },
         nomeGrupo: {
             type: DataTypes.STRING,
             allowNull: false,
         },
         lado: {
-            type: DataTypes.ENUM("Esquerdo", "Direito"),
+            type: DataTypes.STRING, // Removido o CHECK constraint
             allowNull: false,
+            validate: {
+                isIn: [["Esquerdo", "Direito"]], // Validação no backend
+            },
+        },
+        analiseId: {
+            type: DataTypes.UUID,
+            allowNull: true,
+            references: {
+                model: 'tbAnalise',
+                key: 'Id',
+            },
+            field: "AnaliseId",
+        },
+        grupoId: {
+            type: DataTypes.UUID,
+            allowNull: true,
+            field: "GrupoId",
+        },
+        createdAt: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+            field: 'CreatedAt'
+        },
+        updatedAt: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+            field: 'UpdatedAt'
         },
     },
     {
         sequelize,
-        modelName: "tbAnaliseRapida",
+        modelName: "AnaliseRapida",
         tableName: "tbAnaliseRapida",
     }
 );

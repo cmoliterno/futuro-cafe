@@ -58,7 +58,7 @@ Analise.init({
     },
     talhaoId: {
         type: DataTypes.UUID,
-        allowNull: false,
+        allowNull: true,
         field: 'TalhaoId'
     },
     grupoId: {

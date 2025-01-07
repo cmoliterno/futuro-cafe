@@ -24,7 +24,11 @@ import { getAllGrupos, getGrupoById, createGrupo, updateGrupo, deleteGrupo } fro
 import { getAllProjetos, getProjetoById, createProjeto, updateProjeto, deleteProjeto } from '../controllers/ProjetoController';
 import { authenticateJWT } from '../middlewares/authenticateJWT';
 import multer from "multer";
-import {buscarAnalisesRapidasPorGrupo, criarAnaliseRapida} from "../controllers/AnaliseRapidaController";
+import {
+    buscarAnalisesRapidasPorGrupo,
+    compararAnalisesRapidas,
+    criarAnaliseRapida
+} from "../controllers/AnaliseRapidaController";
 
 
 const router = Router();
@@ -71,9 +75,17 @@ router.get('/talhoes/:talhaoId/analises', getPlotAnalyses);
 router.get('/analises', getFilteredAnalyses);
 
 
-// Aálise Rapida
-router.post("/analises-rapidas", criarAnaliseRapida);
+// Rotas de análise rápida
+router.post(
+    "/analises-rapidas",
+    upload.fields([
+        { name: "imagensEsquerdo", maxCount: 20 },
+        { name: "imagensDireito", maxCount: 20 },
+    ]),
+    criarAnaliseRapida
+);
 router.get("/analises-rapidas/:grupoId", buscarAnalisesRapidasPorGrupo);
+router.post("/analises-rapidas/comparar", compararAnalisesRapidas);
 
 
 // Estatísticas

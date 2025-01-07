@@ -5,6 +5,7 @@ import PessoaFisica from './PessoaFisica';
 export class Grupo extends Model {
     public id!: string;
     public nome!: string;
+    public pessoaFisicaId!: string;
     public createdAt!: Date;
     public lastUpdatedAt!: Date;
 }
@@ -20,6 +21,11 @@ Grupo.init({
         type: DataTypes.STRING(500),
         allowNull: false,
         field: 'Nome'
+    },
+    pessoaFisicaId: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        field: 'PessoaFisicaId',
     },
     createdAt: {
         type: DataTypes.DATE,

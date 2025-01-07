@@ -14,7 +14,7 @@ import exifReader from 'exifreader';
 
 const authService = new AuthService();
 // Função auxiliar p/ converter Buffer => ArrayBuffer
-function toArrayBuffer(buffer: Buffer): ArrayBuffer {
+export function toArrayBuffer(buffer: Buffer): ArrayBuffer {
     const ab = new ArrayBuffer(buffer.length);
     const view = new Uint8Array(ab);
     for (let i = 0; i < buffer.length; ++i) {
@@ -23,7 +23,7 @@ function toArrayBuffer(buffer: Buffer): ArrayBuffer {
     return ab;
 }
 
-function parseExifDate(dateTimeString: string): Date | null {
+export function parseExifDate(dateTimeString: string): Date | null {
     if (!dateTimeString) return null;
 
     const parts = dateTimeString.split(' ');
@@ -49,7 +49,7 @@ const AZURE_STORAGE_CONNECTION_STRING = process.env.AZURE_STORAGE_CONNECTION_STR
 const containerName = 'futurocafe';
 const blobServiceClient = BlobServiceClient.fromConnectionString(AZURE_STORAGE_CONNECTION_STRING);
 
-async function uploadToAzure(fileBuffer: Buffer, fileName: string): Promise<string> {
+export async function uploadToAzure(fileBuffer: Buffer, fileName: string): Promise<string> {
     const blobName = `analises/${uuidv4()}_${fileName}`;
     const containerClient = blobServiceClient.getContainerClient(containerName);
     const blockBlobClient = containerClient.getBlockBlobClient(blobName);
@@ -361,11 +361,14 @@ export const addPlotAnalysis = async (req: Request, res: Response) => {
     }
 
     try {
-        const talhaoExists = await Talhao.findByPk(talhaoId);
-        if (!talhaoExists) {
-            console.log(`Erro: Talhão com ID ${talhaoId} não encontrado`);
-            return res.status(404).json({ message: 'Talhão não encontrado' });
+        if (talhaoId != null) {
+            const talhaoExists = await Talhao.findByPk(talhaoId);
+            if (!talhaoExists) {
+                console.log(`Erro: Talhão com ID ${talhaoId} não encontrado`);
+                return res.status(404).json({ message: 'Talhão não encontrado' });
+            }
         }
+
 
         // 1) Upload imagem original no Azure
         const originalImageUrl = await uploadToAzure(formFile.buffer, formFile.originalname);
