@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { useNavigate } from 'react-router-dom'; // Importando o hook para navegação
+import {Link, useNavigate} from 'react-router-dom'; // Importando o hook para navegação
 import api from '../services/api'; // Importando o serviço de API
 
 const CadastroContainer = styled.div`
@@ -37,6 +37,19 @@ const ErrorMessage = styled.p`
 const SuccessMessage = styled.p`
   color: green;
   text-align: center;
+`;
+
+const Description = styled.p`
+  color: #666;
+  padding-top: 10%;
+`;
+
+const PolicyLink = styled(Link)`
+  color: #1a73e8;
+  text-decoration: none;
+  &:hover {
+    text-decoration: underline;
+  }
 `;
 
 const CadastroPage: React.FC = () => {
@@ -105,6 +118,10 @@ const CadastroPage: React.FC = () => {
             {error && <ErrorMessage>{error}</ErrorMessage>}
             {success && <SuccessMessage>{success}</SuccessMessage>} {/* Exibindo a mensagem de sucesso */}
             <Button onClick={handleRegister}>Cadastrar</Button>
+
+            <Description>
+                Para mais informações, consulte nossa <PolicyLink to="/politica-de-privacidade">Política de Privacidade</PolicyLink>.
+            </Description>
         </CadastroContainer>
     );
 };
