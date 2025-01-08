@@ -6,7 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 
 // Configuração inicial do Axios
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_BASE_URL2 || 'https://portal.futurocafe.com.br/api/',  //'http://localhost:3000/api',
+  baseURL: process.env.REACT_APP_API_BASE_URL2 || 'https://api.futurocafe.com.br/api/',  //'http://localhost:3000/api',
   timeout: parseInt(process.env.REACT_APP_API_TIMEOUT || '10000'),
   headers: {
     'Content-Type': 'application/json',
