@@ -13,7 +13,7 @@ const authService = new AuthService();
 
 // Serviço para criar análise rápida de forma assíncrona
 export const criarAnaliseRapida = async (req: Request, res: Response): Promise<Response> => {
-    console.log("Entrou criarAnaliseRapida:", req.body);
+    //console.log("Entrou criarAnaliseRapida:", req.body);
     const { descricao } = req.body;
 
     if (!descricao) {
@@ -28,7 +28,7 @@ export const criarAnaliseRapida = async (req: Request, res: Response): Promise<R
     const pessoaId: string | undefined = authService.verifyToken(token)?.userId;
 
     try {
-        console.log("🔧 Criando grupo...");
+        //console.log("🔧 Criando grupo...");
         const grupo = await Grupo.create({
             nome: descricao,
             pessoaFisicaId: pessoaId,
