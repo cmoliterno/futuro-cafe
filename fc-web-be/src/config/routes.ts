@@ -25,13 +25,42 @@ import { getAllProjetos, getProjetoById, createProjeto, updateProjeto, deletePro
 import { authenticateJWT } from '../middlewares/authenticateJWT';
 import multer from "multer";
 import {
-    buscarAnalisesRapidasPorGrupo,
+    buscarAnalisesRapidasPorGrupo, checkProcessingStatus,
     compararAnalisesRapidas,
     criarAnaliseRapida
 } from "../controllers/AnaliseRapidaController";
+import express from "express";
+import path from "path";
+import fs from "fs";
+import {pipeline} from "stream";
 
 
-const router = Router();
+const router = express.Router();
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, path.join(__dirname, "../../uploads"));
+    },
+    filename: (req, file, cb) => {
+        cb(null, `${Date.now()}-${file.originalname}`);
+    },
+});
+
+
+// Função para salvar imagens em paralelo usando Streams
+const saveImageStream = async (file: Express.Multer.File) => {
+    const outputPath = path.join(__dirname, "../../uploads", `stream-${file.originalname}`);
+    const writeStream = fs.createWriteStream(outputPath);
+
+    // Usamos a função pipeline para lidar com erros automaticamente
+    await pipeline(file.stream, writeStream);
+
+    console.log(`✅ Imagem salva via stream: ${outputPath}`);
+    return outputPath;
+};
+
+
+const upload = multer({ storage });
 
 // Definição das rotas de usuários (sem autenticação)
 router.post('/registrar', registerUser);
@@ -68,8 +97,6 @@ router.put('/talhoes/:id', updateTalhao);
 router.delete('/talhoes/:id', deleteTalhao);
 router.get('/talhoes/fazenda/:fazendaId', getTalhoesByFazenda);
 
-const upload = multer({ storage: multer.memoryStorage() });
-
 router.post('/talhoes/:talhaoId/analises', upload.single('formFile'), addPlotAnalysis);
 router.get('/talhoes/:talhaoId/analises', getPlotAnalyses);
 router.get('/analises', getFilteredAnalyses);
@@ -82,11 +109,18 @@ router.post(
         { name: "imagensEsquerdo", maxCount: 20 },
         { name: "imagensDireito", maxCount: 20 },
     ]),
+    (req, res, next) => {
+        console.log("✅ Upload concluído. Chamando próximo middleware...");
+        next();
+    },
     criarAnaliseRapida
 );
+
+
 router.get("/analises-rapidas/:grupoId", buscarAnalisesRapidasPorGrupo);
 router.post("/analises-rapidas/comparar", compararAnalisesRapidas);
-
+// Rota para verificar o status do processamento de uma análise rápida
+router.get('/analise-rapida/status/:analiseRapidaId', checkProcessingStatus);
 
 // Estatísticas
 router.get('/estatisticas', getEstatisticas);

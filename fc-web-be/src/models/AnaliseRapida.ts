@@ -4,11 +4,10 @@ import { sequelize } from '../services/DatabaseService';
 class AnaliseRapida extends Model {
     public id!: string;
     public nomeGrupo!: string;
-    public lado!: "Esquerdo" | "Direito";
+    public status!: string;
     public createdAt!: Date;
     public updatedAt!: Date;
     public grupoId!: string;
-    public analiseId!: string;
 
 }
 
@@ -23,21 +22,9 @@ AnaliseRapida.init(
             type: DataTypes.STRING,
             allowNull: false,
         },
-        lado: {
-            type: DataTypes.STRING, // Removido o CHECK constraint
+        status: {
+            type: DataTypes.STRING,
             allowNull: false,
-            validate: {
-                isIn: [["Esquerdo", "Direito"]], // Validação no backend
-            },
-        },
-        analiseId: {
-            type: DataTypes.UUID,
-            allowNull: true,
-            references: {
-                model: 'tbAnalise',
-                key: 'Id',
-            },
-            field: "AnaliseId",
         },
         grupoId: {
             type: DataTypes.UUID,

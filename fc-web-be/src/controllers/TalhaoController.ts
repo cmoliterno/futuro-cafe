@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import path from "path";
 import { Fazenda } from '../models/Fazenda';
 import Talhao from '../models/Talhao';
 import Plantio from '../models/Plantio';
@@ -10,7 +11,10 @@ import FormData from 'form-data';
 import { BlobServiceClient } from '@azure/storage-blob';
 import { v4 as uuidv4 } from 'uuid';
 import { AuthService } from '../services/AuthService';
-import exifReader from 'exifreader';
+import fs from "fs"; // Importação da versão síncrona
+import fsp from "fs/promises"; // Importação da versão assíncrona
+import * as exifReader from "exifreader";
+
 
 const authService = new AuthService();
 // Função auxiliar p/ converter Buffer => ArrayBuffer
@@ -49,15 +53,20 @@ const AZURE_STORAGE_CONNECTION_STRING = process.env.AZURE_STORAGE_CONNECTION_STR
 const containerName = 'futurocafe';
 const blobServiceClient = BlobServiceClient.fromConnectionString(AZURE_STORAGE_CONNECTION_STRING);
 
-export async function uploadToAzure(fileBuffer: Buffer, fileName: string): Promise<string> {
-    const blobName = `analises/${uuidv4()}_${fileName}`;
+export async function uploadToAzure(filePath: string, fileName: string): Promise<string> {
+    const blobName = `analises/${fileName}`;
     const containerClient = blobServiceClient.getContainerClient(containerName);
     const blockBlobClient = containerClient.getBlockBlobClient(blobName);
 
-    await blockBlobClient.uploadData(fileBuffer, {
+    // Cria um stream de leitura do arquivo no disco
+    const fileStream = fs.createReadStream(filePath);
+
+    // Faz o upload usando o stream
+    await blockBlobClient.uploadStream(fileStream, undefined, undefined, {
         blobHTTPHeaders: { blobContentType: "image/jpeg" },
     });
 
+    console.log(`✅ Upload concluído no Azure: ${blobName}`);
     return blockBlobClient.url;
 }
 
@@ -353,89 +362,91 @@ export const getFilteredAnalyses = async (req: Request, res: Response) => {
 
 export const addPlotAnalysis = async (req: Request, res: Response) => {
     const { talhaoId } = req.params;
+
+    let lado: string | null = null;
+    let analiseRapidaId: string | null = null;
+
+    if (req.body) {
+        lado = req.body.lado || null;
+        analiseRapidaId = req.body.analiseRapidaId || null;
+    }
+
     const formFile = req.file;
 
     if (!formFile) {
-        console.log('Erro: Arquivo de imagem não detectado');
-        return res.status(400).json({ message: 'Arquivo de imagem não detectado' });
+        console.log("Erro: Arquivo de imagem não detectado");
+        return res.status(400).json({ message: "Arquivo de imagem não detectado" });
     }
 
     try {
-        if (talhaoId != null) {
-            const talhaoExists = await Talhao.findByPk(talhaoId);
-            if (!talhaoExists) {
-                console.log(`Erro: Talhão com ID ${talhaoId} não encontrado`);
-                return res.status(404).json({ message: 'Talhão não encontrado' });
-            }
-        }
-
+        // Salva o arquivo no disco
+        const filePath = path.join(__dirname, "../../uploads", formFile.filename);
 
         // 1) Upload imagem original no Azure
-        const originalImageUrl = await uploadToAzure(formFile.buffer, formFile.originalname);
+        const originalImageUrl = await uploadToAzure(filePath, formFile.filename);
         console.log(`URL da imagem original: ${originalImageUrl}`);
+
+        await fsp.unlink(filePath);
 
         // 2) Ler metadados EXIF (data e coordenadas)
         let photoDate: Date | null = null;
         let photoCoords: string | null = null;
 
         try {
-            // Converter para ArrayBuffer
-            const arrayBuffer = toArrayBuffer(formFile.buffer);
-            // Carregar tags
-            const tags = exifReader.load(arrayBuffer);
+            // Lê o arquivo do disco
+            const fileBuffer = await fsp.readFile(filePath);
+            const tags = exifReader.load(fileBuffer); // Correção
 
             // Data
-            // exifReader geralmente armazena a data em `tags.DateTimeOriginal.description`
             const dateTimeOriginal = tags.DateTimeOriginal?.description;
             if (dateTimeOriginal) {
-                photoDate = parseExifDate(dateTimeOriginal);
+                photoDate = new Date(dateTimeOriginal); // Converte para data
             }
 
             // GPS
-            // Se existirem, ficam em tags.GPSLatitude, tags.GPSLongitude
             const gpsLat = tags.GPSLatitude?.description;
             const gpsLon = tags.GPSLongitude?.description;
             if (gpsLat && gpsLon) {
-                // ex: "12° 34' 56\" N" e "98° 76' 54\" W"
-                // Você pode armazenar "12° 34' 56\" N,98° 76' 54\" W"
-                // ou tentar converter para decimal; aqui faço algo simples:
-                photoCoords = gpsLat + ',' + gpsLon;
+                photoCoords = `${gpsLat},${gpsLon}`;
             }
         } catch (exifError) {
-            // Se não conseguir ler EXIF, não aborta, só loga
-            console.warn('Não foi possível ler metadados EXIF:', exifError);
+            console.warn("Não foi possível ler metadados EXIF:", exifError);
         }
 
         // 3) Chamar a API de predição
         const formData = new FormData();
-        formData.append('image', formFile.buffer, formFile.originalname);
+        formData.append("image", fs.createReadStream(filePath), formFile.originalname);
 
         const predictionResponse = await axios.post(
             `${process.env.PREDICTION_REQUEST_URL}`,
             formData,
-            {
-                headers: formData.getHeaders(),
-            }
+            { headers: formData.getHeaders() }
         );
         const predictionResult = predictionResponse.data;
-        console.log('Resultado da previsão:', predictionResult);
+        console.log("Resultado da previsão:", predictionResult);
 
         const { cherry, dry, green, greenYellow, raisin, total } = predictionResult.dataframe;
 
         if (cherry == null || dry == null || green == null || greenYellow == null || raisin == null || total == null) {
-            console.log('Erro: Dados incompletos recebidos da API externa.');
-            return res.status(500).json({ message: 'A API externa retornou dados incompletos.' });
+            console.log("Erro: Dados incompletos recebidos da API externa.");
+            return res.status(500).json({ message: "A API externa retornou dados incompletos." });
         }
 
         // 4) Se tiver imagem processada, subir também
         let processedImageUrl: string | null = null;
         if (predictionResult.image) {
-            const processedImageBuffer = Buffer.from(predictionResult.image, 'base64');
-            processedImageUrl = await uploadToAzure(processedImageBuffer, `resultado_${formFile.originalname}`);
+            const processedImageBuffer = Buffer.from(predictionResult.image, "base64");
+            const processedFilePath = path.join(__dirname, "../../uploads", `resultado_${formFile.filename}`);
+            await fsp.writeFile(processedFilePath, processedImageBuffer);
+
+            processedImageUrl = await uploadToAzure(processedFilePath, `resultado_${formFile.filename}`);
             console.log(`URL da imagem processada: ${processedImageUrl}`);
+
+            // Remove a imagem processada do disco
+            await fsp.unlink(processedFilePath);
         }
 
-        console.log('Criando análise no banco de dados com os seguintes dados:', {
+        console.log("Criando análise no banco de dados com os seguintes dados:", {
             talhaoId,
             cherry,
             dry,
@@ -446,7 +457,9 @@ export const addPlotAnalysis = async (req: Request, res: Response) => {
             imagemUrl: originalImageUrl,
             imagemResultadoUrl: processedImageUrl,
             coordenadas: photoCoords,
-            createdAt: photoDate || new Date() // se não tiver data EXIF, pega data atual
+            lado: lado || null,
+            analiseRapidaId: analiseRapidaId || null,
+            createdAt: photoDate || new Date(), // Se não tiver data EXIF, pega data atual
         });
 
         // 5) Inserir no banco (tabela tbAnalise)
@@ -461,19 +474,24 @@ export const addPlotAnalysis = async (req: Request, res: Response) => {
             imagemUrl: originalImageUrl,
             imagemResultadoUrl: processedImageUrl,
             coordenadas: photoCoords,
+            lado: lado || null,
+            analiseRapidaId: analiseRapidaId || null,
             createdAt: photoDate || new Date(),
-            lastUpdatedAt: new Date()
+            lastUpdatedAt: new Date(),
         });
 
-        console.log('Análise criada com sucesso no banco de dados:', newAnalysis);
+        console.log("Análise criada com sucesso no banco de dados:", newAnalysis);
+
+        // Remove o arquivo original do disco
+        await fsp.unlink(filePath);
 
         res.status(200).json({
-            message: 'Análise efetuada.',
-            analiseId: newAnalysis.id
+            message: "Análise efetuada.",
+            analiseId: newAnalysis.id,
         });
     } catch (error) {
-        console.error('Erro ao adicionar análise ao talhão:', error);
-        res.status(500).json({ message: 'Erro ao adicionar análise ao talhão', error });
+        console.error("Erro ao adicionar análise ao talhão:", error);
+        res.status(500).json({ message: "Erro ao adicionar análise ao talhão", error });
     }
 };
 

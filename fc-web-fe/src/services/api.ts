@@ -139,10 +139,16 @@ export default {
             },
         }),
 
+    // Verifica o status do processamento
+    async checkProcessingStatus(analiseRapidaId: string) {
+        const response = await api.get(`/analise-rapida/status/${analiseRapidaId}`);
+        return response.data;
+    },
+
     getRapidAnalysisGroup: (grupoId: string) =>
         api.get(`/analises-rapidas/${grupoId}`),
 
-    compareRapidAnalyses: (data: { grupoId: string }) =>
+    compareRapidAnalyses: (data: { analiseRapidaId: string }) =>
         api.post('/analises-rapidas/comparar', data),
 
     // Perfis

@@ -3,6 +3,8 @@ import { sequelize } from '../services/DatabaseService';
 
 export class Analise extends Model {
     public id!: string;
+    public analiseRapidaId!: string;
+    public lado!: "Esquerdo" | "Direito";
     public cherry!: number;
     public dry!: number;
     public green!: number;
@@ -25,6 +27,22 @@ Analise.init({
         defaultValue: DataTypes.UUIDV4,
         primaryKey: true,
         field: 'Id'
+    },
+    lado: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        validate: {
+            isIn: [["Esquerdo", "Direito"]],
+        },
+    },
+    analiseRapidaId: {
+        type: DataTypes.UUID,
+        allowNull: true,
+        references: {
+            model: 'tbAnaliseRapida',
+            key: 'Id',
+        },
+        field: "AnaliseRapidaId",
     },
     cherry: {
         type: DataTypes.INTEGER,
