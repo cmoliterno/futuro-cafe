@@ -16,6 +16,7 @@ import ResultadosAnaliseScreen from "../components/ResultadosAnaliseScreen";
 import ColetaImagens from "../components/ColetaImagensScreen";
 import ComparacaoAnaliseScreen from "../components/ComparacaoAnaliseScreen";
 import ComparacaoRapida from "../components/ComparacaoRapida";
+import PrivacyPolicyScreen from "../pages/PrivacyPolicyScreen";
 
 function AppRoutes() {
   return (
@@ -24,6 +25,7 @@ function AppRoutes() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/cadastro" element={<CadastroPage />} />
       <Route path="/recuperar-senha" element={<ForgotPasswordPage />} />
+    <Route path="/politica-de-privacidade" element={<PrivacyPolicyScreen />} />
 
       {/* Rotas protegidas */}
         <Route path="/talhoes" element={<ProtectedRoute element={<TalhoesPage />} />} />
@@ -37,6 +39,7 @@ function AppRoutes() {
         <Route path="/resultados-analise" element={<ProtectedRoute element={<ResultadosAnaliseScreen />} />} />
         <Route path="/comparacao" element={<ProtectedRoute element={<ComparacaoAnaliseScreen />} />} />
         <Route path="/analise-rapida" element={<ProtectedRoute element={<ComparacaoRapida />} />} />
+
     </Routes>
   );
 }
