@@ -386,8 +386,6 @@ export const addPlotAnalysis = async (req: Request, res: Response) => {
         const originalImageUrl = await uploadToAzure(filePath, formFile.filename);
         console.log(`URL da imagem original: ${originalImageUrl}`);
 
-        await fsp.unlink(filePath);
-
         // 2) Ler metadados EXIF (data e coordenadas)
         let photoDate: Date | null = null;
         let photoCoords: string | null = null;
@@ -423,7 +421,7 @@ export const addPlotAnalysis = async (req: Request, res: Response) => {
             { headers: formData.getHeaders() }
         );
         const predictionResult = predictionResponse.data;
-        console.log("Resultado da previsão:", predictionResult);
+        //console.log("Resultado da previsão:", predictionResult);
 
         const { cherry, dry, green, greenYellow, raisin, total } = predictionResult.dataframe;
 
@@ -440,27 +438,27 @@ export const addPlotAnalysis = async (req: Request, res: Response) => {
             await fsp.writeFile(processedFilePath, processedImageBuffer);
 
             processedImageUrl = await uploadToAzure(processedFilePath, `resultado_${formFile.filename}`);
-            console.log(`URL da imagem processada: ${processedImageUrl}`);
+            //console.log(`URL da imagem processada: ${processedImageUrl}`);
 
             // Remove a imagem processada do disco
             await fsp.unlink(processedFilePath);
         }
 
-        console.log("Criando análise no banco de dados com os seguintes dados:", {
-            talhaoId,
-            cherry,
-            dry,
-            green,
-            greenYellow,
-            raisin,
-            total,
-            imagemUrl: originalImageUrl,
-            imagemResultadoUrl: processedImageUrl,
-            coordenadas: photoCoords,
-            lado: lado || null,
-            analiseRapidaId: analiseRapidaId || null,
-            createdAt: photoDate || new Date(), // Se não tiver data EXIF, pega data atual
-        });
+        // console.log("Criando análise no banco de dados com os seguintes dados:", {
+        //     talhaoId,
+        //     cherry,
+        //     dry,
+        //     green,
+        //     greenYellow,
+        //     raisin,
+        //     total,
+        //     imagemUrl: originalImageUrl,
+        //     imagemResultadoUrl: processedImageUrl,
+        //     coordenadas: photoCoords,
+        //     lado: lado || null,
+        //     analiseRapidaId: analiseRapidaId || null,
+        //     createdAt: photoDate || new Date(), // Se não tiver data EXIF, pega data atual
+        // });
 
         // 5) Inserir no banco (tabela tbAnalise)
         const newAnalysis = await Analise.create({
@@ -480,7 +478,7 @@ export const addPlotAnalysis = async (req: Request, res: Response) => {
             lastUpdatedAt: new Date(),
         });
 
-        console.log("Análise criada com sucesso no banco de dados:", newAnalysis);
+        //console.log("Análise criada com sucesso no banco de dados:", newAnalysis);
 
         // Remove o arquivo original do disco
         await fsp.unlink(filePath);

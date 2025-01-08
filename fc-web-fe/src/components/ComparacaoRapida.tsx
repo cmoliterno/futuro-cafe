@@ -1,9 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import api from "../services/api";
 import imageCompression from "browser-image-compression";
-import { FaUpload, FaTrash, FaChartBar, FaSpinner } from "react-icons/fa";
+import { FaUpload, FaTrash, FaSpinner } from "react-icons/fa";
+import Chart from "chart.js/auto";
 
+// Styled Components
 const Container = styled.div`
   padding: 20px;
   background-color: #3e2723;
@@ -49,19 +51,19 @@ const FileInput = styled.input`
   display: none;
 `;
 
-const FileLabel = styled.label`
+const FileLabel = styled.label<{ disabled?: boolean }>`
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: #28a745;
+  background-color: ${(props) => (props.disabled ? "#6c757d" : "#28a745")};
   color: #fff;
   padding: 10px;
   border-radius: 5px;
-  cursor: pointer;
+  cursor: ${(props) => (props.disabled ? "not-allowed" : "pointer")};
   margin-bottom: 15px;
 
   &:hover {
-    background-color: #218838;
+    background-color: ${(props) => (props.disabled ? "#6c757d" : "#218838")};
   }
 `;
 
@@ -140,6 +142,14 @@ const Button = styled.button`
       background-color: #e0a800;
     }
   }
+
+  &.view-comparison {
+    background-color: #17a2b8;
+
+    &:hover {
+      background-color: #138496;
+    }
+  }
 `;
 
 const LoadingOverlay = styled.div<{ isVisible: boolean }>`
@@ -167,16 +177,29 @@ const SpinnerIcon = styled(FaSpinner)`
   }
 `;
 
-const ResultSection = styled.div`
-  margin-top: 30px;
+const ModalOverlay = styled.div<{ isVisible: boolean }>`
+  display: ${(props) => (props.isVisible ? "flex" : "none")};
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+`;
+
+const ModalContent = styled.div`
+  background-color: #ffffff;
+  padding: 20px;
+  border-radius: 10px;
+  width: 50%;
   text-align: center;
 `;
 
-const ComparisonImage = styled.img`
-  max-width: 45%;
-  height: auto;
-  border-radius: 10px;
-  object-fit: cover;
+const ChartContainer = styled.div`
+  margin-top: 30px;
 `;
 
 const ComparacaoRapida: React.FC = () => {
@@ -186,12 +209,85 @@ const ComparacaoRapida: React.FC = () => {
     const [isComparing, setIsComparing] = useState(false);
     const [comparisonResults, setComparisonResults] = useState<any>(null);
     const [loading, setLoading] = useState(false);
+    const [processing, setProcessing] = useState(false);
+    const [analiseRapidaId, setAnaliseRapidaId] = useState<string | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    useEffect(() => {
+        if (comparisonResults) {
+            renderChart(comparisonResults);
+        }
+    }, [comparisonResults]);
+
+    useEffect(() => {
+        if (processing && analiseRapidaId) {
+            const interval = setInterval(async () => {
+                try {
+                    const response = await api.checkProcessingStatus(analiseRapidaId);
+                    if (response.data.status === "COMPLETED") {
+                        const resultsResponse = await api.compareRapidAnalyses({
+                            analiseRapidaId,
+                        });
+                        setComparisonResults(resultsResponse.data);
+                        setProcessing(false);
+                    }
+                } catch (error) {
+                    console.error("Erro ao verificar o status do processamento:", error);
+                }
+            }, 5000);
+            return () => clearInterval(interval);
+        }
+    }, [processing, analiseRapidaId]);
+
+    const renderChart = (data: any) => {
+        const ctx = document.getElementById("comparisonChart") as HTMLCanvasElement;
+        if (ctx) {
+            new Chart(ctx, {
+                type: "bar",
+                data: {
+                    labels: ["Green", "GreenYellow", "Cherry", "Raisin", "Dry"],
+                    datasets: [
+                        {
+                            label: "Lado Esquerdo",
+                            data: [
+                                data.grupo.estatisticasEsquerdo.green,
+                                data.grupo.estatisticasEsquerdo.greenYellow,
+                                data.grupo.estatisticasEsquerdo.cherry,
+                                data.grupo.estatisticasEsquerdo.raisin,
+                                data.grupo.estatisticasEsquerdo.dry,
+                            ],
+                            backgroundColor: "rgba(75, 192, 192, 0.6)",
+                        },
+                        {
+                            label: "Lado Direito",
+                            data: [
+                                data.grupo.estatisticasDireito.green,
+                                data.grupo.estatisticasDireito.greenYellow,
+                                data.grupo.estatisticasDireito.cherry,
+                                data.grupo.estatisticasDireito.raisin,
+                                data.grupo.estatisticasDireito.dry,
+                            ],
+                            backgroundColor: "rgba(153, 102, 255, 0.6)",
+                        },
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                        },
+                    },
+                },
+            });
+        }
+    };
 
     const handleUpload = async (
         event: React.ChangeEvent<HTMLInputElement>,
         side: "left" | "right"
     ) => {
-        if (comparisonResults) return; // Bloqueia uploads após a comparação
+        if (comparisonResults) return;
 
         const files = event.target.files;
         if (files) {
@@ -200,8 +296,8 @@ const ComparacaoRapida: React.FC = () => {
                 const compressedFiles: File[] = [];
                 for (let file of Array.from(files).slice(0, 20)) {
                     const compressedFile = await imageCompression(file, {
-                        maxSizeMB: 1,
-                        maxWidthOrHeight: 1024,
+                        maxSizeMB: 0.5,
+                        maxWidthOrHeight: 800,
                         useWebWorker: true,
                     });
                     compressedFiles.push(compressedFile);
@@ -236,32 +332,20 @@ const ComparacaoRapida: React.FC = () => {
 
         setIsComparing(true);
         setLoading(true);
+        setProcessing(true);
 
         try {
-
-            // Cria o FormData
             const formData = new FormData();
             formData.append("descricao", descricao);
-
-            // 🔧 Adiciona as imagens ao FormData como arquivos reais
             leftImages.forEach((file) => {
                 formData.append("imagensEsquerdo", file);
             });
-
             rightImages.forEach((file) => {
                 formData.append("imagensDireito", file);
             });
 
-            // 🔧 Faz a chamada correta para o endpoint usando a função do `api.ts`
-            const grupoEsquerdoResponse = await api.createRapidAnalysisGroup(formData);
-
-            const grupoId = grupoEsquerdoResponse.data.grupo.id;
-
-            const comparisonResponse = await api.compareRapidAnalyses({
-                grupoId,
-            });
-
-            setComparisonResults(comparisonResponse.data);
+            const response = await api.createRapidAnalysisGroup(formData);
+            setAnaliseRapidaId(response.data.analiseRapidaId);
         } catch (error) {
             console.error("Erro na comparação:", error);
         } finally {
@@ -275,6 +359,7 @@ const ComparacaoRapida: React.FC = () => {
         setLeftImages([]);
         setRightImages([]);
         setComparisonResults(null);
+        setAnaliseRapidaId(null);
     };
 
     return (
@@ -302,20 +387,28 @@ const ComparacaoRapida: React.FC = () => {
                         multiple
                         accept="image/*"
                         onChange={(e) => handleUpload(e, "left")}
+                        disabled={!!comparisonResults}
                     />
-                    <FileLabel htmlFor="left-upload">
+                    <FileLabel htmlFor="left-upload" disabled={!!comparisonResults}>
                         <FaUpload style={{ marginRight: "5px" }} /> Upload
                     </FileLabel>
                     <ImagePreview>
                         {leftImages.map((file, idx) => (
                             <PreviewContainer key={idx}>
-                                <PreviewImage src={URL.createObjectURL(file)} alt={`Esquerdo ${idx}`} />
+                                <PreviewImage
+                                    src={URL.createObjectURL(file)}
+                                    alt={`Esquerdo ${idx}`}
+                                />
                                 <FileName>{file.name}</FileName>
                             </PreviewContainer>
                         ))}
                     </ImagePreview>
                     <ActionButtons>
-                        <Button className="delete" onClick={() => handleClear("left")}>
+                        <Button
+                            className="delete"
+                            onClick={() => handleClear("left")}
+                            disabled={!!comparisonResults}
+                        >
                             <FaTrash /> Limpar
                         </Button>
                     </ActionButtons>
@@ -329,20 +422,28 @@ const ComparacaoRapida: React.FC = () => {
                         multiple
                         accept="image/*"
                         onChange={(e) => handleUpload(e, "right")}
+                        disabled={!!comparisonResults}
                     />
-                    <FileLabel htmlFor="right-upload">
+                    <FileLabel htmlFor="right-upload" disabled={!!comparisonResults}>
                         <FaUpload style={{ marginRight: "5px" }} /> Upload
                     </FileLabel>
                     <ImagePreview>
                         {rightImages.map((file, idx) => (
                             <PreviewContainer key={idx}>
-                                <PreviewImage src={URL.createObjectURL(file)} alt={`Direito ${idx}`} />
+                                <PreviewImage
+                                    src={URL.createObjectURL(file)}
+                                    alt={`Direito ${idx}`}
+                                />
                                 <FileName>{file.name}</FileName>
                             </PreviewContainer>
                         ))}
                     </ImagePreview>
                     <ActionButtons>
-                        <Button className="delete" onClick={() => handleClear("right")}>
+                        <Button
+                            className="delete"
+                            onClick={() => handleClear("right")}
+                            disabled={!!comparisonResults}
+                        >
                             <FaTrash /> Limpar
                         </Button>
                     </ActionButtons>
@@ -351,8 +452,12 @@ const ComparacaoRapida: React.FC = () => {
 
             <ActionButtons>
                 {!comparisonResults ? (
-                    <Button className="compare" onClick={handleCompare} disabled={isComparing}>
-                        {isComparing ? "Comparando..." : "Comparar"}
+                    <Button
+                        className="compare"
+                        onClick={handleCompare}
+                        disabled={isComparing}
+                    >
+                        {isComparing ? "Enviando..." : "Enviar para análise"}
                     </Button>
                 ) : (
                     <Button className="new-comparison" onClick={handleNewComparison}>
@@ -362,14 +467,25 @@ const ComparacaoRapida: React.FC = () => {
             </ActionButtons>
 
             {comparisonResults && (
-                <ResultSection>
-                    <h2>Resultado da Comparação</h2>
-                    <div>
-                        <ComparisonImage src={comparisonResults.leftImage} alt="Esquerdo" />
-                        <ComparisonImage src={comparisonResults.rightImage} alt="Direito" />
-                    </div>
-                </ResultSection>
+                <ActionButtons>
+                    <Button
+                        className="view-comparison"
+                        onClick={() => setIsModalOpen(true)}
+                    >
+                        Visualizar Comparação
+                    </Button>
+                </ActionButtons>
             )}
+
+            <ModalOverlay isVisible={isModalOpen}>
+                <ModalContent>
+                    <h2>Comparação de Dados</h2>
+                    <ChartContainer>
+                        <canvas id="comparisonChart"></canvas>
+                    </ChartContainer>
+                    <Button onClick={() => setIsModalOpen(false)}>Fechar</Button>
+                </ModalContent>
+            </ModalOverlay>
         </Container>
     );
 };
