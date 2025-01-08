@@ -1,0 +1,56 @@
+Política de Privacidade do App Futuro Café
+Data de Vigência: 08 de janeiro de 2025
+
+Bem-vindo(a) ao Futuro Café. Esta Política de Privacidade descreve como coletamos, usamos, processamos, armazenamos e compartilhamos suas informações ao usar nosso aplicativo (“App”). Ela foi elaborada para cumprir os requisitos de privacidade, incluindo aqueles estabelecidos pela Google Play Store. Ao utilizar nosso App, você concorda com as práticas descritas nesta Política de Privacidade.
+
+1. Identidade do Desenvolvedor
+O Futuro Café é desenvolvido e mantido pela Qwize (“nós” ou “nosso”). Caso tenha dúvidas sobre esta Política de Privacidade ou sobre como tratamos seus dados, entre em contato conosco conforme descrito na Seção 8 (“Contato”).
+
+2. Como Acessamos, Coletamos e Usamos Seus Dados
+2.1. Informações Pessoais
+Ao preencher nosso formulário de cadastro ou leads, poderemos solicitar algumas informações pessoais, tais como:
+
+Nome
+E-mail
+Número de telefone
+Empresa/Organização
+Cargo
+Finalidades do Tratamento:
+
+Atender às suas solicitações e fornecer suporte relacionado ao App.
+Compreender suas necessidades e oferecer uma melhor experiência de uso.
+Enviar atualizações sobre nossos produtos, serviços ou promoções (somente com sua permissão prévia).
+2.2. Dados de Localização
+Para identificar o talhão da fazenda e fornecer análises agrícolas mais precisas, nosso App pode acessar e coletar informações de Localização (GPS).
+
+Finalidade: identificar a localização do talhão para análises de plantio, clima, produtividade e demais funcionalidades relacionadas à sua fazenda.
+Controle do Usuário: você pode optar por permitir ou não o acesso à localização do seu dispositivo por meio das configurações do sistema operacional. Caso opte por não fornecer sua localização, algumas funcionalidades do App podem ficar limitadas ou indisponíveis.
+2.3. Dados de Uso
+Também poderemos coletar automaticamente informações sobre como você interage com o nosso App, como por exemplo, o tipo de dispositivo, sistema operacional e estatísticas de uso, com o objetivo de:
+
+Melhorar o desempenho e a funcionalidade do App.
+Corrigir erros e otimizar a experiência do usuário.
+Analisar tendências de uso para aprimorar nossos serviços.
+3. Compartilhamento de Informações
+Não vendemos, alugamos ou compartilhamos informações pessoais para fins de marketing com terceiros sem sua permissão explícita.
+
+Prestadores de Serviços Confiáveis: podemos compartilhar informações com parceiros que nos ajudam a operar o App, processar dados e fornecer suporte técnico, desde que estes se comprometam a manter seus dados seguros e confidenciais e a utilizá-los apenas para os fins autorizados por nós.
+Conformidade Legal: podemos divulgar informações pessoais quando exigido por lei ou se acreditarmos que tal ação é necessária para cumprir uma obrigação legal, proteger nossos direitos, nossa segurança ou a de terceiros.
+4. Proteção e Segurança dos Dados
+Implementamos medidas de segurança físicas, eletrônicas e administrativas para proteger suas informações contra acesso não autorizado, divulgação, perda, uso indevido, alteração ou destruição. Isso inclui:
+
+Criptografia de dados quando aplicável.
+Controles de acesso restritos a funcionários e prestadores de serviços autorizados.
+Armazenamento Seguro de dados em servidores protegidos.
+5. Retenção e Exclusão de Dados
+Retemos suas informações apenas pelo tempo necessário para cumprir as finalidades descritas nesta Política ou conforme exigido por lei. Caso você deseje excluir seus dados ou solicitar a remoção de informações pessoais, entre em contato conosco (ver Seção 8, “Contato”). Faremos o possível para atender à sua solicitação dentro do prazo razoável e de acordo com a legislação aplicável.
+
+6. Mudanças nesta Política de Privacidade
+Podemos atualizar esta Política de Privacidade periodicamente para refletir mudanças em nossas práticas ou por motivos legais. Quando forem feitas alterações significativas, publicaremos a nova versão em nosso site e/ou notificaremos você por meio do App. Recomendamos que revise esta Política regularmente para manter-se informado(a) sobre como tratamos suas informações.
+
+7. Disponibilidade e Acesso
+URL Ativo: nossa Política de Privacidade está disponível em https://portal.futurocafe.com.br/politica-de-privacidade para consulta pública, sem restrições geográficas e em formato legível por qualquer navegador sem necessidade de plug-ins ou leitores especiais.
+No App e na Página de Detalhes do App: esta Política de Privacidade também está vinculada na página de “Detalhes do App” no Google Play Console, bem como dentro do próprio App, para fácil acesso a todos os usuários.
+8. Contato
+Se você tiver quaisquer dúvidas, preocupações ou solicitações relacionadas a esta Política de Privacidade ou ao tratamento de seus dados pessoais, entre em contato conosco pelo e-mail:
+E-mail: suporte@qwize.io
