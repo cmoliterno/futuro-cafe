@@ -50,9 +50,9 @@ export const criarAnaliseRapida = async (req: Request, res: Response): Promise<R
         });
 
         // Processa as imagens em background
-        processImages(imagensEsquerdo, imagensDireito, analiseRapida.id, grupo.id);
+        processImages(imagensEsquerdo, imagensDireito, analiseRapida.id, grupo.id, );
 
-        return res.status(201).json({ message: "Imagens enviadas para análise.", grupoId: grupo.id });
+        return res.status(201).json({ message: "Imagens enviadas para análise.", grupoId: grupo.id, analiseRapida: analiseRapida.id });
     } catch (error) {
         console.error("❌ Erro ao criar análise rápida:", error);
         return res.status(500).json({ error: "Erro ao criar análise rápida.", details: error });
