@@ -40,19 +40,32 @@ const UploadGroup = styled.div`
   background-color: #4e342e;
   padding: 20px;
   border-radius: 10px;
-  text-align: center;
-  border: 2px dashed #ccc;
-  transition: border-color 0.3s;
-
-  &:hover {
-    border-color: #fff;
-  }
 `;
 
 const UploadTitle = styled.h3`
   text-align: center;
   margin-bottom: 15px;
   color: #fff;
+`;
+
+const FileInput = styled.input`
+  display: none;
+`;
+
+const FileLabel = styled.label<{ disabled?: boolean }>`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: ${(props) => (props.disabled ? "#6c757d" : "#28a745")};
+  color: #fff;
+  padding: 10px;
+  border-radius: 5px;
+  cursor: ${(props) => (props.disabled ? "not-allowed" : "pointer")};
+  margin-bottom: 15px;
+
+  &:hover {
+    background-color: ${(props) => (props.disabled ? "#6c757d" : "#218838")};
+  }
 `;
 
 const ImagePreview = styled.div`
@@ -201,19 +214,25 @@ const ComparacaoRapida: React.FC = () => {
     const [processing, setProcessing] = useState(false);
     const [analiseRapidaId, setAnaliseRapidaId] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [isCompleted, setIsCompleted] = useState(false);
 
-    // Verifica se a análise foi concluída a cada 5 segundos
+    useEffect(() => {
+        if (comparisonResults) {
+            renderChart(comparisonResults);
+        }
+    }, [comparisonResults]);
+
+    // Lógica para verificar o status do processamento
     useEffect(() => {
         if (processing && analiseRapidaId) {
             const interval = setInterval(async () => {
                 try {
                     const response = await api.checkProcessingStatus(analiseRapidaId);
                     if (response.data.status === "COMPLETED") {
-                        const resultsResponse = await api.compareRapidAnalyses({ analiseRapidaId });
+                        const resultsResponse = await api.compareRapidAnalyses({
+                            analiseRapidaId,
+                        });
                         setComparisonResults(resultsResponse.data);
                         setProcessing(false);
-                        setIsCompleted(true);
                         clearInterval(interval);
                     }
                 } catch (error) {
@@ -225,7 +244,6 @@ const ComparacaoRapida: React.FC = () => {
         }
     }, [processing, analiseRapidaId]);
 
-    // Renderiza o gráfico usando Chart.js
     const renderChart = (data: any) => {
         const ctx = document.getElementById("comparisonChart") as HTMLCanvasElement;
         if (ctx) {
@@ -270,16 +288,6 @@ const ComparacaoRapida: React.FC = () => {
         }
     };
 
-    // Lida com o upload das imagens via drag and drop
-    const handleDrop = async (event: React.DragEvent<HTMLDivElement>, side: "left" | "right") => {
-        event.preventDefault();
-        if (comparisonResults) return;
-
-        const files = event.dataTransfer.files;
-        await handleFileUpload(files, side);
-    };
-
-    // Lida com o upload das imagens via seleção de arquivos
     const handleUpload = async (
         event: React.ChangeEvent<HTMLInputElement>,
         side: "left" | "right"
@@ -288,37 +296,31 @@ const ComparacaoRapida: React.FC = () => {
 
         const files = event.target.files;
         if (files) {
-            await handleFileUpload(files, side);
+            setLoading(true);
+            try {
+                const compressedFiles: File[] = [];
+                for (let file of Array.from(files).slice(0, 20)) {
+                    const compressedFile = await imageCompression(file, {
+                        maxSizeMB: 0.5,
+                        maxWidthOrHeight: 800,
+                        useWebWorker: true,
+                    });
+                    compressedFiles.push(compressedFile);
+                }
+
+                if (side === "left") {
+                    setLeftImages((prev) => [...prev, ...compressedFiles]);
+                } else {
+                    setRightImages((prev) => [...prev, ...compressedFiles]);
+                }
+            } catch (error) {
+                console.error("Erro no upload:", error);
+            } finally {
+                setLoading(false);
+            }
         }
     };
 
-    // Função para lidar com o upload de arquivos
-    const handleFileUpload = async (files: FileList, side: "left" | "right") => {
-        setLoading(true);
-        try {
-            const compressedFiles: File[] = [];
-            for (let file of Array.from(files).slice(0, 20)) {
-                const compressedFile = await imageCompression(file, {
-                    maxSizeMB: 0.5,
-                    maxWidthOrHeight: 800,
-                    useWebWorker: true,
-                });
-                compressedFiles.push(compressedFile);
-            }
-
-            if (side === "left") {
-                setLeftImages((prev) => [...prev, ...compressedFiles]);
-            } else {
-                setRightImages((prev) => [...prev, ...compressedFiles]);
-            }
-        } catch (error) {
-            console.error("Erro no upload:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // Limpa as imagens enviadas
     const handleClear = (side: "left" | "right") => {
         if (side === "left") {
             setLeftImages([]);
@@ -327,7 +329,6 @@ const ComparacaoRapida: React.FC = () => {
         }
     };
 
-    // Cria uma nova análise rápida
     const handleCreateAnalysis = async () => {
         if (!descricao || leftImages.length === 0 || rightImages.length === 0) {
             alert("Preencha a descrição e selecione as imagens.");
@@ -358,18 +359,12 @@ const ComparacaoRapida: React.FC = () => {
         }
     };
 
-    // Inicia uma nova comparação
     const handleNewComparison = () => {
         setDescricao("");
         setLeftImages([]);
         setRightImages([]);
         setComparisonResults(null);
         setAnaliseRapidaId(null);
-    };
-
-    // Previne o comportamento padrão de drag and drop
-    const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
-        event.preventDefault();
     };
 
     return (
@@ -389,11 +384,19 @@ const ComparacaoRapida: React.FC = () => {
             </LoadingOverlay>
 
             <UploadSection>
-                <UploadGroup
-                    onDrop={(e) => handleDrop(e, "left")}
-                    onDragOver={handleDragOver}
-                >
+                <UploadGroup>
                     <UploadTitle>Lado Esquerdo</UploadTitle>
+                    <FileInput
+                        id="left-upload"
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={(e) => handleUpload(e, "left")}
+                        disabled={!!comparisonResults}
+                    />
+                    <FileLabel htmlFor="left-upload" disabled={!!comparisonResults}>
+                        <FaUpload style={{ marginRight: "5px" }} /> Upload
+                    </FileLabel>
                     <ImagePreview>
                         {leftImages.map((file, idx) => (
                             <PreviewContainer key={idx}>
@@ -416,11 +419,19 @@ const ComparacaoRapida: React.FC = () => {
                     </ActionButtons>
                 </UploadGroup>
 
-                <UploadGroup
-                    onDrop={(e) => handleDrop(e, "right")}
-                    onDragOver={handleDragOver}
-                >
+                <UploadGroup>
                     <UploadTitle>Lado Direito</UploadTitle>
+                    <FileInput
+                        id="right-upload"
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={(e) => handleUpload(e, "right")}
+                        disabled={!!comparisonResults}
+                    />
+                    <FileLabel htmlFor="right-upload" disabled={!!comparisonResults}>
+                        <FaUpload style={{ marginRight: "5px" }} /> Upload
+                    </FileLabel>
                     <ImagePreview>
                         {rightImages.map((file, idx) => (
                             <PreviewContainer key={idx}>
@@ -444,12 +455,13 @@ const ComparacaoRapida: React.FC = () => {
                 </UploadGroup>
             </UploadSection>
 
-            {processing && !isCompleted && (
+            {processing && (
                 <UploadTitle>
                     Após a conclusão do processamento de todas as imagens, a comparação será liberada.
                 </UploadTitle>
             )}
             <ActionButtons>
+
                 {!processing ? (
                     <Button className="compare" onClick={handleCreateAnalysis} disabled={isComparing}>
                         {isComparing ? "Enviando..." : "Enviar para análise"}
