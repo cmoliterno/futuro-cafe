@@ -509,7 +509,7 @@ export const addFastAnalysis = async (req: Request, res: Response) => {
 
 export const addPlotAnalysis = async (req: Request, res: Response) => {
 
-    console.log("Entrando no: addPlotAnalysis", req);
+    console.log("Entrando no: addPlotAnalysis", req.params);
 
     const { talhaoId } = req.params;
     const formFile = req.file;

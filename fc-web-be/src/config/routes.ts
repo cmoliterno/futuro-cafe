@@ -60,7 +60,7 @@ const saveImageStream = async (file: Express.Multer.File) => {
 };
 
 
-const upload = multer({ storage });
+const upload = multer({ storage: multer.memoryStorage() });
 
 // Definição das rotas de usuários (sem autenticação)
 router.post('/registrar', registerUser);
