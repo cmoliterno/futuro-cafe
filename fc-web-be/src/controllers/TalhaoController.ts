@@ -65,6 +65,23 @@ async function uploadToAzure(fileBuffer: Buffer, fileName: string): Promise<stri
     return blockBlobClient.url;
 }
 
+export async function uploadToAzureByFast(filePath: string, fileName: string): Promise<string> {
+    const blobName = `analises/${fileName}`;
+    const containerClient = blobServiceClient.getContainerClient(containerName);
+    const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+
+    // Cria um stream de leitura do arquivo no disco
+    const fileStream = fs.createReadStream(filePath);
+
+    // Faz o upload usando o stream
+    await blockBlobClient.uploadStream(fileStream, undefined, undefined, {
+        blobHTTPHeaders: { blobContentType: "image/jpeg" },
+    });
+
+    console.log(`✅ Upload concluído no Azure: ${blobName}`);
+    return blockBlobClient.url;
+}
+
 export async function getAllTalhoes(req: Request, res: Response) {
     try {
         const token = req.headers.authorization?.split(' ')[1];
@@ -352,6 +369,139 @@ export const getFilteredAnalyses = async (req: Request, res: Response) => {
             success: false,
             hasErrors: true
         });
+    }
+};
+
+export const addFastAnalysis = async (req: Request, res: Response) => {
+    const { talhaoId } = req.params;
+
+    let lado: string | null = null;
+    let analiseRapidaId: string | null = null;
+
+    if (req.body) {
+        lado = req.body.lado || null;
+        analiseRapidaId = req.body.analiseRapidaId || null;
+    }
+
+    const formFile = req.file;
+
+    if (!formFile) {
+        console.log("Erro: Arquivo de imagem não detectado");
+        return res.status(400).json({ message: "Arquivo de imagem não detectado" });
+    }
+
+    try {
+        // Salva o arquivo no disco
+        const filePath = path.join(__dirname, "../../uploads", formFile.filename);
+
+        // 1) Upload imagem original no Azure
+        const originalImageUrl = await uploadToAzureByFast(filePath, formFile.filename);
+        console.log(`URL da imagem original: ${originalImageUrl}`);
+
+        // 2) Ler metadados EXIF (data e coordenadas)
+        let photoDate: Date | null = null;
+        let photoCoords: string | null = null;
+
+        try {
+            // Lê o arquivo do disco
+            const fileBuffer = await fsp.readFile(filePath);
+            const tags = exifReader.load(fileBuffer); // Correção
+
+            // Data
+            const dateTimeOriginal = tags.DateTimeOriginal?.description;
+            if (dateTimeOriginal) {
+                photoDate = new Date(dateTimeOriginal); // Converte para data
+            }
+
+            // GPS
+            const gpsLat = tags.GPSLatitude?.description;
+            const gpsLon = tags.GPSLongitude?.description;
+            if (gpsLat && gpsLon) {
+                photoCoords = `${gpsLat},${gpsLon}`;
+            }
+        } catch (exifError) {
+            console.warn("Não foi possível ler metadados EXIF:", exifError);
+        }
+
+        // 3) Chamar a API de predição
+        const formData = new FormData();
+        formData.append("image", fs.createReadStream(filePath), formFile.originalname);
+
+        const predictionResponse = await axios.post(
+            `${process.env.PREDICTION_REQUEST_URL}`,
+            formData,
+            { headers: formData.getHeaders() }
+        );
+        const predictionResult = predictionResponse.data;
+        //console.log("Resultado da previsão:", predictionResult);
+
+        const { cherry, dry, green, greenYellow, raisin, total } = predictionResult.dataframe;
+
+        if (cherry == null || dry == null || green == null || greenYellow == null || raisin == null || total == null) {
+            console.log("Erro: Dados incompletos recebidos da API externa.");
+            return res.status(500).json({ message: "A API externa retornou dados incompletos." });
+        }
+
+        // 4) Se tiver imagem processada, subir também
+        let processedImageUrl: string | null = null;
+        if (predictionResult.image) {
+            const processedImageBuffer = Buffer.from(predictionResult.image, "base64");
+            const processedFilePath = path.join(__dirname, "../../uploads", `resultado_${formFile.filename}`);
+            await fsp.writeFile(processedFilePath, processedImageBuffer);
+
+            processedImageUrl = await uploadToAzureByFast(processedFilePath, `resultado_${formFile.filename}`);
+            //console.log(`URL da imagem processada: ${processedImageUrl}`);
+
+            // Remove a imagem processada do disco
+            await fsp.unlink(processedFilePath);
+        }
+
+        // console.log("Criando análise no banco de dados com os seguintes dados:", {
+        //     talhaoId,
+        //     cherry,
+        //     dry,
+        //     green,
+        //     greenYellow,
+        //     raisin,
+        //     total,
+        //     imagemUrl: originalImageUrl,
+        //     imagemResultadoUrl: processedImageUrl,
+        //     coordenadas: photoCoords,
+        //     lado: lado || null,
+        //     analiseRapidaId: analiseRapidaId || null,
+        //     createdAt: photoDate || new Date(), // Se não tiver data EXIF, pega data atual
+        // });
+
+        // 5) Inserir no banco (tabela tbAnalise)
+        const newAnalysis = await Analise.create({
+            talhaoId,
+            cherry,
+            dry,
+            green,
+            greenYellow,
+            raisin,
+            total,
+            imagemUrl: originalImageUrl,
+            imagemResultadoUrl: processedImageUrl,
+            coordenadas: photoCoords,
+            lado: lado || null,
+            analiseRapidaId: analiseRapidaId || null,
+            createdAt: photoDate || new Date(),
+            lastUpdatedAt: new Date(),
+        });
+
+        //console.log("Análise criada com sucesso no banco de dados:", newAnalysis);
+
+        // Remove o arquivo original do disco
+        await fsp.unlink(filePath);
+
+        res.status(200).json({
+            message: "Análise efetuada.",
+            analiseId: newAnalysis.id,
+        });
+    } catch (error) {
+        console.error("Erro ao adicionar análise ao talhão:", error);
+        res.status(500).json({ message: "Erro ao adicionar análise ao talhão", error });
     }
 };
 

@@ -5,7 +5,7 @@ import { Op, QueryTypes } from "sequelize";
 import { sequelize } from "../services/DatabaseService";
 import Grupo from "../models/Grupo";
 import { AuthService } from "../services/AuthService";
-import {addPlotAnalysis} from "../controllers/TalhaoController";
+import {addFastAnalysis, addPlotAnalysis} from "../controllers/TalhaoController";
 import fs from "fs";
 import path from "path";
 
@@ -90,7 +90,7 @@ const processImages = async (
                             json: (data: any) => resolve(data),
                         } as unknown as Response;
 
-                        addPlotAnalysis(reqMock, resMock);
+                        addFastAnalysis(reqMock, resMock);
                     });
                 })
             );
