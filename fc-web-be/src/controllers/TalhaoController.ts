@@ -53,7 +53,19 @@ const AZURE_STORAGE_CONNECTION_STRING = process.env.AZURE_STORAGE_CONNECTION_STR
 const containerName = 'futurocafe';
 const blobServiceClient = BlobServiceClient.fromConnectionString(AZURE_STORAGE_CONNECTION_STRING);
 
-export async function uploadToAzure(filePath: string, fileName: string): Promise<string> {
+async function uploadToAzure(fileBuffer: Buffer, fileName: string): Promise<string> {
+    const blobName = `analises/${uuidv4()}_${fileName}`;
+    const containerClient = blobServiceClient.getContainerClient(containerName);
+    const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+
+    await blockBlobClient.uploadData(fileBuffer, {
+        blobHTTPHeaders: { blobContentType: "image/jpeg" },
+    });
+
+    return blockBlobClient.url;
+}
+
+export async function uploadToAzureByFast(filePath: string, fileName: string): Promise<string> {
     const blobName = `analises/${fileName}`;
     const containerClient = blobServiceClient.getContainerClient(containerName);
     const blockBlobClient = containerClient.getBlockBlobClient(blobName);
@@ -360,7 +372,7 @@ export const getFilteredAnalyses = async (req: Request, res: Response) => {
     }
 };
 
-export const addPlotAnalysis = async (req: Request, res: Response) => {
+export const addFastAnalysis = async (req: Request, res: Response) => {
     const { talhaoId } = req.params;
 
     let lado: string | null = null;
@@ -383,7 +395,7 @@ export const addPlotAnalysis = async (req: Request, res: Response) => {
         const filePath = path.join(__dirname, "../../uploads", formFile.filename);
 
         // 1) Upload imagem original no Azure
-        const originalImageUrl = await uploadToAzure(filePath, formFile.filename);
+        const originalImageUrl = await uploadToAzureByFast(filePath, formFile.filename);
         console.log(`URL da imagem original: ${originalImageUrl}`);
 
         // 2) Ler metadados EXIF (data e coordenadas)
@@ -437,7 +449,7 @@ export const addPlotAnalysis = async (req: Request, res: Response) => {
             const processedFilePath = path.join(__dirname, "../../uploads", `resultado_${formFile.filename}`);
             await fsp.writeFile(processedFilePath, processedImageBuffer);
 
-            processedImageUrl = await uploadToAzure(processedFilePath, `resultado_${formFile.filename}`);
+            processedImageUrl = await uploadToAzureByFast(processedFilePath, `resultado_${formFile.filename}`);
             //console.log(`URL da imagem processada: ${processedImageUrl}`);
 
             // Remove a imagem processada do disco
@@ -490,6 +502,129 @@ export const addPlotAnalysis = async (req: Request, res: Response) => {
     } catch (error) {
         console.error("Erro ao adicionar análise ao talhão:", error);
         res.status(500).json({ message: "Erro ao adicionar análise ao talhão", error });
+    }
+};
+
+export const addPlotAnalysis = async (req: Request, res: Response) => {
+    const { talhaoId } = req.params;
+    const formFile = req.file;
+
+    if (!formFile) {
+        console.log('Erro: Arquivo de imagem não detectado');
+        return res.status(400).json({ message: 'Arquivo de imagem não detectado' });
+    }
+
+    try {
+        const talhaoExists = await Talhao.findByPk(talhaoId);
+        if (!talhaoExists) {
+            console.log(`Erro: Talhão com ID ${talhaoId} não encontrado`);
+            return res.status(404).json({ message: 'Talhão não encontrado' });
+        }
+
+        // 1) Upload imagem original no Azure
+        const originalImageUrl = await uploadToAzure(formFile.buffer, formFile.originalname);
+        console.log(`URL da imagem original: ${originalImageUrl}`);
+
+        // 2) Ler metadados EXIF (data e coordenadas)
+        let photoDate: Date | null = null;
+        let photoCoords: string | null = null;
+
+        try {
+            // Converter para ArrayBuffer
+            const arrayBuffer = toArrayBuffer(formFile.buffer);
+            // Carregar tags
+            const tags = exifReader.load(arrayBuffer);
+
+            // Data
+            // exifReader geralmente armazena a data em `tags.DateTimeOriginal.description`
+            const dateTimeOriginal = tags.DateTimeOriginal?.description;
+            if (dateTimeOriginal) {
+                photoDate = parseExifDate(dateTimeOriginal);
+            }
+
+            // GPS
+            // Se existirem, ficam em tags.GPSLatitude, tags.GPSLongitude
+            const gpsLat = tags.GPSLatitude?.description;
+            const gpsLon = tags.GPSLongitude?.description;
+            if (gpsLat && gpsLon) {
+                // ex: "12° 34' 56\" N" e "98° 76' 54\" W"
+                // Você pode armazenar "12° 34' 56\" N,98° 76' 54\" W"
+                // ou tentar converter para decimal; aqui faço algo simples:
+                photoCoords = gpsLat + ',' + gpsLon;
+            }
+        } catch (exifError) {
+            // Se não conseguir ler EXIF, não aborta, só loga
+            console.warn('Não foi possível ler metadados EXIF:', exifError);
+        }
+
+        // 3) Chamar a API de predição
+        const formData = new FormData();
+        formData.append('image', formFile.buffer, formFile.originalname);
+
+        const predictionResponse = await axios.post(
+            `${process.env.PREDICTION_REQUEST_URL}`,
+            formData,
+            {
+                headers: formData.getHeaders(),
+            }
+        );
+        const predictionResult = predictionResponse.data;
+        console.log('Resultado da previsão:', predictionResult);
+
+        const { cherry, dry, green, greenYellow, raisin, total } = predictionResult.dataframe;
+
+        if (cherry == null || dry == null || green == null || greenYellow == null || raisin == null || total == null) {
+            console.log('Erro: Dados incompletos recebidos da API externa.');
+            return res.status(500).json({ message: 'A API externa retornou dados incompletos.' });
+        }
+
+        // 4) Se tiver imagem processada, subir também
+        let processedImageUrl: string | null = null;
+        if (predictionResult.image) {
+            const processedImageBuffer = Buffer.from(predictionResult.image, 'base64');
+            processedImageUrl = await uploadToAzure(processedImageBuffer, `resultado_${formFile.originalname}`);
+            console.log(`URL da imagem processada: ${processedImageUrl}`);
+        }
+
+        console.log('Criando análise no banco de dados com os seguintes dados:', {
+            talhaoId,
+            cherry,
+            dry,
+            green,
+            greenYellow,
+            raisin,
+            total,
+            imagemUrl: originalImageUrl,
+            imagemResultadoUrl: processedImageUrl,
+            coordenadas: photoCoords,
+            createdAt: photoDate || new Date() // se não tiver data EXIF, pega data atual
+        });
+
+        // 5) Inserir no banco (tabela tbAnalise)
+        const newAnalysis = await Analise.create({
+            talhaoId,
+            cherry,
+            dry,
+            green,
+            greenYellow,
+            raisin,
+            total,
+            imagemUrl: originalImageUrl,
+            imagemResultadoUrl: processedImageUrl,
+            coordenadas: photoCoords,
+            createdAt: photoDate || new Date(),
+            lastUpdatedAt: new Date()
+        });
+
+        console.log('Análise criada com sucesso no banco de dados:', newAnalysis);
+
+        res.status(200).json({
+            message: 'Análise efetuada.',
+            analiseId: newAnalysis.id
+        });
+    } catch (error) {
+        console.error('Erro ao adicionar análise ao talhão:', error);
+        res.status(500).json({ message: 'Erro ao adicionar análise ao talhão', error });
     }
 };
 

@@ -5,7 +5,7 @@ import { Op, QueryTypes } from "sequelize";
 import { sequelize } from "../services/DatabaseService";
 import Grupo from "../models/Grupo";
 import { AuthService } from "../services/AuthService";
-import { addPlotAnalysis } from "../controllers/TalhaoController";
+import {addFastAnalysis, addPlotAnalysis} from "../controllers/TalhaoController";
 import fs from "fs";
 import path from "path";
 
@@ -52,7 +52,7 @@ export const criarAnaliseRapida = async (req: Request, res: Response): Promise<R
         // Processa as imagens em background
         processImages(imagensEsquerdo, imagensDireito, analiseRapida.id, grupo.id, );
 
-        return res.status(201).json({ message: "Imagens enviadas para análise.", grupoId: grupo.id, analiseRapida: analiseRapida.id });
+        return res.status(201).json({ message: "Imagens enviadas para análise.", grupoId: grupo.id, analiseRapidaId: analiseRapida.id });
     } catch (error) {
         console.error("❌ Erro ao criar análise rápida:", error);
         return res.status(500).json({ error: "Erro ao criar análise rápida.", details: error });
@@ -90,7 +90,7 @@ const processImages = async (
                             json: (data: any) => resolve(data),
                         } as unknown as Response;
 
-                        addPlotAnalysis(reqMock, resMock);
+                        addFastAnalysis(reqMock, resMock);
                     });
                 })
             );
@@ -140,7 +140,7 @@ export const compararAnalisesRapidas = async (req: Request, res: Response) => {
 
     try {
         const analiseRapida = await AnaliseRapida.findOne({
-            where: { analiseRapidaId: analiseRapidaId },
+            where: { id: analiseRapidaId },
         });
 
         if (!analiseRapida) {
@@ -158,7 +158,7 @@ export const compararAnalisesRapidas = async (req: Request, res: Response) => {
                         COALESCE(SUM(dry), 0) AS dry,
                         COALESCE(SUM(total), 0) AS total
                     FROM tbAnalise
-                    WHERE AnaliseRapidaId = :analiseRapidaId AND lado = :lado
+                    WHERE AnaliseRapidaId = :analiseRapidaId AND Lado = :lado
                 `,
                 {
                     replacements: { analiseRapidaId: analiseRapida.id, lado },

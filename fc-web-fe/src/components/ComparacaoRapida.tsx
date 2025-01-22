@@ -1,11 +1,22 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import styled from "styled-components";
+import { useDropzone } from "react-dropzone";
 import api from "../services/api";
 import imageCompression from "browser-image-compression";
-import { FaUpload, FaTrash, FaSpinner } from "react-icons/fa";
-import Chart from "chart.js/auto";
+import {
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    Tooltip,
+    Legend,
+    CartesianGrid,
+    LabelList,
+} from "recharts";
+// import Chart from "chart.js/auto"; // <-- Comente/Remova se for trocar por Recharts
+import { FaUpload, FaTrash, FaSpinner, FaSync, FaTimes } from "react-icons/fa";
 
-// Styled Components
+// Styled Components (iguais aos anteriores)
 const Container = styled.div`
   padding: 20px;
   background-color: #3e2723;
@@ -26,6 +37,11 @@ const DescriptionInput = styled.input`
   border-radius: 5px;
   border: none;
   font-size: 16px;
+
+  &:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+  }
 `;
 
 const UploadSection = styled.div`
@@ -48,23 +64,57 @@ const UploadTitle = styled.h3`
   color: #fff;
 `;
 
+const DropZoneContainer = styled.div<{
+    isDragActive: boolean;
+    isDisabled?: boolean;
+}>`
+  border: 2px dashed #fff;
+  border-color: ${({ isDragActive }) => (isDragActive ? "#28a745" : "#fff")};
+  padding: 20px;
+  text-align: center;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.3s;
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  ${({ isDisabled }) =>
+          isDisabled &&
+          `
+    pointer-events: none;
+    opacity: 0.6;
+    cursor: not-allowed;
+  `}
+`;
+
+const DropZoneText = styled.p`
+  margin: 10px 0;
+  color: #ccc;
+  font-size: 14px;
+`;
+
 const FileInput = styled.input`
   display: none;
 `;
 
 const FileLabel = styled.label<{ disabled?: boolean }>`
-  display: flex;
-  justify-content: center;
+  display: inline-flex;
   align-items: center;
   background-color: ${(props) => (props.disabled ? "#6c757d" : "#28a745")};
   color: #fff;
   padding: 10px;
   border-radius: 5px;
   cursor: ${(props) => (props.disabled ? "not-allowed" : "pointer")};
-  margin-bottom: 15px;
+  margin-top: 15px;
+  font-size: 14px;
 
   &:hover {
     background-color: ${(props) => (props.disabled ? "#6c757d" : "#218838")};
+  }
+
+  svg {
+    margin-right: 5px;
   }
 `;
 
@@ -76,6 +126,7 @@ const ImagePreview = styled.div`
 `;
 
 const PreviewContainer = styled.div`
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -91,6 +142,22 @@ const PreviewImage = styled.img`
 
   &:hover {
     opacity: 0.8;
+  }
+`;
+
+const RemoveIcon = styled(FaTimes)`
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  color: #dc3545;
+  background-color: #fff;
+  border-radius: 50%;
+  padding: 2px;
+  font-size: 14px;
+  cursor: pointer;
+
+  &:hover {
+    transform: scale(1.1);
   }
 `;
 
@@ -151,6 +218,11 @@ const Button = styled.button`
       background-color: #138496;
     }
   }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
 `;
 
 const LoadingOverlay = styled.div<{ isVisible: boolean }>`
@@ -195,15 +267,23 @@ const ModalContent = styled.div`
   background-color: #ffffff;
   padding: 20px;
   border-radius: 10px;
-  width: 50%;
+  width: 60%;
+  max-width: 1000px; /* Ajuste se quiser */
   text-align: center;
+  max-height: 90%;
+  overflow-y: auto;
 `;
 
 const ChartContainer = styled.div`
   margin-top: 30px;
 `;
 
-// Componente Principal
+// Função para formatar percentual
+const formatPercent = (value: number, total: number) => {
+    if (!total || total === 0) return "0%";
+    return `${((value / total) * 100).toFixed(2)}%`;
+};
+
 const ComparacaoRapida: React.FC = () => {
     const [descricao, setDescricao] = useState("");
     const [leftImages, setLeftImages] = useState<File[]>([]);
@@ -215,13 +295,97 @@ const ComparacaoRapida: React.FC = () => {
     const [analiseRapidaId, setAnaliseRapidaId] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    useEffect(() => {
-        if (comparisonResults) {
-            renderChart(comparisonResults);
-        }
-    }, [comparisonResults]);
+    // ---- (1) Vamos criar um state para armazenar os dados formatados do gráfico Recharts
+    const [chartData, setChartData] = useState<any[]>([]);
 
-    // Lógica para verificar o status do processamento
+    const compressAndAddFiles = async (files: File[], side: "left" | "right") => {
+        setLoading(true);
+        try {
+            const compressedFiles: File[] = [];
+            for (let file of files.slice(0, 20)) {
+                const compressedFile = await imageCompression(file, {
+                    maxSizeMB: 0.5,
+                    maxWidthOrHeight: 800,
+                    useWebWorker: true,
+                });
+                compressedFiles.push(compressedFile);
+            }
+
+            if (side === "left") {
+                setLeftImages((prev) => [...prev, ...compressedFiles]);
+            } else {
+                setRightImages((prev) => [...prev, ...compressedFiles]);
+            }
+        } catch (error) {
+            console.error("Erro no upload:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Dropzone LADO ESQUERDO
+    const onDropLeft = useCallback(
+        (acceptedFiles: File[]) => {
+            if (processing || comparisonResults) return;
+            compressAndAddFiles(acceptedFiles, "left");
+        },
+        [processing, comparisonResults]
+    );
+    const {
+        getRootProps: getLeftRootProps,
+        getInputProps: getLeftInputProps,
+        isDragActive: isLeftDragActive,
+    } = useDropzone({
+        onDrop: onDropLeft,
+        accept: { "image/*": [] },
+        maxFiles: 20,
+        disabled: processing || !!comparisonResults,
+    });
+
+    // Dropzone LADO DIREITO
+    const onDropRight = useCallback(
+        (acceptedFiles: File[]) => {
+            if (processing || comparisonResults) return;
+            compressAndAddFiles(acceptedFiles, "right");
+        },
+        [processing, comparisonResults]
+    );
+    const {
+        getRootProps: getRightRootProps,
+        getInputProps: getRightInputProps,
+        isDragActive: isRightDragActive,
+    } = useDropzone({
+        onDrop: onDropRight,
+        accept: { "image/*": [] },
+        maxFiles: 20,
+        disabled: processing || !!comparisonResults,
+    });
+
+    // Verificar status manualmente
+    const handleCheckStatus = async () => {
+        if (!analiseRapidaId) return;
+        console.log("Verificando status no backend...");
+        try {
+            const response = await api.checkProcessingStatus(analiseRapidaId);
+            console.log("Resposta do checkProcessingStatus:", response.data);
+
+            if (response.data.status === "COMPLETED") {
+                // Pega resultados
+                const resultsResponse = await api.compareRapidAnalyses({
+                    analiseRapidaId,
+                });
+                console.log("Resultado final da análise:", resultsResponse.data);
+                setComparisonResults(resultsResponse.data);
+                setProcessing(false);
+            } else {
+                alert("Ainda processando... Tente novamente em alguns segundos!");
+            }
+        } catch (error) {
+            console.error("Erro ao verificar o status do processamento:", error);
+        }
+    };
+
+    // Polling automático
     useEffect(() => {
         if (processing && analiseRapidaId) {
             const interval = setInterval(async () => {
@@ -244,81 +408,73 @@ const ComparacaoRapida: React.FC = () => {
         }
     }, [processing, analiseRapidaId]);
 
-    const renderChart = (data: any) => {
-        const ctx = document.getElementById("comparisonChart") as HTMLCanvasElement;
-        if (ctx) {
-            new Chart(ctx, {
-                type: "bar",
-                data: {
-                    labels: ["Green", "GreenYellow", "Cherry", "Raisin", "Dry"],
-                    datasets: [
-                        {
-                            label: "Lado Esquerdo",
-                            data: [
-                                data.grupo.estatisticasEsquerdo.green,
-                                data.grupo.estatisticasEsquerdo.greenYellow,
-                                data.grupo.estatisticasEsquerdo.cherry,
-                                data.grupo.estatisticasEsquerdo.raisin,
-                                data.grupo.estatisticasEsquerdo.dry,
-                            ],
-                            backgroundColor: "rgba(75, 192, 192, 0.6)",
-                        },
-                        {
-                            label: "Lado Direito",
-                            data: [
-                                data.grupo.estatisticasDireito.green,
-                                data.grupo.estatisticasDireito.greenYellow,
-                                data.grupo.estatisticasDireito.cherry,
-                                data.grupo.estatisticasDireito.raisin,
-                                data.grupo.estatisticasDireito.dry,
-                            ],
-                            backgroundColor: "rgba(153, 102, 255, 0.6)",
-                        },
-                    ],
+    // ----------------------------------
+    // (2) Assim que tiver "comparisonResults", montamos o "chartData" para Recharts
+    // ----------------------------------
+    useEffect(() => {
+        if (comparisonResults) {
+            // Supondo que comparisonResults tenha algo como:
+            //  comparisonResults.grupo.estatisticasEsquerdo.{ green, greenYellow, ... }
+            //  comparisonResults.grupo.estatisticasDireito.{ green, greenYellow, ... }
+            // Precisamos montar 2 objetos: um para o "Esquerdo", outro para o "Direito".
+            const leftStats = comparisonResults.grupo.estatisticasEsquerdo;
+            const rightStats = comparisonResults.grupo.estatisticasDireito;
+
+            // Vamos pegar o total de cada lado (some de todos)
+            const totalLeft =
+                leftStats.green +
+                leftStats.greenYellow +
+                leftStats.cherry +
+                leftStats.raisin +
+                leftStats.dry;
+            const totalRight =
+                rightStats.green +
+                rightStats.greenYellow +
+                rightStats.cherry +
+                rightStats.raisin +
+                rightStats.dry;
+
+            // Monta array para Recharts
+            const dataForChart = [
+                {
+                    nome: "Esquerdo",
+                    green: leftStats.green,
+                    greenYellow: leftStats.greenYellow,
+                    cherry: leftStats.cherry,
+                    raisin: leftStats.raisin,
+                    dry: leftStats.dry,
+                    total: totalLeft,
                 },
-                options: {
-                    responsive: true,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                        },
-                    },
+                {
+                    nome: "Direito",
+                    green: rightStats.green,
+                    greenYellow: rightStats.greenYellow,
+                    cherry: rightStats.cherry,
+                    raisin: rightStats.raisin,
+                    dry: rightStats.dry,
+                    total: totalRight,
                 },
-            });
+            ];
+            setChartData(dataForChart);
         }
-    };
+    }, [comparisonResults]);
+
+    // (Opcional) Se antes usávamos Chart.js, poderíamos comentar:
+    // useEffect(() => {
+    //   if (comparisonResults) {
+    //     renderChart(comparisonResults);
+    //   }
+    // }, [comparisonResults]);
 
     const handleUpload = async (
         event: React.ChangeEvent<HTMLInputElement>,
         side: "left" | "right"
     ) => {
-        if (comparisonResults) return;
+        if (processing || comparisonResults) return;
+        if (!event.target.files) return;
 
-        const files = event.target.files;
-        if (files) {
-            setLoading(true);
-            try {
-                const compressedFiles: File[] = [];
-                for (let file of Array.from(files).slice(0, 20)) {
-                    const compressedFile = await imageCompression(file, {
-                        maxSizeMB: 0.5,
-                        maxWidthOrHeight: 800,
-                        useWebWorker: true,
-                    });
-                    compressedFiles.push(compressedFile);
-                }
-
-                if (side === "left") {
-                    setLeftImages((prev) => [...prev, ...compressedFiles]);
-                } else {
-                    setRightImages((prev) => [...prev, ...compressedFiles]);
-                }
-            } catch (error) {
-                console.error("Erro no upload:", error);
-            } finally {
-                setLoading(false);
-            }
-        }
+        const files = Array.from(event.target.files);
+        compressAndAddFiles(files, side);
     };
 
     const handleClear = (side: "left" | "right") => {
@@ -326,6 +482,14 @@ const ComparacaoRapida: React.FC = () => {
             setLeftImages([]);
         } else {
             setRightImages([]);
+        }
+    };
+
+    const handleRemoveSingle = (side: "left" | "right", index: number) => {
+        if (side === "left") {
+            setLeftImages((prev) => prev.filter((_, i) => i !== index));
+        } else {
+            setRightImages((prev) => prev.filter((_, i) => i !== index));
         }
     };
 
@@ -341,14 +505,11 @@ const ComparacaoRapida: React.FC = () => {
         try {
             const formData = new FormData();
             formData.append("descricao", descricao);
-            leftImages.forEach((file) => {
-                formData.append("imagensEsquerdo", file);
-            });
-            rightImages.forEach((file) => {
-                formData.append("imagensDireito", file);
-            });
+            leftImages.forEach((file) => formData.append("imagensEsquerdo", file));
+            rightImages.forEach((file) => formData.append("imagensDireito", file));
 
             const response = await api.createRapidAnalysisGroup(formData);
+            console.log("Análise criada:", response.data);
             setAnaliseRapidaId(response.data.analiseRapidaId);
             setProcessing(true);
         } catch (error) {
@@ -365,6 +526,8 @@ const ComparacaoRapida: React.FC = () => {
         setRightImages([]);
         setComparisonResults(null);
         setAnaliseRapidaId(null);
+        setProcessing(false);
+        setChartData([]);
     };
 
     return (
@@ -376,7 +539,7 @@ const ComparacaoRapida: React.FC = () => {
                 placeholder="Descrição da Análise"
                 value={descricao}
                 onChange={(e) => setDescricao(e.target.value)}
-                disabled={!!comparisonResults}
+                disabled={processing || !!comparisonResults}
             />
 
             <LoadingOverlay isVisible={loading}>
@@ -384,19 +547,39 @@ const ComparacaoRapida: React.FC = () => {
             </LoadingOverlay>
 
             <UploadSection>
+                {/* LADO ESQUERDO */}
                 <UploadGroup>
                     <UploadTitle>Lado Esquerdo</UploadTitle>
+
+                    <DropZoneContainer
+                        {...getLeftRootProps()}
+                        isDragActive={isLeftDragActive}
+                        isDisabled={processing || !!comparisonResults}
+                    >
+                        <input {...getLeftInputProps()} />
+                        <DropZoneText>
+                            {isLeftDragActive
+                                ? "Solte as imagens aqui..."
+                                : "Arraste e solte as imagens aqui ou clique para selecionar"}
+                        </DropZoneText>
+                    </DropZoneContainer>
+
                     <FileInput
                         id="left-upload"
                         type="file"
                         multiple
                         accept="image/*"
                         onChange={(e) => handleUpload(e, "left")}
-                        disabled={!!comparisonResults}
+                        disabled={processing || !!comparisonResults}
                     />
-                    <FileLabel htmlFor="left-upload" disabled={!!comparisonResults}>
-                        <FaUpload style={{ marginRight: "5px" }} /> Upload
+                    <FileLabel
+                        htmlFor="left-upload"
+                        disabled={processing || !!comparisonResults}
+                    >
+                        <FaUpload />
+                        Upload
                     </FileLabel>
+
                     <ImagePreview>
                         {leftImages.map((file, idx) => (
                             <PreviewContainer key={idx}>
@@ -404,6 +587,9 @@ const ComparacaoRapida: React.FC = () => {
                                     src={URL.createObjectURL(file)}
                                     alt={`Esquerdo ${idx}`}
                                 />
+                                {!processing && !comparisonResults && (
+                                    <RemoveIcon onClick={() => handleRemoveSingle("left", idx)} />
+                                )}
                                 <FileName>{file.name}</FileName>
                             </PreviewContainer>
                         ))}
@@ -412,26 +598,47 @@ const ComparacaoRapida: React.FC = () => {
                         <Button
                             className="delete"
                             onClick={() => handleClear("left")}
-                            disabled={!!comparisonResults}
+                            disabled={processing || !!comparisonResults}
                         >
-                            <FaTrash /> Limpar
+                            <FaTrash />
+                            Limpar
                         </Button>
                     </ActionButtons>
                 </UploadGroup>
 
+                {/* LADO DIREITO */}
                 <UploadGroup>
                     <UploadTitle>Lado Direito</UploadTitle>
+
+                    <DropZoneContainer
+                        {...getRightRootProps()}
+                        isDragActive={isRightDragActive}
+                        isDisabled={processing || !!comparisonResults}
+                    >
+                        <input {...getRightInputProps()} />
+                        <DropZoneText>
+                            {isRightDragActive
+                                ? "Solte as imagens aqui..."
+                                : "Arraste e solte as imagens aqui ou clique para selecionar"}
+                        </DropZoneText>
+                    </DropZoneContainer>
+
                     <FileInput
                         id="right-upload"
                         type="file"
                         multiple
                         accept="image/*"
                         onChange={(e) => handleUpload(e, "right")}
-                        disabled={!!comparisonResults}
+                        disabled={processing || !!comparisonResults}
                     />
-                    <FileLabel htmlFor="right-upload" disabled={!!comparisonResults}>
-                        <FaUpload style={{ marginRight: "5px" }} /> Upload
+                    <FileLabel
+                        htmlFor="right-upload"
+                        disabled={processing || !!comparisonResults}
+                    >
+                        <FaUpload />
+                        Upload
                     </FileLabel>
+
                     <ImagePreview>
                         {rightImages.map((file, idx) => (
                             <PreviewContainer key={idx}>
@@ -439,6 +646,9 @@ const ComparacaoRapida: React.FC = () => {
                                     src={URL.createObjectURL(file)}
                                     alt={`Direito ${idx}`}
                                 />
+                                {!processing && !comparisonResults && (
+                                    <RemoveIcon onClick={() => handleRemoveSingle("right", idx)} />
+                                )}
                                 <FileName>{file.name}</FileName>
                             </PreviewContainer>
                         ))}
@@ -447,9 +657,10 @@ const ComparacaoRapida: React.FC = () => {
                         <Button
                             className="delete"
                             onClick={() => handleClear("right")}
-                            disabled={!!comparisonResults}
+                            disabled={processing || !!comparisonResults}
                         >
-                            <FaTrash /> Limpar
+                            <FaTrash />
+                            Limpar
                         </Button>
                     </ActionButtons>
                 </UploadGroup>
@@ -457,40 +668,125 @@ const ComparacaoRapida: React.FC = () => {
 
             {processing && (
                 <UploadTitle>
-                    Após a conclusão do processamento de todas as imagens, a comparação será liberada.
+                    Estamos processando suas imagens. Assim que finalizar, você poderá
+                    visualizar a comparação.
                 </UploadTitle>
             )}
-            <ActionButtons>
 
-                {!processing ? (
-                    <Button className="compare" onClick={handleCreateAnalysis} disabled={isComparing}>
+            <ActionButtons>
+                {!comparisonResults && !processing && (
+                    <Button
+                        className="compare"
+                        onClick={handleCreateAnalysis}
+                        disabled={isComparing}
+                    >
                         {isComparing ? "Enviando..." : "Enviar para análise"}
                     </Button>
-                ) : (
+                )}
+
+                {processing && (
+                    <Button onClick={handleCheckStatus}>
+                        <FaSync style={{ marginRight: "5px" }} />
+                        Atualizar Status
+                    </Button>
+                )}
+
+                {(comparisonResults || processing) && (
                     <Button className="new-comparison" onClick={handleNewComparison}>
                         Nova Comparação
                     </Button>
                 )}
             </ActionButtons>
 
+            {/* Quando já houver resultados, exibir botão para abrir o Modal */}
             {comparisonResults && (
                 <ActionButtons>
-                    <Button
-                        className="view-comparison"
-                        onClick={() => setIsModalOpen(true)}
-                    >
+                    <Button className="view-comparison" onClick={() => setIsModalOpen(true)}>
                         Visualizar Comparação
                     </Button>
                 </ActionButtons>
             )}
 
+            {/* --- MODAL RECHARTS --- */}
             <ModalOverlay isVisible={isModalOpen}>
                 <ModalContent>
-                    <h2>Comparação de Dados</h2>
+                    <Button
+                        style={{
+                            position: "absolute",
+                            top: 15,
+                            right: 15,
+                            backgroundColor: "#dc3545",
+                            borderRadius: "50%",
+                            fontSize: 14,
+                            padding: "8px 10px",
+                        }}
+                        onClick={() => setIsModalOpen(false)}
+                    >
+                        <FaTimes />
+                    </Button>
+
+                    <h2>Comparação de Dados (Recharts)</h2>
                     <ChartContainer>
-                        <canvas id="comparisonChart"></canvas>
+                        {/* Exemplo de BarChart com as duas entradas (Esquerdo e Direito) */}
+                        <BarChart
+                            width={800}
+                            height={400}
+                            data={chartData}
+                            style={{ margin: "0 auto" }}
+                        >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="nome" />
+                            <YAxis />
+                            <Tooltip />
+                            <Legend />
+
+                            {/* Para cada tipo de grão, criamos uma <Bar> */}
+                            <Bar dataKey="green" fill="#34A853" name="Verde">
+                                {/* LabelList exibe o % em cima da barra */}
+                                <LabelList
+                                    dataKey={(entry: any) => formatPercent(entry.green, entry.total)}
+                                    position="top"
+                                />
+                            </Bar>
+
+                            <Bar dataKey="greenYellow" fill="#FFD700" name="Amarelo">
+                                <LabelList
+                                    dataKey={(entry: any) =>
+                                        formatPercent(entry.greenYellow, entry.total)
+                                    }
+                                    position="top"
+                                />
+                            </Bar>
+
+                            <Bar dataKey="cherry" fill="#FF6347" name="Cherry">
+                                <LabelList
+                                    dataKey={(entry: any) => formatPercent(entry.cherry, entry.total)}
+                                    position="top"
+                                />
+                            </Bar>
+
+                            <Bar dataKey="raisin" fill="#8B4513" name="Raisin">
+                                <LabelList
+                                    dataKey={(entry: any) => formatPercent(entry.raisin, entry.total)}
+                                    position="top"
+                                />
+                            </Bar>
+
+                            <Bar dataKey="dry" fill="#A9A9A9" name="Dry">
+                                <LabelList
+                                    dataKey={(entry: any) => formatPercent(entry.dry, entry.total)}
+                                    position="top"
+                                />
+                            </Bar>
+                        </BarChart>
                     </ChartContainer>
-                    <Button onClick={() => setIsModalOpen(false)}>Fechar</Button>
+
+                    <Button
+                        style={{ marginTop: 20 }}
+                        onClick={() => setIsModalOpen(false)}
+                    >
+                        Fechar
+                    </Button>
                 </ModalContent>
             </ModalOverlay>
         </Container>

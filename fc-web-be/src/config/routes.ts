@@ -100,6 +100,7 @@ router.get('/talhoes/fazenda/:fazendaId', getTalhoesByFazenda);
 router.post('/talhoes/:talhaoId/analises', upload.single('formFile'), addPlotAnalysis);
 router.get('/talhoes/:talhaoId/analises', getPlotAnalyses);
 router.get('/analises', getFilteredAnalyses);
+router.post('/analises-rapidas/comparar', compararAnalisesRapidas);
 
 
 // Rotas de análise rápida
