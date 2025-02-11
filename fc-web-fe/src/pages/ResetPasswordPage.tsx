@@ -80,16 +80,20 @@ const SuccessMessage = styled.p`
   text-align: center;
 `;
 
-const ResetPasswordPage = ({ match }: any) => {
+const ResetPasswordPage = () => {
     const [newPassword, setNewPassword] = useState('');
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
     const navigate = useNavigate();
-    const { token } = useParams(); // Obtém o token da URL
+    const { token } = useParams(); // Obtém o token da URL (não é mais match.params)
 
     const handleResetPassword = async () => {
+        if (!token) {
+            setError('Token inválido ou expirado.');
+            return;
+        }
+
         try {
-            const { token } = match.params; // O token estará na URL, por exemplo: /reset-password/:token
             const response = await api.resetPassword({ token, newPassword });
             setMessage('Sua senha foi redefinida com sucesso!');
             setError('');
