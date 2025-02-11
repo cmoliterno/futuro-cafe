@@ -274,8 +274,9 @@ export const getPlotAnalyses = async (req: Request, res: Response) => {
                 'raisin', 'total', 'createdAt', 'lastUpdatedAt'
             ],
             order: [
-                ['createdAt', 'DESC'] // Ordena do mais recente para o mais antigo
-            ],
+                ['lastUpdatedAt', 'DESC'],  // Ordena primeiro por lastUpdatedAt
+                ['createdAt', 'DESC']       // Depois, se necessário, por createdAt
+            ]
         });
 
         // Estrutura do retorno conforme solicitado
