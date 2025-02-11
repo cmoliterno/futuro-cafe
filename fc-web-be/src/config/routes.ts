@@ -5,7 +5,7 @@ import {
     updateUser,
     deleteUser,
     refreshAccessToken,
-    getUserDetails
+    getUserDetails, forgotPassword, resetPassword
 } from '../controllers/UsuarioController';
 import { getAllCultivares, getCultivarById, createCultivar, updateCultivar, deleteCultivar } from '../controllers/CultivaresController';
 import { getAllFazendas, getFazendaById, createFazenda, updateFazenda, deleteFazenda } from '../controllers/FazendaController';
@@ -66,6 +66,8 @@ const upload = multer({ storage: multer.memoryStorage() });
 router.post('/registrar', registerUser);
 router.post('/auth/token', authenticateUser);
 router.post('/auth/refresh-token', refreshAccessToken);
+router.post('/auth/forgot-password', forgotPassword); // Rota para enviar email de redefinição de senha
+router.post('/auth/reset-password', resetPassword); // Rota para redefinir a senha
 
 // Todas as outras rotas requerem autenticação
 router.use(authenticateJWT); // Aplica o middleware a todas as rotas a seguir

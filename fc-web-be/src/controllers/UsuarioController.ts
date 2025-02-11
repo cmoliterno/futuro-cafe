@@ -1,10 +1,12 @@
 import { Request, Response } from 'express';
+import { Op } from 'sequelize';
 import { sequelize } from '../services/DatabaseService';
 import crypto from 'crypto';
 import Pessoa from '../models/Pessoa';
 import PessoaFisica from '../models/PessoaFisica';
 import Login from '../models/Login';
 import { AuthService } from "../services/AuthService";
+import nodemailer from "nodemailer";
 
 const authService = new AuthService();
 
@@ -225,5 +227,85 @@ export async function getUserDetails(req: Request, res: Response) {
     }
 }
 
+export async function forgotPassword(req: Request, res: Response) {
+    const { email } = req.body;
 
-export default { registerUser, authenticateUser, updateUser, deleteUser, refreshAccessToken, getUserDetails };
+    try {
+        // Encontrar o usuário pelo email
+        const pessoaFisica = await PessoaFisica.findOne({ where: { email } });
+        if (!pessoaFisica) {
+            return res.status(404).json({ message: 'Usuário não encontrado' });
+        }
+
+        // Gerar um token único para redefinir a senha
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const resetTokenExpiration = new Date(Date.now() + 3600000); // Expira em 1 hora
+
+        // Armazenar o token e a data de expiração no banco de dados
+        pessoaFisica.passwordResetToken = resetToken;
+        pessoaFisica.passwordResetExpires = resetTokenExpiration;
+        await pessoaFisica.save();
+
+        // Configurar o transporte de email
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER,  // Defina no seu arquivo .env
+                pass: process.env.EMAIL_PASS,  // Defina no seu arquivo .env
+            },
+        });
+
+        // Configurar o email
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: email,
+            subject: 'Redefinir Senha',
+            text: `Olá, para redefinir sua senha, clique no link abaixo:\n\n` +
+                `${process.env.BASE_URL}/reset-password/${resetToken}\n\n` +
+                `Este link expira em 1 hora.`,
+        };
+
+        // Enviar o email
+        await transporter.sendMail(mailOptions);
+
+        res.status(200).json({
+            message: 'Instruções para redefinir a senha foram enviadas para o seu email.',
+        });
+    } catch (error) {
+        console.error('Erro ao processar solicitação de redefinição de senha:', error);
+        res.status(500).json({ message: 'Erro ao enviar o email de redefinição de senha.' });
+    }
+}
+
+export async function resetPassword(req: Request, res: Response) {
+    const { token, newPassword } = req.body;
+
+    try {
+        // Encontrar o usuário pelo token
+        const pessoaFisica = await PessoaFisica.findOne({
+            where: {
+                passwordResetToken: token,
+                passwordResetExpires: { [Op.gt]: new Date() },  // Use o Op.gt diretamente
+            },
+        });
+
+        if (!pessoaFisica) {
+            return res.status(400).json({ message: 'Token inválido ou expirado' });
+        }
+
+        // Atualizar a senha do usuário
+        const hashedPassword = await authService.hashPassword(newPassword);
+        pessoaFisica.passwordHash = hashedPassword;
+        pessoaFisica.passwordResetToken = null; // Limpa o token de redefinição
+        pessoaFisica.passwordResetExpires = null; // Limpa a data de expiração
+        await pessoaFisica.save();
+
+        res.status(200).json({ message: 'Senha redefinida com sucesso.' });
+    } catch (error) {
+        console.error('Erro ao redefinir senha:', error);
+        res.status(500).json({ message: 'Erro ao redefinir a senha.' });
+    }
+}
+
+
+export default { registerUser, authenticateUser, updateUser, deleteUser, refreshAccessToken, getUserDetails,  };

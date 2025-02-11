@@ -17,7 +17,8 @@ class PessoaFisica extends Model {
     public nomeCompleto!: string;  // Nome completo da pessoa
     public nomeSocial?: string;  // Nome social da pessoa
     public passwordHash?: string;  // Hash da senha
-    public passwordResetToken?: string;  // Token para redefinição de senha
+    public passwordResetToken?: string | null;  // Token para redefinição de senha
+    public passwordResetExpires?: Date | null;  // Data de expiração do token de redefinição
 }
 
 PessoaFisica.init({
@@ -35,7 +36,7 @@ PessoaFisica.init({
     },
     email: {
         type: DataTypes.STRING(400),
-        allowNull: false, // Ajustado para não permitir nulos
+        allowNull: false,  // Ajustado para não permitir nulos
         field: 'Email'
     },
     emailUpdateToken: {
@@ -99,9 +100,14 @@ PessoaFisica.init({
         field: 'PasswordHash'
     },
     passwordResetToken: {
-        type: DataTypes.UUID,
+        type: DataTypes.STRING,  // Novo campo para o token de redefinição de senha
         allowNull: true,
         field: 'PasswordResetToken'
+    },
+    passwordResetExpires: {
+        type: DataTypes.DATE,  // Novo campo para a data de expiração do token
+        allowNull: true,
+        field: 'PasswordResetExpires'
     },
 }, {
     sequelize,

@@ -61,6 +61,14 @@ api.interceptors.response.use(
 
 // Funções da API
 export default {
+    // Função para enviar o email com o link de redefinição de senha
+    forgotPassword: (data: { email: string }) =>
+        api.post('/auth/forgot-password', data), // Envia o email para redefinir a senha
+
+    // Função para redefinir a senha com o token
+    resetPassword: (data: { token: string, newPassword: string }) =>
+        api.post('/auth/reset-password', data),
+
     // Funções de autenticação
     loginUser: (data: { email: string; password: string }) =>
         api.post('/auth/token', data),
@@ -74,6 +82,7 @@ export default {
         api.put(`/usuarios/${id}`, data), // Requer autenticação
     deleteUser: (id: string) =>
         api.delete(`/usuarios/${id}`), // Requer autenticação
+
 
     // Função para obter talhões de uma fazenda (por fazenda)
     getTalhoesByFazenda: (fazendaId: string) =>

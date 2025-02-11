@@ -39,36 +39,36 @@ const ErrorMessage = styled.p`
 `;
 
 const ForgotPasswordPage: React.FC = () => {
-  const [email, setEmail] = useState('');
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
+    const [email, setEmail] = useState('');
+    const [message, setMessage] = useState('');
+    const [error, setError] = useState('');
 
-  const handleForgotPassword = async () => {
-    try {
-      // const response = await api.forgotPassword({ email });
-      // setMessage('Instruções para redefinição de senha foram enviadas para o seu email.');
-      // setError(''); // Limpa mensagens de erro, se houver
-      // console.log(response.data);
-    } catch (err) {
-      setError('Erro ao enviar email. Verifique o email e tente novamente.');
-      setMessage(''); // Limpa mensagens de sucesso, se houver
-    }
-  };
+    const handleForgotPassword = async () => {
+        try {
+            const response = await api.forgotPassword({ email });
+            setMessage('Instruções para redefinição de senha foram enviadas para o seu email.');
+            setError(''); // Limpa mensagens de erro, se houver
+            console.log(response.data);
+        } catch (err) {
+            setError('Erro ao enviar email. Verifique o email e tente novamente.');
+            setMessage(''); // Limpa mensagens de sucesso, se houver
+        }
+    };
 
-  return (
-    <ForgotPasswordContainer>
-      <Title>Redefinição de Senha</Title>
-      <Input
-        type="email"
-        value={email}
-        placeholder="Email"
-        onChange={(e) => setEmail(e.target.value)} // Atualizando o email
-      />
-      {message && <Message>{message}</Message>}
-      {error && <ErrorMessage>{error}</ErrorMessage>}
-      <Button onClick={handleForgotPassword}>Enviar Instruções</Button>
-    </ForgotPasswordContainer>
-  );
+    return (
+        <ForgotPasswordContainer>
+            <Title>Redefinição de Senha</Title>
+            <Input
+                type="email"
+                value={email}
+                placeholder="Email"
+                onChange={(e) => setEmail(e.target.value)} // Atualizando o email
+            />
+            {message && <Message>{message}</Message>}
+            {error && <ErrorMessage>{error}</ErrorMessage>}
+            <Button onClick={handleForgotPassword}>Enviar Instruções</Button>
+        </ForgotPasswordContainer>
+    );
 };
 
 export default ForgotPasswordPage;

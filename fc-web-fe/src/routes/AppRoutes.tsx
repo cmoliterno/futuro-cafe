@@ -4,6 +4,7 @@ import HomePage from '../pages/HomePage';
 import LoginPage from '../pages/LoginPage';
 import CadastroPage from '../pages/CadastroPage';
 import ForgotPasswordPage from '../pages/ForgotPasswordPage';
+import ResetPasswordPage from '../pages/ResetPasswordPage';
 import TalhoesPage from '../pages/TalhoesPage';
 import CultivaresPage from '../pages/CultivaresPage';
 import FazendasPage from '../pages/FazendasPage';
@@ -19,29 +20,29 @@ import ComparacaoRapida from "../components/ComparacaoRapida";
 import PrivacyPolicyScreen from "../pages/PrivacyPolicyScreen";
 
 function AppRoutes() {
-  return (
-    <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/cadastro" element={<CadastroPage />} />
-      <Route path="/recuperar-senha" element={<ForgotPasswordPage />} />
-    <Route path="/politica-de-privacidade" element={<PrivacyPolicyScreen />} />
+    return (
+        <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/cadastro" element={<CadastroPage />} />
+            <Route path="/recuperar-senha" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+            <Route path="/politica-de-privacidade" element={<PrivacyPolicyScreen />} />
 
-      {/* Rotas protegidas */}
-        <Route path="/talhoes" element={<ProtectedRoute element={<TalhoesPage />} />} />
-        <Route path="/cultivares" element={<ProtectedRoute element={<CultivaresPage />} />} />
-        <Route path="/fazendas" element={<ProtectedRoute element={<FazendasPage />} />} />
-        <Route path="/projetos" element={<ProtectedRoute element={<ProjetosPage />} />} />
-        <Route path="/grupos" element={<ProtectedRoute element={<GruposPage />} />} />
-        <Route path="/estatisticas" element={<ProtectedRoute element={<EstatisticasPage />} />} />
-        <Route path="/dashboard" element={<ProtectedRoute element={<DashboardPage />} />} />
-        <Route path="/coleta-imagens/:talhaoId" element={<ProtectedRoute element={<ColetaImagens />} />} />
-        <Route path="/resultados-analise" element={<ProtectedRoute element={<ResultadosAnaliseScreen />} />} />
-        <Route path="/comparacao" element={<ProtectedRoute element={<ComparacaoAnaliseScreen />} />} />
-        <Route path="/analise-rapida" element={<ProtectedRoute element={<ComparacaoRapida />} />} />
-
-    </Routes>
-  );
+            {/* Rotas protegidas */}
+            <Route path="/talhoes" element={<ProtectedRoute element={<TalhoesPage />} />} />
+            <Route path="/cultivares" element={<ProtectedRoute element={<CultivaresPage />} />} />
+            <Route path="/fazendas" element={<ProtectedRoute element={<FazendasPage />} />} />
+            <Route path="/projetos" element={<ProtectedRoute element={<ProjetosPage />} />} />
+            <Route path="/grupos" element={<ProtectedRoute element={<GruposPage />} />} />
+            <Route path="/estatisticas" element={<ProtectedRoute element={<EstatisticasPage />} />} />
+            <Route path="/dashboard" element={<ProtectedRoute element={<DashboardPage />} />} />
+            <Route path="/coleta-imagens/:talhaoId" element={<ProtectedRoute element={<ColetaImagens />} />} />
+            <Route path="/resultados-analise" element={<ProtectedRoute element={<ResultadosAnaliseScreen />} />} />
+            <Route path="/comparacao" element={<ProtectedRoute element={<ComparacaoAnaliseScreen />} />} />
+            <Route path="/analise-rapida" element={<ProtectedRoute element={<ComparacaoRapida />} />} />
+        </Routes>
+    );
 }
 
 export default AppRoutes;
