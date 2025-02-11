@@ -273,6 +273,9 @@ export const getPlotAnalyses = async (req: Request, res: Response) => {
                 'grupoId', 'imagemResultadoUrl', 'imagemUrl', 'projetoId',
                 'raisin', 'total', 'createdAt', 'lastUpdatedAt'
             ],
+            order: [
+                ['createdAt', 'DESC'] // Ordena do mais recente para o mais antigo
+            ],
         });
 
         // Estrutura do retorno conforme solicitado
