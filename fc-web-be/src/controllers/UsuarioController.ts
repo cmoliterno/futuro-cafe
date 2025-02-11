@@ -241,10 +241,14 @@ export async function forgotPassword(req: Request, res: Response) {
         const resetToken = crypto.randomBytes(32).toString('hex');
         const resetTokenExpiration = new Date(Date.now() + 3600000); // Expira em 1 hora
 
-        // Armazenar o token e a data de expiração no banco de dados
+        // Formatar para 'yyyy-MM-dd HH:mm:ss.SSS +0000' para o tipo datetimeoffset
+        const formattedExpirationDate = resetTokenExpiration.toISOString();
+
+        // Atualizar a pessoa fisica com o token e a data de expiração
         pessoaFisica.passwordResetToken = resetToken;
-        pessoaFisica.passwordResetExpires = resetTokenExpiration;
+        pessoaFisica.passwordResetExpires = formattedExpirationDate;
         await pessoaFisica.save();
+
 
         // Configurar o transporte de email
         const transporter = nodemailer.createTransport({

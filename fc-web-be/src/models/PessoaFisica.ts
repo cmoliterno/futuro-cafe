@@ -18,7 +18,7 @@ class PessoaFisica extends Model {
     public nomeSocial?: string;  // Nome social da pessoa
     public passwordHash?: string;  // Hash da senha
     public passwordResetToken?: string | null;  // Token para redefinição de senha
-    public passwordResetExpires?: Date | null;  // Data de expiração do token de redefinição
+    public passwordResetExpires?: string | null;  // Data de expiração do token de redefinição (como string para compatibilidade)
 }
 
 PessoaFisica.init({
@@ -105,7 +105,7 @@ PessoaFisica.init({
         field: 'PasswordResetToken'
     },
     passwordResetExpires: {
-        type: DataTypes.DATE,  // Novo campo para a data de expiração do token
+        type: DataTypes.STRING,  // Usando tipo STRING para garantir compatibilidade com o formato de datetimeoffset
         allowNull: true,
         field: 'PasswordResetExpires'
     },
