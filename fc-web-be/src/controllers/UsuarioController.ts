@@ -238,8 +238,9 @@ export async function forgotPassword(req: Request, res: Response) {
         }
 
         // Gerar um token único para redefinir a senha
-        const resetToken = crypto.randomBytes(32).toString('hex');
-        const resetTokenExpiration = new Date(Date.now() + 3600000); // Expira em 1 hora
+        const resetToken = crypto.randomUUID();  // Gerar um UUID válido
+
+        const resetTokenExpiration = new Date(Date.now() + 3600000);
 
         // Formatar para 'yyyy-MM-dd HH:mm:ss.SSS +0000' para o tipo datetimeoffset
         const formattedExpirationDate = resetTokenExpiration.toISOString();
@@ -249,13 +250,12 @@ export async function forgotPassword(req: Request, res: Response) {
         pessoaFisica.passwordResetExpires = formattedExpirationDate;
         await pessoaFisica.save();
 
-
         // Configurar o transporte de email
         const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
-                user: process.env.EMAIL_USER,  // Defina no seu arquivo .env
-                pass: process.env.EMAIL_PASS,  // Defina no seu arquivo .env
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS,
             },
         });
 
@@ -289,7 +289,7 @@ export async function resetPassword(req: Request, res: Response) {
         const pessoaFisica = await PessoaFisica.findOne({
             where: {
                 passwordResetToken: token,
-                passwordResetExpires: { [Op.gt]: new Date() },  // Use o Op.gt diretamente
+                passwordResetExpires: { [Op.gt]: new Date() },
             },
         });
 
@@ -310,6 +310,5 @@ export async function resetPassword(req: Request, res: Response) {
         res.status(500).json({ message: 'Erro ao redefinir a senha.' });
     }
 }
-
 
 export default { registerUser, authenticateUser, updateUser, deleteUser, refreshAccessToken, getUserDetails,  };
