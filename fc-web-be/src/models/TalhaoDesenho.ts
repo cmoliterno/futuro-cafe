@@ -14,6 +14,18 @@ TalhaoDesenho.init(
             type: DataTypes.GEOMETRY('POLYGON'),
             allowNull: false,
         },
+        createdAt: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW, // Preencher automaticamente
+            field: 'CreatedAt'
+        },
+        updatedAt: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW, // Preencher automaticamente
+            field: 'updatedAt'
+        }
     },
     {
         sequelize,
