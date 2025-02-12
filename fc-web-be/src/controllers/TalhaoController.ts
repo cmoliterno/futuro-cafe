@@ -186,14 +186,13 @@ export async function createTalhao(req: Request, res: Response) {
         // Verificando e formatando as coordenadas para o formato POLYGON
         console.log("Chegou coordinates? --->", coordinates);
         if (coordinates && coordinates.length > 0) {
-            const polygonCoordinates = coordinates
-                .map((coord: any[]) => `${coord[1]} ${coord[0]}`)  // Certificando-se que está no formato: longitude latitude
-                .join(', ');
+            // Formatar as coordenadas para o formato POLYGON esperado pelo SQL Server
+            const polygonCoordinates = coordinates.map((coord: any[]) => `${coord[1]} ${coord[0]}`).join(', ');
 
-            const closedPolygonCoordinates = `${polygonCoordinates}, ${coordinates[0][1]} ${coordinates[0][0]}`;
+            // Garantir que o polígono feche com a mesma coordenada do início
+            const polygonText = `POLYGON((${polygonCoordinates}, ${coordinates[0][1]} ${coordinates[0][0]}))`;
 
-            const polygonText = `POLYGON((${closedPolygonCoordinates}))`;
-
+            // Salvar o desenho no banco de dados
             await TalhaoDesenho.create({
                 talhaoId: talhao.id,
                 desenhoGeometria: Sequelize.fn('geography::STGeomFromText', polygonText, 4326),
