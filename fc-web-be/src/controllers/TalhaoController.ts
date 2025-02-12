@@ -14,6 +14,7 @@ import { AuthService } from '../services/AuthService';
 import fs from "fs"; // Importação da versão síncrona
 import fsp from "fs/promises"; // Importação da versão assíncrona
 import * as exifReader from "exifreader";
+import TalhaoDesenho from "../models/TalhaoDesenho";
 
 
 const authService = new AuthService();
@@ -96,7 +97,11 @@ export async function getAllTalhoes(req: Request, res: Response) {
             where: {
                 fazendaId: {
                     [Op.in]: Sequelize.literal(`(SELECT FazendaId FROM tbPessoaFisicaFazenda WHERE PessoaFisicaId = '${pessoaId}')`)
-                }
+                },
+                include: [
+                    { model: Fazenda },
+                    { model: TalhaoDesenho },
+                ],
             }
         });
 
@@ -111,7 +116,10 @@ export async function getTalhaoById(req: Request, res: Response) {
     try {
         const { id } = req.params;
         const talhao = await Talhao.findByPk(id, {
-            include: [{ model: Fazenda }]
+            include: [
+                { model: Fazenda },
+                { model: TalhaoDesenho },  // Aqui, incluímos o desenho do talhão
+            ],
         });
 
         if (!talhao) {
@@ -123,6 +131,7 @@ export async function getTalhaoById(req: Request, res: Response) {
         res.status(500).json({ message: 'Erro ao buscar talhão', error });
     }
 }
+
 
 export async function getTalhoesByFazenda(req: Request, res: Response) {
     try {
@@ -153,7 +162,7 @@ export async function getTalhoesByFazenda(req: Request, res: Response) {
 
 export async function createTalhao(req: Request, res: Response) {
     try {
-        const { nome, nomeResponsavel, fazendaId, dataPlantio, espacamentoLinhas, espacamentoMudas, cultivarId } = req.body;
+        const { nome, nomeResponsavel, fazendaId, dataPlantio, espacamentoLinhas, espacamentoMudas, cultivarId, coordenadas } = req.body;
 
         if (!nome || !fazendaId) {
             return res.status(400).json({ message: 'Nome e Fazenda ID são obrigatórios' });
@@ -171,9 +180,20 @@ export async function createTalhao(req: Request, res: Response) {
 
         const pessoaId = authService.verifyToken(token)?.userId;
 
+        // Criar o talhão
         const talhao = await Talhao.create({ nome, fazendaId });
 
-        // Cadastro do Plantio
+        if (!coordenadas || coordenadas.length === 0) {
+            //return res.status(400).json({ message: 'As coordenadas do desenho são obrigatórias' });
+            // Salvar o desenho (coordenadas)
+            await TalhaoDesenho.create({
+                talhaoId: talhao.id,
+                desenhoGeometria: Sequelize.fn('ST_GeomFromText', `POLYGON((${coordenadas.join(',')}))`),  // Salva as coordenadas como um POLYGON no banco
+            });
+
+        }
+
+        // Cadastro do Plantio, se os dados estiverem presentes
         if (dataPlantio && espacamentoLinhas && espacamentoMudas && cultivarId) {
             await Plantio.create({
                 data: dataPlantio,
@@ -192,6 +212,7 @@ export async function createTalhao(req: Request, res: Response) {
         res.status(500).json({ message: 'Erro ao criar talhão', error });
     }
 }
+
 
 export async function updateTalhao(req: Request, res: Response) {
     try {
@@ -708,6 +729,26 @@ export const getPlotAnalysesChart = async (req: Request, res: Response) => {
         return res.status(200).json(data);
     } catch (error) {
         res.status(500).json({ message: 'Erro ao obter dados para gráfico', error });
+    }
+};
+
+export const addTalhaoDesenho = async (req: Request, res: Response) => {
+    const { talhaoId, coordenadas } = req.body;
+
+    if (!talhaoId || !coordenadas || coordenadas.length === 0) {
+        return res.status(400).json({ message: 'Talhão ID e coordenadas são obrigatórios' });
+    }
+
+    try {
+        const desenho = await TalhaoDesenho.create({
+            talhaoId,
+            desenhoGeometria: Sequelize.fn('ST_GeomFromText', `POLYGON((${coordenadas.join(',')}))`),
+        });
+
+        res.status(201).json(desenho);
+    } catch (error) {
+        console.error('Erro ao salvar desenho:', error);
+        res.status(500).json({ message: 'Erro ao salvar desenho', error });
     }
 };
 
