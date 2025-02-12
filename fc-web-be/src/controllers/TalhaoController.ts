@@ -162,7 +162,7 @@ export async function getTalhoesByFazenda(req: Request, res: Response) {
 
 export async function createTalhao(req: Request, res: Response) {
     try {
-        const { nome, nomeResponsavel, fazendaId, dataPlantio, espacamentoLinhas, espacamentoMudas, cultivarId, coordenadas } = req.body;
+        const { nome, nomeResponsavel, fazendaId, dataPlantio, espacamentoLinhas, espacamentoMudas, cultivarId, coordinates } = req.body;
 
         if (!nome || !fazendaId) {
             return res.status(400).json({ message: 'Nome e Fazenda ID são obrigatórios' });
@@ -184,9 +184,10 @@ export async function createTalhao(req: Request, res: Response) {
         const talhao = await Talhao.create({ nome, fazendaId });
 
         // Verificando e formatando as coordenadas para o formato POLYGON
-        if (coordenadas && coordenadas.length > 0) {
+        console.log("Chegou coordinates? --->", coordinates);
+        if (coordinates && coordinates.length > 0) {
             // Formatar as coordenadas para o formato POLYGON( longitude latitude, longitude latitude, ... )
-            const polygonCoordinates = coordenadas.map((coord: any[]) => `${coord[1]} ${coord[0]}`).join(', ');
+            const polygonCoordinates = coordinates.map((coord: any[]) => `${coord[1]} ${coord[0]}`).join(', ');
 
             // Criar o desenho no banco de dados com as coordenadas formatadas
             await TalhaoDesenho.create({
