@@ -183,14 +183,18 @@ export async function createTalhao(req: Request, res: Response) {
         // Criar o talhão
         const talhao = await Talhao.create({ nome, fazendaId });
 
-        if (!coordenadas || coordenadas.length === 0) {
-            //return res.status(400).json({ message: 'As coordenadas do desenho são obrigatórias' });
-            // Salvar o desenho (coordenadas)
+        // Verificando e formatando as coordenadas para o formato POLYGON
+        if (coordenadas && coordenadas.length > 0) {
+            // Formatar as coordenadas para o formato POLYGON( longitude latitude, longitude latitude, ... )
+            const polygonCoordinates = coordenadas.map((coord: any[]) => `${coord[1]} ${coord[0]}`).join(', ');
+
+            // Criar o desenho no banco de dados com as coordenadas formatadas
             await TalhaoDesenho.create({
                 talhaoId: talhao.id,
-                desenhoGeometria: Sequelize.fn('ST_GeomFromText', `POLYGON((${coordenadas.join(',')}))`),  // Salva as coordenadas como um POLYGON no banco
+                desenhoGeometria: Sequelize.fn('ST_GeomFromText', `POLYGON((${polygonCoordinates}))`),
             });
-
+        } else {
+            return res.status(400).json({ message: 'As coordenadas do desenho são obrigatórias' });
         }
 
         // Cadastro do Plantio, se os dados estiverem presentes
