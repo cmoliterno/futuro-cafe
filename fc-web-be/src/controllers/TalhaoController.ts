@@ -15,6 +15,7 @@ import fs from "fs"; // Importação da versão síncrona
 import fsp from "fs/promises"; // Importação da versão assíncrona
 import * as exifReader from "exifreader";
 import TalhaoDesenho from "../models/TalhaoDesenho";
+import {sequelize} from "../services/DatabaseService";
 
 
 const authService = new AuthService();
@@ -193,11 +194,13 @@ export async function createTalhao(req: Request, res: Response) {
             const polygonText = `POLYGON((${polygonCoordinates}, ${coordinates[0][1]} ${coordinates[0][0]}))`;
             console.log("Polygon Text: ", polygonText);
 
-            // Salvar o desenho no banco de dados
-            await TalhaoDesenho.create({
-                talhaoId: talhao.id,
-                desenhoGeometria: Sequelize.fn('geography::STGeomFromText', polygonText, 4326),
-            });
+            // Executar a query diretamente com Sequelize raw query
+            const query = `
+                INSERT INTO [tbTalhaoDesenho] ([talhaoId], [desenhoGeometria], [CreatedAt], [LastUpdatedAt], [updatedAt])
+                VALUES ('${talhao.id}', geography::STGeomFromText(N'${polygonText}', 4326), GETDATE(), GETDATE(), GETDATE());
+            `;
+
+            await sequelize.query(query);
         } else {
             return res.status(400).json({ message: 'As coordenadas do desenho são obrigatórias' });
         }
@@ -221,6 +224,7 @@ export async function createTalhao(req: Request, res: Response) {
         res.status(500).json({ message: 'Erro ao criar talhão', error });
     }
 }
+
 
 export async function updateTalhao(req: Request, res: Response) {
     try {
