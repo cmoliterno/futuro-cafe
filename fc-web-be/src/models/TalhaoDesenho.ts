@@ -11,7 +11,7 @@ TalhaoDesenho.init(
             allowNull: false,
         },
         desenhoGeometria: {
-            type: DataTypes.GEOMETRY('POLYGON'),
+            type: DataTypes.GEOGRAPHY('POLYGON'),
             allowNull: false,
         },
         createdAt: {
