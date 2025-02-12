@@ -98,11 +98,7 @@ export async function getAllTalhoes(req: Request, res: Response) {
             where: {
                 fazendaId: {
                     [Op.in]: Sequelize.literal(`(SELECT FazendaId FROM tbPessoaFisicaFazenda WHERE PessoaFisicaId = '${pessoaId}')`)
-                },
-                include: [
-                    { model: Fazenda },
-                    { model: TalhaoDesenho },
-                ],
+                }
             }
         });
 
