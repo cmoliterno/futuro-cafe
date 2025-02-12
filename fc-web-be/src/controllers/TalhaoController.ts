@@ -196,8 +196,8 @@ export async function createTalhao(req: Request, res: Response) {
 
             // Executar a query diretamente com Sequelize raw query
             const query = `
-                INSERT INTO [tbTalhaoDesenho] ([talhaoId], [desenhoGeometria], [CreatedAt], [LastUpdatedAt], [updatedAt])
-                VALUES ('${talhao.id}', geography::STGeomFromText(N'${polygonText}', 4326), GETDATE(), GETDATE(), GETDATE());
+                INSERT INTO [tbTalhaoDesenho] ([talhaoId], [desenhoGeometria], [CreatedAt], [LastUpdatedAt])
+                VALUES ('${talhao.id}', geography::STGeomFromText(N'${polygonText}', 4326), GETDATE(), GETDATE());
             `;
 
             await sequelize.query(query);
