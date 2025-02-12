@@ -20,11 +20,11 @@ TalhaoDesenho.init(
             defaultValue: DataTypes.NOW, // Preencher automaticamente
             field: 'CreatedAt'
         },
-        updatedAt: {
+        LastUpdatedAt: {
             type: DataTypes.DATE,
             allowNull: false,
             defaultValue: DataTypes.NOW, // Preencher automaticamente
-            field: 'updatedAt'
+            field: 'LastUpdatedAt'
         }
     },
     {
