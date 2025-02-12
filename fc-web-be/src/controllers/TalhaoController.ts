@@ -186,15 +186,21 @@ export async function createTalhao(req: Request, res: Response) {
         // Verificando e formatando as coordenadas para o formato POLYGON
         console.log("Chegou coordinates? --->", coordinates);
         if (coordinates && coordinates.length > 0) {
-            // Formatar as coordenadas para o formato POLYGON esperado pelo SQL Server
-            const polygonCoordinates = coordinates.map((coord: any[]) => `${coord[1]} ${coord[0]}`).join(', ');
-            const polygonText = `POLYGON((${polygonCoordinates}))`;
+            const polygonCoordinates = coordinates
+                .map((coord: any[]) => `${coord[1]} ${coord[0]}`)
+                .join(', ');
 
-            // Salvar o desenho no banco de dados
+
+            const closedPolygonCoordinates = `${polygonCoordinates}, ${coordinates[0][1]} ${coordinates[0][0]}`;
+
+            const polygonText = `POLYGON((${closedPolygonCoordinates}))`;
+
+
             await TalhaoDesenho.create({
                 talhaoId: talhao.id,
                 desenhoGeometria: Sequelize.fn('geography::STGeomFromText', polygonText, 4326),
             });
+
         } else {
             return res.status(400).json({ message: 'As coordenadas do desenho são obrigatórias' });
         }
