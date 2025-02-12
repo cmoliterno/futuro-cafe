@@ -187,20 +187,17 @@ export async function createTalhao(req: Request, res: Response) {
         console.log("Chegou coordinates? --->", coordinates);
         if (coordinates && coordinates.length > 0) {
             const polygonCoordinates = coordinates
-                .map((coord: any[]) => `${coord[1]} ${coord[0]}`)
+                .map((coord: any[]) => `${coord[1]} ${coord[0]}`)  // Certificando-se que está no formato: longitude latitude
                 .join(', ');
-
 
             const closedPolygonCoordinates = `${polygonCoordinates}, ${coordinates[0][1]} ${coordinates[0][0]}`;
 
             const polygonText = `POLYGON((${closedPolygonCoordinates}))`;
 
-
             await TalhaoDesenho.create({
                 talhaoId: talhao.id,
                 desenhoGeometria: Sequelize.fn('geography::STGeomFromText', polygonText, 4326),
             });
-
         } else {
             return res.status(400).json({ message: 'As coordenadas do desenho são obrigatórias' });
         }
