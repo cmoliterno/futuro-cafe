@@ -193,7 +193,7 @@ export async function createTalhao(req: Request, res: Response) {
             // Salvar o desenho no banco de dados
             await TalhaoDesenho.create({
                 talhaoId: talhao.id,
-                desenhoGeometria: Sequelize.fn('ST_GeomFromText', polygonText),
+                desenhoGeometria: Sequelize.fn('geography::STGeomFromText', polygonText, 4326),
             });
         } else {
             return res.status(400).json({ message: 'As coordenadas do desenho são obrigatórias' });
