@@ -191,6 +191,7 @@ export async function createTalhao(req: Request, res: Response) {
 
             // Garantir que o polígono feche com a mesma coordenada do início
             const polygonText = `POLYGON((${polygonCoordinates}, ${coordinates[0][1]} ${coordinates[0][0]}))`;
+            console.log("Polygon Text: ", polygonText);
 
             // Salvar o desenho no banco de dados
             await TalhaoDesenho.create({
@@ -220,7 +221,6 @@ export async function createTalhao(req: Request, res: Response) {
         res.status(500).json({ message: 'Erro ao criar talhão', error });
     }
 }
-
 
 export async function updateTalhao(req: Request, res: Response) {
     try {
