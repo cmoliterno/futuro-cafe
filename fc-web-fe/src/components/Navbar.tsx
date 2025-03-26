@@ -109,7 +109,6 @@ const Navbar: React.FC = () => {
     return (
         <NavbarContainer>
             <NavbarContent>
-                <Logo>Futuro Café</Logo>
                 <NavLinks>
                     {isAuthenticated && (
                         <>
