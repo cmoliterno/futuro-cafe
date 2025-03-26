@@ -298,6 +298,11 @@ const ComparacaoRapida: React.FC = () => {
     // ---- (1) Vamos criar um state para armazenar os dados formatados do gráfico Recharts
     const [chartData, setChartData] = useState<any[]>([]);
 
+    const [sortConfig, setSortConfig] = useState<{
+        key: 'green' | 'greenYellow' | 'cherry' | 'raisin' | 'dry' | 'total' | 'createdAt';
+        direction: 'asc' | 'desc';
+    } | null>(null);
+
     const compressAndAddFiles = async (files: File[], side: "left" | "right") => {
         setLoading(true);
         try {
@@ -530,6 +535,27 @@ const ComparacaoRapida: React.FC = () => {
         setChartData([]);
     };
 
+    const handleSort = (key: 'green' | 'greenYellow' | 'cherry' | 'raisin' | 'dry' | 'total' | 'createdAt') => {
+        const direction = sortConfig?.key === key && sortConfig.direction === 'asc' ? 'desc' : 'asc';
+        setSortConfig({ key, direction });
+
+        const sortedAnalyses = [...chartData].sort((a, b) => {
+            if (key === 'createdAt') {
+                return direction === 'asc' 
+                    ? new Date(a[key]).getTime() - new Date(b[key]).getTime()
+                    : new Date(b[key]).getTime() - new Date(a[key]).getTime();
+            }
+            
+            // Para percentuais
+            const aValue = (a[key] / a.total) * 100;
+            const bValue = (b[key] / b.total) * 100;
+            
+            return direction === 'asc' ? aValue - bValue : bValue - aValue;
+        });
+
+        setChartData(sortedAnalyses);
+    };
+
     return (
         <Container>
             <Title>Comparação Rápida</Title>
@@ -742,44 +768,75 @@ const ComparacaoRapida: React.FC = () => {
 
                             {/* Para cada tipo de grão, criamos uma <Bar> */}
                             <Bar dataKey="green" fill="#34A853" name="Verde">
-                                {/* LabelList exibe o % em cima da barra */}
                                 <LabelList
-                                    dataKey={(entry: any) => formatPercent(entry.green, entry.total)}
-                                    position="top"
+                                    dataKey="greenPercent"
+                                    position="inside"
+                                    formatter={(value: string | number) => `${value}%`}
+                                    style={{ fontSize: 14, fontWeight: 'bold', fill: 'black' }}
                                 />
                             </Bar>
 
-                            <Bar dataKey="greenYellow" fill="#FFD700" name="Amarelo">
+                            <Bar dataKey="greenYellow" fill="#FFD700" name="Verde Cana">
                                 <LabelList
-                                    dataKey={(entry: any) =>
-                                        formatPercent(entry.greenYellow, entry.total)
-                                    }
-                                    position="top"
+                                    dataKey="greenYellowPercent"
+                                    position="inside"
+                                    formatter={(value: string | number) => `${value}%`}
+                                    style={{ fontSize: 14, fontWeight: 'bold', fill: 'black' }}
                                 />
                             </Bar>
 
-                            <Bar dataKey="cherry" fill="#FF6347" name="Cherry">
+                            <Bar dataKey="cherry" fill="#FF6347" name="Cereja">
                                 <LabelList
-                                    dataKey={(entry: any) => formatPercent(entry.cherry, entry.total)}
-                                    position="top"
+                                    dataKey="cherryPercent"
+                                    position="inside"
+                                    formatter={(value: string | number) => `${value}%`}
+                                    style={{ fontSize: 14, fontWeight: 'bold', fill: 'black' }}
                                 />
                             </Bar>
 
-                            <Bar dataKey="raisin" fill="#8B4513" name="Raisin">
+                            <Bar dataKey="raisin" fill="#8B4513" name="Passa">
                                 <LabelList
-                                    dataKey={(entry: any) => formatPercent(entry.raisin, entry.total)}
-                                    position="top"
+                                    dataKey="raisinPercent"
+                                    position="inside"
+                                    formatter={(value: string | number) => `${value}%`}
+                                    style={{ fontSize: 14, fontWeight: 'bold', fill: 'black' }}
                                 />
                             </Bar>
 
-                            <Bar dataKey="dry" fill="#A9A9A9" name="Dry">
+                            <Bar dataKey="dry" fill="#A9A9A9" name="Seco">
                                 <LabelList
-                                    dataKey={(entry: any) => formatPercent(entry.dry, entry.total)}
-                                    position="top"
+                                    dataKey="dryPercent"
+                                    position="inside"
+                                    formatter={(value: string | number) => `${value}%`}
+                                    style={{ fontSize: 14, fontWeight: 'bold', fill: 'black' }}
                                 />
                             </Bar>
                         </BarChart>
                     </ChartContainer>
+
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '20px' }}>
+                        <Button onClick={() => handleSort('green')}>
+                            Ordenar por Verde {sortConfig?.key === 'green' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                        </Button>
+                        <Button onClick={() => handleSort('greenYellow')}>
+                            Ordenar por Verde Cana {sortConfig?.key === 'greenYellow' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                        </Button>
+                        <Button onClick={() => handleSort('cherry')}>
+                            Ordenar por Cereja {sortConfig?.key === 'cherry' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                        </Button>
+                        <Button onClick={() => handleSort('raisin')}>
+                            Ordenar por Passa {sortConfig?.key === 'raisin' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                        </Button>
+                        <Button onClick={() => handleSort('dry')}>
+                            Ordenar por Seco {sortConfig?.key === 'dry' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                        </Button>
+                        <Button onClick={() => handleSort('total')}>
+                            Ordenar por Total {sortConfig?.key === 'total' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                        </Button>
+                        <Button onClick={() => handleSort('createdAt')}>
+                            Ordenar por Data {sortConfig?.key === 'createdAt' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                        </Button>
+                    </div>
 
                     <Button
                         style={{ marginTop: 20 }}

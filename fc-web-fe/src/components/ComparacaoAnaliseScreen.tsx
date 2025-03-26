@@ -44,72 +44,91 @@ enum GrainWeight {
 
 // ----- Estilos -----
 const Container = styled.div`
-  padding: 20px;
-  background-color: #3e2723;
+  padding: var(--spacing-xl);
+  background-color: var(--color-background);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-md);
+  margin: var(--spacing-md);
 `;
 
 const Title = styled.h1`
-  color: #ffffff;
+  color: var(--color-primary);
+  margin-bottom: var(--spacing-xl);
   text-align: center;
-  margin-bottom: 20px;
-  font-size: 26px;
 `;
 
 const FiltersContainer = styled.div`
   display: flex;
-  justify-content: space-between;
-  gap: 20px;
-  margin-bottom: 30px;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+  background-color: var(--color-surface);
+  padding: var(--spacing-lg);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-sm);
 `;
 
-const FilterSection = styled.div`
-  background-color: #42210b;
-  padding: 20px;
-  border-radius: 10px;
-  width: 48%;
+const FilterGroup = styled.div`
+  flex: 1;
+  min-width: 200px;
 `;
 
 const FilterLabel = styled.label`
-  color: #f5f5f5;
-  font-size: 14px;
-  margin-bottom: 10px;
   display: block;
+  margin-bottom: var(--spacing-sm);
+  font-weight: 500;
+  color: var(--color-gray-700);
 `;
 
-const FilterSelect = styled.select`
+const Select = styled.select`
   width: 100%;
-  padding: 10px;
-  margin-bottom: 10px;
-  border-radius: 5px;
-  border: 1px solid #ccc;
+  padding: 12px;
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--border-radius-md);
+  background-color: white;
+  
+  &:focus {
+    border-color: var(--color-secondary);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(4, 117, 2, 0.2);
+  }
 `;
 
-const FilterInput = styled.input`
-  width: 100%;
-  padding: 10px;
-  margin-bottom: 10px;
-  border-radius: 5px;
-  border: 1px solid #ccc;
-`;
-
-const FilterButton = styled.button`
-  background-color: #28a745;
+const Button = styled.button`
+  padding: 12px 20px;
+  background-color: var(--color-secondary);
   color: white;
-  padding: 10px 20px;
   border: none;
-  border-radius: 5px;
+  border-radius: var(--border-radius-md);
   cursor: pointer;
-
+  font-weight: bold;
+  transition: var(--transition-normal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: var(--shadow-button);
+  margin: var(--spacing-md) auto;
+  min-width: 200px;
+  
   &:hover {
-    background-color: #218838;
+    background-color: var(--color-secondary-dark);
+    transform: translateY(-2px);
+  }
+  
+  &:disabled {
+    background-color: var(--color-gray-400);
+    cursor: not-allowed;
+    transform: none;
   }
 `;
 
 const Loading = styled.div`
-  color: white;
+  color: var(--color-primary);
   text-align: center;
-  font-size: 18px;
-  margin-top: 20px;
+  font-size: var(--font-size-lg);
+  margin-top: var(--spacing-lg);
+  font-weight: 500;
 `;
 
 const Modal = styled.div`
@@ -127,28 +146,34 @@ const Modal = styled.div`
 
 const ModalContent = styled.div`
   background: white;
-  padding: 30px;
-  border-radius: 12px;
-  width: 90%; /* Aumenta o tamanho da modal */
-  max-width: 1000px; /* Limite máximo de largura */
-  max-height: 90%; /* Limite máximo de altura */
-  overflow-y: auto; /* Adiciona scroll se necessário */
+  padding: var(--spacing-xl);
+  border-radius: var(--border-radius-lg);
+  width: 90%;
+  max-width: 1000px;
+  max-height: 90%;
+  overflow-y: auto;
   position: relative;
+  box-shadow: var(--shadow-xl);
 `;
 
 const CloseButton = styled.button`
   position: absolute;
   top: 15px;
   right: 15px;
-  background: #e74c3c;
+  background: var(--color-error);
   color: white;
   border: none;
   font-size: 20px;
   font-weight: bold;
   padding: 10px 15px;
-  border-radius: 50%;
+  border-radius: var(--border-radius-round);
   cursor: pointer;
-  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-button);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
 
   &:hover {
     background: #c0392b;
@@ -157,47 +182,73 @@ const CloseButton = styled.button`
   }
 `;
 
+const ComparisonSection = styled.div`
+  flex: 1;
+  background-color: var(--color-surface);
+  padding: var(--spacing-lg);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-sm);
+`;
+
+const ComparisonTitle = styled.h3`
+  color: var(--color-primary);
+  margin-bottom: var(--spacing-md);
+  text-align: center;
+`;
+
+const DateInput = styled.input`
+  padding: 12px;
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--border-radius-md);
+  width: 100%;
+  margin-bottom: var(--spacing-md);
+  
+  &:focus {
+    border-color: var(--color-secondary);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(4, 117, 2, 0.2);
+  }
+`;
 
 const ComparacaoAnaliseScreen = () => {
     const [fazendas, setFazendas] = useState<any[]>([]);
-    const [grupos, setGrupos] = useState<any[]>([]);
-    const [projetos, setProjetos] = useState<any[]>([]);
     const [talhoesLeft, setTalhoesLeft] = useState<any[]>([]);
     const [talhoesRight, setTalhoesRight] = useState<any[]>([]);
     const [chartData, setChartData] = useState<ChartData[]>([]);
     const [modalVisible, setModalVisible] = useState(false);
     const [loading, setLoading] = useState(false);
 
+    // Função para obter o primeiro dia do mês atual formatado como YYYY-MM-DD
+    const getFirstDayOfCurrentMonth = () => {
+        const today = new Date();
+        return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
+    };
+
+    // Função para obter a data atual formatada como YYYY-MM-DD
+    const getCurrentDate = () => {
+        const today = new Date();
+        return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    };
+
     const [filtersLeft, setFiltersLeft] = useState({
         fazenda: '',
         talhao: '',
-        grupo: '',
-        projeto: '',
-        startDate: '',
-        endDate: '',
+        startDate: getFirstDayOfCurrentMonth(),
+        endDate: getCurrentDate(),
     });
     const [filtersRight, setFiltersRight] = useState({
         fazenda: '',
         talhao: '',
-        grupo: '',
-        projeto: '',
-        startDate: '',
-        endDate: '',
+        startDate: getFirstDayOfCurrentMonth(),
+        endDate: getCurrentDate(),
     });
 
-    // Carrega listas iniciais de fazendas, grupos, projetos
+    // Carrega listas iniciais de fazendas
     useEffect(() => {
         const fetchInitialData = async () => {
             try {
-                const [fazendasData, gruposData, projetosData] = await Promise.all([
-                    api.getAllFazendas(),
-                    api.getAllGrupos(),
-                    api.getAllProjetos(),
-                ]);
-
+                const fazendasData = await api.getAllFazendas();
                 setFazendas(fazendasData.data);
-                setGrupos(gruposData.data);
-                setProjetos(projetosData.data);
             } catch (err) {
                 console.error('Erro ao carregar dados iniciais:', err);
             }
@@ -229,18 +280,52 @@ const ComparacaoAnaliseScreen = () => {
         setLoading(true);
 
         try {
+            // Verificações antes de enviar a requisição
+            if (JSON.stringify(filtersLeft) === JSON.stringify(filtersRight)) {
+                console.warn('Os filtros esquerdo e direito são idênticos!');
+                
+                // Verifica quais campos específicos são iguais
+                for (const key in filtersLeft) {
+                    if (filtersLeft[key] === filtersRight[key]) {
+                        console.log(`O campo "${key}" é igual nos dois lados: "${filtersLeft[key]}"`);
+                    }
+                }
+            }
+
+            // Obter nomes dos talhões selecionados
+            const getSelectedTalhaoName = (talhaoId, talhoes) => {
+                const talhao = talhoes.find(t => t.id === talhaoId);
+                return talhao ? talhao.nome : 'Desconhecido';
+            };
+            
+            const leftTalhaoName = filtersLeft.talhao ? getSelectedTalhaoName(filtersLeft.talhao, talhoesLeft) : '';
+            const rightTalhaoName = filtersRight.talhao ? getSelectedTalhaoName(filtersRight.talhao, talhoesRight) : '';
+
             // Monta objeto com os dois conjuntos de filtros
             const requestBody = {
                 filtersLeft,
                 filtersRight,
             };
+            
+            console.log('Enviando filtros para comparação:', JSON.stringify(requestBody, null, 2));
+            
             // Faz a requisição ao backend no endpoint compare-analises
             const response = await api.compareAnalises(requestBody);
             const { leftData, rightData } = response.data;
+            
+            console.log('Dados recebidos do lado esquerdo:', JSON.stringify(leftData, null, 2));
+            console.log('Dados recebidos do lado direito:', JSON.stringify(rightData, null, 2));
+            
+            // Verificação para alertar quando os dados são idênticos
+            const areIdentical = JSON.stringify(leftData) === JSON.stringify(rightData);
+            if (areIdentical) {
+                console.warn('AVISO: Os dados do lado esquerdo e direito são idênticos!');
+                alert('Atenção! Os dados retornados para os dois lados são idênticos. Verifique se os filtros estão corretos.');
+            }
 
             // Ajusta dados para o chart
             const leftChart: ChartData = {
-                nome: 'Esquerda',
+                nome: '',
                 green: leftData.green,
                 greenYellow: leftData.greenYellow,
                 cherry: leftData.cherry,
@@ -252,10 +337,11 @@ const ComparacaoAnaliseScreen = () => {
                 cherryWeight: leftData.cherryWeight / 1000,
                 raisinWeight: leftData.raisinWeight / 1000,
                 dryWeight: leftData.dryWeight / 1000,
+                totalWeight: leftData.totalWeight / 1000,
             };
 
             const rightChart: ChartData = {
-                nome: 'Direita',
+                nome: '',
                 green: rightData.green,
                 greenYellow: rightData.greenYellow,
                 cherry: rightData.cherry,
@@ -267,12 +353,14 @@ const ComparacaoAnaliseScreen = () => {
                 cherryWeight: rightData.cherryWeight / 1000,
                 raisinWeight: rightData.raisinWeight / 1000,
                 dryWeight: rightData.dryWeight / 1000,
+                totalWeight: rightData.totalWeight / 1000,
             };
 
             setChartData([leftChart, rightChart]);
             setModalVisible(true);
         } catch (error) {
             console.error('Erro ao buscar dados de comparação:', error);
+            alert('Erro ao buscar dados de comparação. Verifique o console para mais detalhes.');
         } finally {
             setLoading(false);
         }
@@ -282,108 +370,115 @@ const ComparacaoAnaliseScreen = () => {
         <Container>
             <Title>Comparação de Análises</Title>
 
-            <FiltersContainer>
-                {[filtersLeft, filtersRight].map((filters, idx) => (
-                    <FilterSection key={idx}>
-                        <FilterLabel>Fazenda</FilterLabel>
-                        <FilterSelect
-                            value={filters.fazenda}
-                            onChange={(e) => {
-                                const fazendaId = e.target.value;
-                                if (idx === 0) {
-                                    setFiltersLeft({ ...filtersLeft, fazenda: fazendaId });
-                                    fetchTalhoes(fazendaId, setTalhoesLeft);
-                                } else {
-                                    setFiltersRight({ ...filtersRight, fazenda: fazendaId });
-                                    fetchTalhoes(fazendaId, setTalhoesRight);
-                                }
-                            }}
-                        >
-                            <option value="">Selecione</option>
-                            {fazendas.map((f: any) => (
-                                <option key={f.id} value={f.id}>
-                                    {f.nome}
-                                </option>
-                            ))}
-                        </FilterSelect>
+            <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                <ComparisonSection>
+                    <ComparisonTitle>Lado Esquerdo</ComparisonTitle>
+                    <FilterLabel>Fazenda</FilterLabel>
+                    <Select
+                        value={filtersLeft.fazenda}
+                        onChange={(e) => {
+                            const fazendaId = e.target.value;
+                            setFiltersLeft({ ...filtersLeft, fazenda: fazendaId });
+                            fetchTalhoes(fazendaId, setTalhoesLeft);
+                        }}
+                    >
+                        <option value="">Selecione</option>
+                        {fazendas.map((f: any) => (
+                            <option key={f.id} value={f.id}>
+                                {f.nome}
+                            </option>
+                        ))}
+                    </Select>
 
-                        <FilterLabel>Talhão</FilterLabel>
-                        <FilterSelect
-                            value={filters.talhao}
-                            onChange={(e) =>
-                                idx === 0
-                                    ? setFiltersLeft({ ...filtersLeft, talhao: e.target.value })
-                                    : setFiltersRight({ ...filtersRight, talhao: e.target.value })
-                            }
-                        >
-                            <option value="">Selecione</option>
-                            {(idx === 0 ? talhoesLeft : talhoesRight).map((t: any) => (
-                                <option key={t.id} value={t.id}>
-                                    {t.nome}
-                                </option>
-                            ))}
-                        </FilterSelect>
+                    <FilterLabel>Talhão</FilterLabel>
+                    <Select
+                        value={filtersLeft.talhao}
+                        onChange={(e) =>
+                            setFiltersLeft({ ...filtersLeft, talhao: e.target.value })
+                        }
+                    >
+                        <option value="">Selecione</option>
+                        {talhoesLeft.map((t: any) => (
+                            <option key={t.id} value={t.id}>
+                                {t.nome}
+                            </option>
+                        ))}
+                    </Select>
 
-                        <FilterLabel>Grupo</FilterLabel>
-                        <FilterSelect
-                            value={filters.grupo}
-                            onChange={(e) =>
-                                idx === 0
-                                    ? setFiltersLeft({ ...filtersLeft, grupo: e.target.value })
-                                    : setFiltersRight({ ...filtersRight, grupo: e.target.value })
-                            }
-                        >
-                            <option value="">Selecione</option>
-                            {grupos.map((g: any) => (
-                                <option key={g.id} value={g.id}>
-                                    {g.nome}
-                                </option>
-                            ))}
-                        </FilterSelect>
+                    <FilterLabel>Data Início</FilterLabel>
+                    <DateInput
+                        type="date"
+                        value={filtersLeft.startDate}
+                        onChange={(e) =>
+                            setFiltersLeft({ ...filtersLeft, startDate: e.target.value })
+                        }
+                    />
 
-                        <FilterLabel>Projeto</FilterLabel>
-                        <FilterSelect
-                            value={filters.projeto}
-                            onChange={(e) =>
-                                idx === 0
-                                    ? setFiltersLeft({ ...filtersLeft, projeto: e.target.value })
-                                    : setFiltersRight({ ...filtersRight, projeto: e.target.value })
-                            }
-                        >
-                            <option value="">Selecione</option>
-                            {projetos.map((p: any) => (
-                                <option key={p.id} value={p.id}>
-                                    {p.nome}
-                                </option>
-                            ))}
-                        </FilterSelect>
+                    <FilterLabel>Data Fim</FilterLabel>
+                    <DateInput
+                        type="date"
+                        value={filtersLeft.endDate}
+                        onChange={(e) =>
+                            setFiltersLeft({ ...filtersLeft, endDate: e.target.value })
+                        }
+                    />
+                </ComparisonSection>
 
-                        <FilterLabel>Data Início</FilterLabel>
-                        <FilterInput
-                            type="date"
-                            value={filters.startDate}
-                            onChange={(e) =>
-                                idx === 0
-                                    ? setFiltersLeft({ ...filtersLeft, startDate: e.target.value })
-                                    : setFiltersRight({ ...filtersRight, startDate: e.target.value })
-                            }
-                        />
+                <ComparisonSection>
+                    <ComparisonTitle>Lado Direito</ComparisonTitle>
+                    <FilterLabel>Fazenda</FilterLabel>
+                    <Select
+                        value={filtersRight.fazenda}
+                        onChange={(e) => {
+                            const fazendaId = e.target.value;
+                            setFiltersRight({ ...filtersRight, fazenda: fazendaId });
+                            fetchTalhoes(fazendaId, setTalhoesRight);
+                        }}
+                    >
+                        <option value="">Selecione</option>
+                        {fazendas.map((f: any) => (
+                            <option key={f.id} value={f.id}>
+                                {f.nome}
+                            </option>
+                        ))}
+                    </Select>
 
-                        <FilterLabel>Data Fim</FilterLabel>
-                        <FilterInput
-                            type="date"
-                            value={filters.endDate}
-                            onChange={(e) =>
-                                idx === 0
-                                    ? setFiltersLeft({ ...filtersLeft, endDate: e.target.value })
-                                    : setFiltersRight({ ...filtersRight, endDate: e.target.value })
-                            }
-                        />
-                    </FilterSection>
-                ))}
-            </FiltersContainer>
+                    <FilterLabel>Talhão</FilterLabel>
+                    <Select
+                        value={filtersRight.talhao}
+                        onChange={(e) =>
+                            setFiltersRight({ ...filtersRight, talhao: e.target.value })
+                        }
+                    >
+                        <option value="">Selecione</option>
+                        {talhoesRight.map((t: any) => (
+                            <option key={t.id} value={t.id}>
+                                {t.nome}
+                            </option>
+                        ))}
+                    </Select>
 
-            <FilterButton onClick={handleCompare}>Comparar</FilterButton>
+                    <FilterLabel>Data Início</FilterLabel>
+                    <DateInput
+                        type="date"
+                        value={filtersRight.startDate}
+                        onChange={(e) =>
+                            setFiltersRight({ ...filtersRight, startDate: e.target.value })
+                        }
+                    />
+
+                    <FilterLabel>Data Fim</FilterLabel>
+                    <DateInput
+                        type="date"
+                        value={filtersRight.endDate}
+                        onChange={(e) =>
+                            setFiltersRight({ ...filtersRight, endDate: e.target.value })
+                        }
+                    />
+                </ComparisonSection>
+            </div>
+
+            <Button onClick={handleCompare}>Comparar</Button>
             {loading && <Loading>Carregando...</Loading>}
 
             {modalVisible && (
@@ -391,80 +486,124 @@ const ComparacaoAnaliseScreen = () => {
                     <ModalContent>
                         <CloseButton onClick={() => setModalVisible(false)}>&times;</CloseButton>
 
-                        {/* Nome acima do gráfico */}
                         <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>
                             Comparação de Dados
                         </h2>
 
-                        {/* Gráfico */}
                         <BarChart width={900} height={600} data={chartData}>
                             <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis
-                                tick={false} // Remove os rótulos no eixo X
-                                axisLine={false} // Remove a linha do eixo X (opcional)
-                                tickLine={false} // Remove as marcações dos ticks no eixo X
+                            <XAxis 
+                                dataKey="nome"
+                                tick={{ fill: '#000', fontSize: 14, fontWeight: 'bold' }}
                             />
                             <YAxis />
-                            <Tooltip />
+                            <Tooltip 
+                                content={({ active, payload }) => {
+                                    if (active && payload && payload.length) {
+                                        const data = payload[0].payload;
+                                        return (
+                                            <div style={{ 
+                                                backgroundColor: 'white', 
+                                                padding: '10px', 
+                                                border: '1px solid #ccc',
+                                                borderRadius: '5px' 
+                                            }}>
+                                                <p>{data.nome}</p>
+                                                <p style={{ color: '#34A853' }}>Verde: {data.green} ({formatPercent(data.green, data.total)})</p>
+                                                <p style={{ color: '#FFD700' }}>Verde Cana: {data.greenYellow} ({formatPercent(data.greenYellow, data.total)})</p>
+                                                <p style={{ color: '#FF6347' }}>Cherry: {data.cherry} ({formatPercent(data.cherry, data.total)})</p>
+                                                <p style={{ color: '#8B4513' }}>Raisin: {data.raisin} ({formatPercent(data.raisin, data.total)})</p>
+                                                <p style={{ color: '#A9A9A9' }}>Dry: {data.dry} ({formatPercent(data.dry, data.total)})</p>
+                                            </div>
+                                        );
+                                    }
+                                    return null;
+                                }}
+                            />
                             <Legend />
 
-                            {/* Barras com percentual e peso */}
+                            {/* Barras com percentual */}
                             <Bar dataKey="green" fill="#34A853" name="Verde">
                                 <LabelList
                                     dataKey={(entry: any) => formatPercent(entry.green, entry.total)}
                                     position="top"
+                                    style={{ fontSize: 14, fontWeight: 'bold', fill: 'black' }}
                                 />
                                 <LabelList
-                                    dataKey="greenWeight"
-                                    formatter={(value: number) => `Peso: ${value.toFixed(2)} kg`}
+                                    dataKey={(entry: any) => `Peso: ${(entry.greenWeight).toFixed(2)} kg`}
                                     position="bottom"
+                                    style={{ fontSize: 12, fill: 'black' }}
                                 />
                             </Bar>
-                            <Bar dataKey="greenYellow" fill="#FFD700" name="Amarelo">
+                            <Bar dataKey="greenYellow" fill="#FFD700" name="Verde Cana">
                                 <LabelList
                                     dataKey={(entry: any) => formatPercent(entry.greenYellow, entry.total)}
                                     position="top"
+                                    style={{ fontSize: 14, fontWeight: 'bold', fill: 'black' }}
                                 />
                                 <LabelList
-                                    dataKey="greenYellowWeight"
-                                    formatter={(value: number) => `Peso: ${value.toFixed(2)} kg`}
+                                    dataKey={(entry: any) => `Peso: ${(entry.greenYellowWeight).toFixed(2)} kg`}
                                     position="bottom"
+                                    style={{ fontSize: 12, fill: 'black' }}
                                 />
                             </Bar>
-                            <Bar dataKey="cherry" fill="#FF6347" name="Cherry">
+                            <Bar dataKey="cherry" fill="#FF6347" name="Cereja">
                                 <LabelList
                                     dataKey={(entry: any) => formatPercent(entry.cherry, entry.total)}
                                     position="top"
+                                    style={{ fontSize: 14, fontWeight: 'bold', fill: 'black' }}
                                 />
                                 <LabelList
-                                    dataKey="cherryWeight"
-                                    formatter={(value: number) => `Peso: ${value.toFixed(2)} kg`}
+                                    dataKey={(entry: any) => `Peso: ${(entry.cherryWeight).toFixed(2)} kg`}
                                     position="bottom"
+                                    style={{ fontSize: 12, fill: 'black' }}
                                 />
                             </Bar>
-                            <Bar dataKey="raisin" fill="#8B4513" name="Raisin">
+                            <Bar dataKey="raisin" fill="#8B4513" name="Passa">
                                 <LabelList
                                     dataKey={(entry: any) => formatPercent(entry.raisin, entry.total)}
                                     position="top"
+                                    style={{ fontSize: 14, fontWeight: 'bold', fill: 'black' }}
                                 />
                                 <LabelList
-                                    dataKey="raisinWeight"
-                                    formatter={(value: number) => `Peso: ${value.toFixed(2)} kg`}
+                                    dataKey={(entry: any) => `Peso: ${(entry.raisinWeight).toFixed(2)} kg`}
                                     position="bottom"
+                                    style={{ fontSize: 12, fill: 'black' }}
                                 />
                             </Bar>
-                            <Bar dataKey="dry" fill="#A9A9A9" name="Dry">
+                            <Bar dataKey="dry" fill="#A9A9A9" name="Seco">
                                 <LabelList
                                     dataKey={(entry: any) => formatPercent(entry.dry, entry.total)}
                                     position="top"
+                                    style={{ fontSize: 14, fontWeight: 'bold', fill: 'black' }}
                                 />
                                 <LabelList
-                                    dataKey="dryWeight"
-                                    formatter={(value: number) => `Peso: ${value.toFixed(2)} kg`}
+                                    dataKey={(entry: any) => `Peso: ${(entry.dryWeight).toFixed(2)} kg`}
                                     position="bottom"
+                                    style={{ fontSize: 12, fill: 'black' }}
                                 />
                             </Bar>
                         </BarChart>
+
+                        <div style={{ marginTop: '30px', padding: '20px', backgroundColor: '#f5f5f5', borderRadius: '8px' }}>
+                            <h3 style={{ textAlign: 'center', marginBottom: '15px' }}>Resumo</h3>
+                            <div style={{ display: 'flex', justifyContent: 'space-around' }}>
+                                {chartData.map((data, index) => (
+                                    <div key={index} style={{ flex: 1, padding: '10px' }}>
+                                        <h4>{data.nome}</h4>
+                                        <p><strong>Total de grãos:</strong> {data.total.toLocaleString()}</p>
+                                        <p><strong>Peso total estimado:</strong> {data.totalWeight?.toFixed(2)} kg</p>
+                                        <div>
+                                            <p><strong>Verde:</strong> {data.green} ({formatPercent(data.green, data.total)})</p>
+                                            <p><strong>Verde Cana:</strong> {data.greenYellow} ({formatPercent(data.greenYellow, data.total)})</p>
+                                            <p><strong>Cereja:</strong> {data.cherry} ({formatPercent(data.cherry, data.total)})</p>
+                                            <p><strong>Passa:</strong> {data.raisin} ({formatPercent(data.raisin, data.total)})</p>
+                                            <p><strong>Seco:</strong> {data.dry} ({formatPercent(data.dry, data.total)})</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     </ModalContent>
                 </Modal>
             )}

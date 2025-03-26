@@ -115,23 +115,9 @@ interface Photo {
 const ColetaImagensScreen: React.FC = () => {
     const navigate = useNavigate();
     const { talhaoId } = useParams<{ talhaoId: string }>(); // Pegando o ID do talhão da URL
-    const [projects, setProjects] = useState<any[]>([]);
-    const [groups, setGroups] = useState<any[]>([]);
-    const [selectedProject, setSelectedProject] = useState<string | null>(null);
-    const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
     const [photos, setPhotos] = useState<Photo[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const [loadingImages, setLoadingImages] = useState<boolean>(false); // Novo estado para controle de carregamento de imagens
-
-    useEffect(() => {
-        const fetchData = async () => {
-            const projectsData = await api.getAllProjetos();
-            const groupsData = await api.getAllGrupos();
-            setProjects(projectsData.data);
-            setGroups(groupsData.data);
-        };
-        fetchData();
-    }, []);
 
     const handleImageSelection = async (event: ChangeEvent<HTMLInputElement>) => {
         const selectedFiles = event.target.files;
@@ -195,10 +181,6 @@ const ColetaImagensScreen: React.FC = () => {
                 const formData = new FormData();
                 formData.append('formFile', photo.file); // Envia o arquivo real compactado
 
-                // Se houver projeto ou grupo selecionado, adiciona ao formData
-                if (selectedProject) formData.append('projetoId', selectedProject);
-                if (selectedGroup) formData.append('grupoId', selectedGroup);
-
                 // Envia uma imagem de cada vez para o back-end
                 return api.addPlotAnalysis(talhaoId, formData); // Retorna a Promise
             });
@@ -220,36 +202,6 @@ const ColetaImagensScreen: React.FC = () => {
         <ColetaImagensContainer>
             <Title>Coleta de Imagens</Title>
             <span>Talhão Selecionado: {talhaoId}</span>
-
-            <div>
-                <Label>Projeto (Opcional)</Label>
-                <Select
-                    value={selectedProject || ''}
-                    onChange={(e) => setSelectedProject(e.target.value)}
-                >
-                    <option value="">Selecione um projeto</option>
-                    {projects.map((project: any) => (
-                        <option key={project.id} value={project.id}>
-                            {project.nome}
-                        </option>
-                    ))}
-                </Select>
-            </div>
-
-            <div>
-                <Label>Grupo (Opcional)</Label>
-                <Select
-                    value={selectedGroup || ''}
-                    onChange={(e) => setSelectedGroup(e.target.value)}
-                >
-                    <option value="">Selecione um grupo</option>
-                    {groups.map((group: any) => (
-                        <option key={group.id} value={group.id}>
-                            {group.nome}
-                        </option>
-                    ))}
-                </Select>
-            </div>
 
             <div>
                 <PhotoButton as="label">

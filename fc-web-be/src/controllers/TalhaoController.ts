@@ -5,7 +5,7 @@ import Talhao from '../models/Talhao';
 import Plantio from '../models/Plantio';
 import jwt from 'jsonwebtoken';
 import Analise from "../models/Analise";
-import {Op, Sequelize} from "sequelize";
+import {Op, QueryTypes, Sequelize} from "sequelize";
 import axios from "axios";
 import FormData from 'form-data';
 import { BlobServiceClient } from '@azure/storage-blob';
@@ -93,38 +93,178 @@ export async function getAllTalhoes(req: Request, res: Response) {
 
         const pessoaId = authService.verifyToken(token)?.userId;
 
-        // Busca apenas os talhões que pertencem ao usuário através da Fazenda
-        const talhoes = await Talhao.findAll({
-            where: {
-                fazendaId: {
-                    [Op.in]: Sequelize.literal(`(SELECT FazendaId FROM tbPessoaFisicaFazenda WHERE PessoaFisicaId = '${pessoaId}')`)
-                }
+        // Busca os talhões com todas as informações necessárias
+        const talhoes = await sequelize.query<TalhaoAtualizadoResult>(
+            `SELECT 
+                t.*,
+                f.Nome as FazendaNome,
+                td.desenhoGeometria.STAsText() as desenho,
+                tp.Id as PlantioId,
+                tp.Data as DataPlantio,
+                tp.EspacamentoLinhasMetros,
+                tp.EspacamentoMudasMetros,
+                tp.CultivarId
+            FROM tbTalhao t
+            INNER JOIN tbFazenda f ON t.FazendaId = f.Id
+            LEFT JOIN tbTalhaoDesenho td ON t.Id = td.talhaoId
+            LEFT JOIN tbPlantio tp ON t.Id = tp.TalhaoId
+            WHERE t.FazendaId IN (
+                SELECT FazendaId 
+                FROM tbPessoaFisicaFazenda 
+                WHERE PessoaFisicaId = :pessoaId
+            )
+            ORDER BY t.Nome ASC`,
+            {
+                replacements: { pessoaId },
+                type: QueryTypes.SELECT
             }
-        });
+        );
 
-        res.json(talhoes);
+        // Formatar a resposta para manter a compatibilidade com o frontend
+        const response = talhoes.map(talhao => ({
+            id: talhao.Id,
+            nome: talhao.Nome,
+            fazendaId: talhao.FazendaId,
+            createdAt: talhao.CreatedAt,
+            lastUpdatedAt: talhao.LastUpdatedAt,
+            Fazenda: {
+                id: talhao.FazendaId,
+                nome: talhao.FazendaNome
+            },
+            TalhaoDesenho: talhao.desenho ? {
+                talhaoId: talhao.Id,
+                desenhoGeometria: talhao.desenho
+            } : null,
+            Plantio: talhao.PlantioId ? {
+                id: talhao.PlantioId,
+                data: talhao.DataPlantio,
+                espacamentoLinhasMetros: talhao.EspacamentoLinhasMetros,
+                espacamentoMudasMetros: talhao.EspacamentoMudasMetros,
+                cultivarId: talhao.CultivarId,
+                talhaoId: talhao.Id
+            } : null
+        }));
+
+        res.json(response);
     } catch (error) {
         console.error('Erro ao buscar talhões:', error);
         res.status(500).json({ message: 'Erro ao buscar talhões', error });
     }
 }
 
+// Interface para os resultados da query
+interface TalhaoQueryResult {
+    Id: string;
+    Nome: string;
+    FazendaId: string;
+    CreatedAt: Date;
+    LastUpdatedAt: Date;
+    FazendaNome: string;
+    desenho: any;
+    // Campos do Plantio
+    PlantioId: string;
+    DataPlantio: Date;
+    EspacamentoLinhasMetros: number;
+    EspacamentoMudasMetros: number;
+    CultivarId: string;
+}
+
 export async function getTalhaoById(req: Request, res: Response) {
     try {
         const { id } = req.params;
-        const talhao = await Talhao.findByPk(id, {
-            include: [
-                { model: Fazenda },
-                { model: TalhaoDesenho },  // Aqui, incluímos o desenho do talhão
-            ],
+        
+        console.log(`Buscando talhão com ID: ${id}`);
+        
+        // Consulta SQL para buscar o talhão e suas informações relacionadas
+        const [results] = await sequelize.query<TalhaoQueryResult>(`
+            SELECT 
+                t.*,
+                f.Nome as FazendaNome,
+                td.DesenhoGeometria.STAsText() as desenho,
+                tp.Id as PlantioId,
+                tp.Data as DataPlantio,
+                tp.EspacamentoLinhasMetros,
+                tp.EspacamentoMudasMetros,
+                tp.CultivarId
+            FROM tbTalhao t
+            LEFT JOIN tbPlantio tp ON tp.TalhaoId = t.Id  
+            INNER JOIN tbFazenda f ON t.FazendaId = f.Id
+            LEFT JOIN tbTalhaoDesenho td ON t.Id = td.TalhaoId
+            WHERE t.Id = :talhaoId
+        `, {
+            replacements: { talhaoId: id },
+            type: QueryTypes.SELECT
         });
 
-        if (!talhao) {
+        if (!results) {
+            console.log(`Talhão não encontrado com ID: ${id}`);
             return res.status(404).json({ message: 'Talhão não encontrado' });
         }
 
-        res.json(talhao);
+        console.log(`Talhão encontrado: ${results.Nome}, desenho: ${results.desenho ? 'Sim' : 'Não'}`);
+
+        // Converter o texto WKT para formato GeoJSON para o frontend
+        let desenhoGeoJSON = null;
+        if (results.desenho) {
+            try {
+                console.log(`Desenho WKT: ${results.desenho}`);
+                // Parse do formato WKT para extrair as coordenadas
+                // Corrigindo a regex para corresponder ao formato real retornado pelo SQL Server
+                const wktRegex = /POLYGON\s*\(\((.*)\)\)/;
+                const match = results.desenho.match(wktRegex);
+                
+                if (match && match[1]) {
+                    const coordsText = match[1];
+                    console.log(`Coordenadas extraídas: ${coordsText}`);
+                    const coordPairs = coordsText.split(',').map((pair: string) => {
+                        const [lng, lat] = pair.trim().split(' ').map(Number);
+                        return [lat, lng]; // Inverter para o formato [latitude, longitude]
+                    });
+                    
+                    desenhoGeoJSON = {
+                        type: 'Polygon',
+                        coordinates: [coordPairs]
+                    };
+                    console.log(`Desenho GeoJSON gerado com ${coordPairs.length} pontos`);
+                } else {
+                    console.log(`Regex não encontrou coordenadas no desenho: ${results.desenho}`);
+                }
+            } catch (error) {
+                console.error('Erro ao converter WKT para GeoJSON:', error);
+            }
+        } else {
+            console.log('Talhão não possui desenho');
+        }
+
+        // Formatar a resposta para manter a compatibilidade com o frontend
+        const response = {
+            id: results.Id,
+            nome: results.Nome,
+            fazendaId: results.FazendaId,
+            createdAt: results.CreatedAt,
+            lastUpdatedAt: results.LastUpdatedAt,
+            Fazenda: {
+                id: results.FazendaId,
+                nome: results.FazendaNome
+            },
+            TalhaoDesenho: desenhoGeoJSON ? {
+                talhaoId: results.Id,
+                desenhoGeometria: desenhoGeoJSON
+            } : null,
+            Plantio: results.PlantioId ? {
+                id: results.PlantioId,
+                data: results.DataPlantio,
+                espacamentoLinhasMetros: results.EspacamentoLinhasMetros,
+                espacamentoMudasMetros: results.EspacamentoMudasMetros,
+                cultivarId: results.CultivarId,
+                talhaoId: results.Id
+            } : null
+        };
+
+        console.log(`Resposta formatada. TalhaoDesenho: ${response.TalhaoDesenho ? 'Presente' : 'Ausente'}`);
+        res.json(response);
     } catch (error) {
+        console.error('Erro ao buscar talhão:', error);
         res.status(500).json({ message: 'Erro ao buscar talhão', error });
     }
 }
@@ -147,7 +287,8 @@ export async function getTalhoesByFazenda(req: Request, res: Response) {
 
         // Busca os talhões associados à fazenda
         const talhoes = await Talhao.findAll({
-            where: { fazendaId }
+            where: { fazendaId },
+            order: [['nome', 'ASC']] // Ordenar por nome em ordem alfabética
         });
 
         res.json(talhoes);
@@ -157,12 +298,25 @@ export async function getTalhoesByFazenda(req: Request, res: Response) {
     }
 }
 
+type Coordinate = [number, number]; // [latitude, longitude]
+
 export async function createTalhao(req: Request, res: Response) {
     try {
-        const { nome, nomeResponsavel, fazendaId, dataPlantio, espacamentoLinhas, espacamentoMudas, cultivarId, coordinates } = req.body;
+        const { nome, nomeResponsavel, fazendaId, dataPlantio, espacamentoLinhas, espacamentoMudas, cultivarId, desenho } = req.body;
 
-        if (!nome || !fazendaId) {
-            return res.status(400).json({ message: 'Nome e Fazenda ID são obrigatórios' });
+        // Verificar todos os campos obrigatórios e retornar uma mensagem específica para cada um
+        const camposObrigatorios = [];
+        if (!nome) camposObrigatorios.push('Nome');
+        if (!fazendaId) camposObrigatorios.push('Fazenda');
+        if (!dataPlantio) camposObrigatorios.push('Data de plantio');
+        if (!espacamentoLinhas) camposObrigatorios.push('Espaçamento entre linhas');
+        if (!espacamentoMudas) camposObrigatorios.push('Espaçamento entre mudas');
+        if (!cultivarId) camposObrigatorios.push('Cultivar');
+
+        if (camposObrigatorios.length > 0) {
+            return res.status(400).json({ 
+                message: `Os seguintes campos são obrigatórios: ${camposObrigatorios.join(', ')}` 
+            });
         }
 
         const fazendaExists = await Fazenda.findByPk(fazendaId);
@@ -177,76 +331,280 @@ export async function createTalhao(req: Request, res: Response) {
 
         const pessoaId = authService.verifyToken(token)?.userId;
 
-        // Criar o talhão
-        const talhao = await Talhao.create({ nome, fazendaId });
+        // Usar uma transação para garantir a consistência dos dados
+        const result = await sequelize.transaction(async (t) => {
+            // Criar o talhão
+            const talhao = await Talhao.create({ 
+                nome, 
+                fazendaId,
+                createdAt: new Date(),
+                lastUpdatedAt: new Date()
+            }, { transaction: t });
 
-        // Verificando e formatando as coordenadas para o formato POLYGON
-        console.log("Chegou coordinates? --->", coordinates);
-        if (coordinates && coordinates.length > 0) {
-            // Formatar as coordenadas para o formato POLYGON esperado pelo SQL Server
-            const polygonCoordinates = coordinates.map((coord: any[]) => `${coord[1]} ${coord[0]}`).join(', ');
-
-            // Garantir que o polígono feche com a mesma coordenada do início
-            const polygonText = `POLYGON((${polygonCoordinates}, ${coordinates[0][1]} ${coordinates[0][0]}))`;
-            console.log("Polygon Text: ", polygonText);
-
-            // Executar a query diretamente com Sequelize raw query
-            const query = `
-                INSERT INTO [tbTalhaoDesenho] ([talhaoId], [desenhoGeometria], [CreatedAt], [LastUpdatedAt])
-                VALUES ('${talhao.id}', geography::STGeomFromText(N'${polygonText}', 4326), GETDATE(), GETDATE());
-            `;
-
-            await sequelize.query(query);
-        } else {
-            return res.status(400).json({ message: 'As coordenadas do desenho são obrigatórias' });
-        }
-
-        // Cadastro do Plantio, se os dados estiverem presentes
-        if (dataPlantio && espacamentoLinhas && espacamentoMudas && cultivarId) {
-            await Plantio.create({
-                data: dataPlantio,
+            // Criar o plantio associado ao talhão
+            const plantio = await Plantio.create({
+                data: new Date(dataPlantio),
                 espacamentoLinhasMetros: espacamentoLinhas,
                 espacamentoMudasMetros: espacamentoMudas,
                 cultivarId,
-                talhaoId: talhao.id,
-                createdAt: new Date(),
-                lastUpdatedAt: new Date(),
-            });
-        }
+                talhaoId: talhao.id
+            }, { transaction: t });
 
-        res.status(201).json(talhao);
+            // Se tiver desenho, salvar
+            if (desenho?.type === 'Polygon' && desenho.coordinates && Array.isArray(desenho.coordinates[0])) {
+                // Formatar as coordenadas para o formato WKT - IMPORTANTE: Inverter lat/long para long/lat
+                const polygonPoints = desenho.coordinates[0].map(coord => `${coord[1]} ${coord[0]}`).join(',');
+                // Fechar o polígono repetindo o primeiro ponto se necessário
+                const firstCoord = desenho.coordinates[0][0];
+                const lastCoord = desenho.coordinates[0][desenho.coordinates[0].length - 1];
+                const wktPolygon = `POLYGON((${polygonPoints}${firstCoord[0] !== lastCoord[0] || firstCoord[1] !== lastCoord[1] ? `,${firstCoord[1]} ${firstCoord[0]}` : ''}))`;
+                
+                await sequelize.query(
+                    `INSERT INTO tbTalhaoDesenho (TalhaoId, DesenhoGeometria, CreatedAt, LastUpdatedAt)
+                     VALUES (:talhaoId, geography::STGeomFromText(:wktPolygon, 4326), :createdAt, :lastUpdatedAt)`,
+                    {
+                        replacements: {
+                            talhaoId: talhao.id,
+                            wktPolygon,
+                            createdAt: new Date(),
+                            lastUpdatedAt: new Date()
+                        },
+                        type: QueryTypes.INSERT,
+                        transaction: t
+                    }
+                );
+            }
+
+            return { talhao, plantio };
+        });
+
+        // Retornar a estrutura esperada pelo APP
+        res.status(201).json({
+            id: result.talhao.id,
+            nome: result.talhao.nome,
+            fazendaId: result.talhao.fazendaId,
+            createdAt: result.talhao.createdAt,
+            lastUpdatedAt: result.talhao.lastUpdatedAt,
+            Plantio: {
+                id: result.plantio.id,
+                data: result.plantio.data,
+                espacamentoLinhasMetros: result.plantio.espacamentoLinhasMetros,
+                espacamentoMudasMetros: result.plantio.espacamentoMudasMetros,
+                cultivarId: result.plantio.cultivarId,
+                talhaoId: result.talhao.id
+            }
+        });
     } catch (error) {
         console.error('Erro ao criar talhão:', error);
         res.status(500).json({ message: 'Erro ao criar talhão', error });
     }
 }
 
+// Interface para os resultados da query de atualização
+interface TalhaoAtualizadoResult {
+    Id: string;
+    Nome: string;
+    FazendaId: string;
+    CreatedAt: Date;
+    LastUpdatedAt: Date;
+    FazendaNome: string;
+    desenho: string | null;
+    PlantioId: string;
+    DataPlantio: Date;
+    EspacamentoLinhasMetros: number;
+    EspacamentoMudasMetros: number;
+    CultivarId: string;
+}
 
 export async function updateTalhao(req: Request, res: Response) {
     try {
         const { id } = req.params;
-        const { nome, nomeResponsavel, fazendaId } = req.body;
+        const { nome, fazendaId, dataPlantio, espacamentoLinhas, espacamentoMudas, cultivarId, desenho } = req.body;
 
+        // Validação dos campos obrigatórios
+        if (!nome || !fazendaId) {
+            return res.status(400).json({ message: 'Nome e Fazenda ID são obrigatórios' });
+        }
+
+        // Verificar se o talhão existe
         const talhao = await Talhao.findByPk(id);
         if (!talhao) {
             return res.status(404).json({ message: 'Talhão não encontrado' });
         }
 
-        if (!nome || !fazendaId) {
-            return res.status(400).json({ message: 'Nome e Fazenda ID são obrigatórios' });
-        }
-
+        // Verificar se a fazenda existe
         const fazendaExists = await Fazenda.findByPk(fazendaId);
         if (!fazendaExists) {
             return res.status(404).json({ message: 'Fazenda não encontrada' });
         }
 
-        talhao.nome = nome;
-        talhao.fazendaId = fazendaId;
-        await talhao.save();
+        // Usar uma transação para garantir a consistência dos dados
+        await sequelize.transaction(async (t) => {
+            // Atualizar o talhão
+            await talhao.update({
+                nome,
+                fazendaId,
+                lastUpdatedAt: new Date()
+            }, { transaction: t });
 
-        res.json({ message: 'Talhão atualizado com sucesso', talhao });
+            // Atualizar ou criar o desenho do talhão
+            if (desenho?.type === 'Polygon' && desenho.coordinates && Array.isArray(desenho.coordinates[0])) {
+                // Formatar as coordenadas para o formato WKT - IMPORTANTE: Inverter lat/long para long/lat
+                const polygonPoints = desenho.coordinates[0].map(coord => `${coord[1]} ${coord[0]}`).join(',');
+                // Fechar o polígono repetindo o primeiro ponto se necessário
+                const firstCoord = desenho.coordinates[0][0];
+                const lastCoord = desenho.coordinates[0][desenho.coordinates[0].length - 1];
+                const wktPolygon = `POLYGON((${polygonPoints}${firstCoord[0] !== lastCoord[0] || firstCoord[1] !== lastCoord[1] ? `,${firstCoord[1]} ${firstCoord[0]}` : ''}))`;
+
+                // Verificar se já existe um desenho
+                const existingDesenho = await TalhaoDesenho.findOne({
+                    where: { talhaoId: id },
+                    transaction: t
+                });
+
+                if (existingDesenho) {
+                    // Se existe, atualiza
+                    await sequelize.query(
+                        `UPDATE tbTalhaoDesenho 
+                         SET DesenhoGeometria = geography::STGeomFromText(:wktPolygon, 4326),
+                             LastUpdatedAt = :lastUpdatedAt
+                         WHERE TalhaoId = :talhaoId`,
+                        {
+                            replacements: {
+                                talhaoId: id,
+                                wktPolygon,
+                                lastUpdatedAt: new Date()
+                            },
+                            type: QueryTypes.UPDATE,
+                            transaction: t
+                        }
+                    );
+                } else {
+                    // Se não existe, cria um novo
+                    await sequelize.query(
+                        `INSERT INTO tbTalhaoDesenho (TalhaoId, DesenhoGeometria, CreatedAt, LastUpdatedAt)
+                         VALUES (:talhaoId, geography::STGeomFromText(:wktPolygon, 4326), :createdAt, :lastUpdatedAt)`,
+                        {
+                            replacements: {
+                                talhaoId: id,
+                                wktPolygon,
+                                createdAt: new Date(),
+                                lastUpdatedAt: new Date()
+                            },
+                            type: QueryTypes.INSERT,
+                            transaction: t
+                        }
+                    );
+                }
+            }
+
+            // Atualizar o plantio associado se necessário
+            if (dataPlantio || espacamentoLinhas || espacamentoMudas || cultivarId) {
+                const plantio = await Plantio.findOne({ 
+                    where: { talhaoId: id },
+                    transaction: t 
+                });
+                
+                const plantioData = {
+                    data: dataPlantio ? new Date(dataPlantio) : undefined,
+                    espacamentoLinhasMetros: espacamentoLinhas,
+                    espacamentoMudasMetros: espacamentoMudas,
+                    cultivarId,
+                    talhaoId: id
+                };
+                
+                if (plantio) {
+                    await plantio.update({
+                        ...Object.fromEntries(
+                            Object.entries(plantioData).filter(([_, value]) => value !== undefined)
+                        )
+                    }, { transaction: t });
+                } else if (Object.values(plantioData).some(value => value !== undefined)) {
+                    await Plantio.create(plantioData, { transaction: t });
+                }
+            }
+        });
+
+        // Buscar o talhão atualizado com todas as relações
+        const [talhaoAtualizado] = await sequelize.query<TalhaoAtualizadoResult>(
+            `SELECT 
+                t.*,
+                f.Nome as FazendaNome,
+                td.DesenhoGeometria.STAsText() as desenho,
+                tp.Id as PlantioId,
+                tp.Data as DataPlantio,
+                tp.EspacamentoLinhasMetros,
+                tp.EspacamentoMudasMetros,
+                tp.CultivarId
+            FROM tbTalhao t
+            INNER JOIN tbFazenda f ON t.FazendaId = f.Id
+            LEFT JOIN tbTalhaoDesenho td ON t.Id = td.TalhaoId
+            LEFT JOIN tbPlantio tp ON t.Id = tp.TalhaoId
+            WHERE t.Id = :talhaoId`,
+            {
+                replacements: { talhaoId: id },
+                type: QueryTypes.SELECT
+            }
+        );
+
+        // Converter o texto WKT para formato GeoJSON para o frontend
+        let desenhoGeoJSON = null;
+        if (talhaoAtualizado.desenho) {
+            try {
+                // Parse do formato WKT para extrair as coordenadas
+                // Corrigindo a regex para corresponder ao formato real retornado pelo SQL Server
+                const wktRegex = /POLYGON\s*\(\((.*)\)\)/;
+                const match = talhaoAtualizado.desenho.match(wktRegex);
+                
+                if (match && match[1]) {
+                    const coordsText = match[1];
+                    console.log(`Coordenadas extraídas: ${coordsText}`);
+                    const coordPairs = coordsText.split(',').map((pair: string) => {
+                        const [lng, lat] = pair.trim().split(' ').map(Number);
+                        return [lat, lng]; // Inverter para o formato [latitude, longitude]
+                    });
+                    
+                    desenhoGeoJSON = {
+                        type: 'Polygon',
+                        coordinates: [coordPairs]
+                    };
+                    console.log(`Desenho GeoJSON gerado com ${coordPairs.length} pontos`);
+                } else {
+                    console.log(`Regex não encontrou coordenadas no desenho: ${talhaoAtualizado.desenho}`);
+                }
+            } catch (error) {
+                console.error('Erro ao converter WKT para GeoJSON:', error);
+            }
+        }
+
+        // Formatar a resposta para manter a compatibilidade com o frontend
+        const response = {
+            id: talhaoAtualizado.Id,
+            nome: talhaoAtualizado.Nome,
+            fazendaId: talhaoAtualizado.FazendaId,
+            createdAt: talhaoAtualizado.CreatedAt,
+            lastUpdatedAt: talhaoAtualizado.LastUpdatedAt,
+            Fazenda: {
+                id: talhaoAtualizado.FazendaId,
+                nome: talhaoAtualizado.FazendaNome
+            },
+            TalhaoDesenho: desenhoGeoJSON ? {
+                talhaoId: talhaoAtualizado.Id,
+                desenhoGeometria: desenhoGeoJSON
+            } : null,
+            Plantio: talhaoAtualizado.PlantioId ? {
+                id: talhaoAtualizado.PlantioId,
+                data: talhaoAtualizado.DataPlantio,
+                espacamentoLinhasMetros: talhaoAtualizado.EspacamentoLinhasMetros,
+                espacamentoMudasMetros: talhaoAtualizado.EspacamentoMudasMetros,
+                cultivarId: talhaoAtualizado.CultivarId,
+                talhaoId: talhaoAtualizado.Id
+            } : null
+        };
+
+        res.json(response);
     } catch (error) {
+        console.error('Erro ao atualizar talhão:', error);
         res.status(500).json({ message: 'Erro ao atualizar talhão', error });
     }
 }
@@ -255,18 +613,47 @@ export async function deleteTalhao(req: Request, res: Response) {
     try {
         const { id } = req.params;
 
-        // Excluir todos os registros associados na tabela Plantio
-        await Plantio.destroy({ where: { talhaoId: id } });
-
+        // Verificar se o talhão existe
         const talhao = await Talhao.findByPk(id);
         if (!talhao) {
             return res.status(404).json({ message: 'Talhão não encontrado' });
         }
 
-        await talhao.destroy();
-        res.json({ message: 'Talhão e seus plantios associados excluídos com sucesso' });
+        // Usar uma transação para garantir que todas as exclusões sejam feitas ou nenhuma
+        await sequelize.transaction(async (t) => {
+            // 1. Excluir todas as análises associadas ao talhão
+            await Analise.destroy({ 
+                where: { talhaoId: id },
+                transaction: t
+            });
+
+            // 2. Excluir o desenho do talhão
+            await TalhaoDesenho.destroy({ 
+                where: { talhaoId: id },
+                transaction: t
+            });
+
+            // 3. Excluir todos os plantios associados ao talhão
+            await Plantio.destroy({ 
+                where: { talhaoId: id },
+                transaction: t
+            });
+
+            // 4. Finalmente, excluir o talhão
+            await talhao.destroy({ transaction: t });
+        });
+
+        res.json({ 
+            message: 'Talhão e todos os seus registros associados foram excluídos com sucesso',
+            success: true
+        });
     } catch (error) {
-        res.status(500).json({ message: 'Erro ao excluir talhão', error });
+        console.error('Erro ao excluir talhão:', error);
+        res.status(500).json({ 
+            message: 'Erro ao excluir talhão', 
+            error,
+            success: false
+        });
     }
 }
 
@@ -760,4 +1147,24 @@ export const addTalhaoDesenho = async (req: Request, res: Response) => {
     }
 };
 
-export default { getAllTalhoes, getTalhaoById, createTalhao, updateTalhao, deleteTalhao, getPlotAnalyses, addPlotAnalysis, getPlotAnalysesChart, getTalhoesByFazenda, getFilteredAnalyses };
+export const getTalhaoDesenho = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        
+        const desenho = await TalhaoDesenho.findOne({
+            where: { talhaoId: id }
+        });
+
+        if (!desenho) {
+            return res.status(404).json({ message: 'Desenho do talhão não encontrado' });
+        }
+
+        res.json(desenho);
+    } catch (error) {
+        console.error('Erro ao buscar desenho do talhão:', error);
+        res.status(500).json({ message: 'Erro ao buscar desenho do talhão', error });
+    }
+};
+
+export default { getAllTalhoes, getTalhaoById, createTalhao, updateTalhao, deleteTalhao, getPlotAnalyses, addPlotAnalysis, getPlotAnalysesChart, getTalhoesByFazenda, getFilteredAnalyses, addTalhaoDesenho, getTalhaoDesenho };
+

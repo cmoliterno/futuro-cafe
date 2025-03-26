@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router } from 'react-router-dom';
+import { BrowserRouter } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import AppRoutes from './routes/AppRoutes';
 import { Layout } from 'antd';
 // @ts-ignore
 import logo from './assets/logo.png';
 import './index.css';
+import GlobalStyle from './styles/GlobalStyle';
+import UploadNotification from './components/UploadNotification';
 
 const { Header, Content, Footer } = Layout;
 
@@ -18,22 +20,26 @@ const App: React.FC = () => {
     }, []);
 
     return (
-        <Layout style={{ minHeight: '100vh' }}>
-            <Header className="header" style={{ height: '80px' }}>
-                <div style={{ margin: '0 auto' }}>
-                    <img src={logo} alt="Futuro Café Logo" style={{ height: '60px', margin: '0 20px' }} />
-                </div>
-            </Header>
-            <Content style={{ paddingTop: '2px', backgroundColor: '#EEDCC8' }}>
-                <Router>
-                    <div>
-                        <Navbar/>
-                        <AppRoutes />
+        <>
+            <GlobalStyle />
+            <Layout style={{ minHeight: '100vh' }}>
+                <Header className="header" style={{ height: '80px' }}>
+                    <div style={{ margin: '0 auto' }}>
+                        <img src={logo} alt="Futuro Café Logo" style={{ height: '60px', margin: '0 20px' }} />
                     </div>
-                </Router>
-            </Content>
-            <Footer className="footer">Futuro Café ©2024</Footer>
-        </Layout>
+                </Header>
+                <Content style={{ paddingTop: '2px', backgroundColor: '#EEDCC8' }}>
+                    <BrowserRouter>
+                        <div>
+                            <Navbar />
+                            <AppRoutes />
+                            <UploadNotification />
+                        </div>
+                    </BrowserRouter>
+                </Content>
+                <Footer className="footer">Futuro Café ©2024</Footer>
+            </Layout>
+        </>
     );
 };
 

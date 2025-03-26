@@ -17,13 +17,13 @@ TalhaoDesenho.init(
         createdAt: {
             type: DataTypes.DATE,
             allowNull: false,
-            defaultValue: DataTypes.NOW, // Preencher automaticamente
+            defaultValue: DataTypes.NOW,
             field: 'CreatedAt'
         },
-        LastUpdatedAt: {
+        lastUpdatedAt: {
             type: DataTypes.DATE,
             allowNull: false,
-            defaultValue: DataTypes.NOW, // Preencher automaticamente
+            defaultValue: DataTypes.NOW,
             field: 'LastUpdatedAt'
         }
     },
@@ -31,7 +31,9 @@ TalhaoDesenho.init(
         sequelize,
         modelName: 'TalhaoDesenho',
         tableName: 'tbTalhaoDesenho',
-        timestamps: true,
+        timestamps: false,
+        createdAt: false,
+        updatedAt: false
     }
 );
 

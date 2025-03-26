@@ -94,13 +94,31 @@ export default {
     getDataToChartBy: (data: { farmId: string, plotId: string, startDate: string, endDate: string, reportType: string }) =>
         api.get('/chart', { params: data }),
 
+    // Método para buscar estatísticas específicas de um talhão
+    getEstatisticasTalhao: (talhaoId: string, params: { dataInicio: string, dataFim: string }) =>
+        api.get(`/talhoes/${talhaoId}/estatisticas`, { params }),
+
     // Funcionalidades de CRUD para Cultivares
     getAllCultivares: () => api.get('/cultivares'), // Requer autenticação
     getCultivarById: (id: number) => api.get(`/cultivares/${id}`), // Requer autenticação
-    createCultivar: (data: { nome: string; especie: string }) =>
-        api.post('/cultivares', data), // Requer autenticação
-    updateCultivar: (id: number, data: { nome: string; especie: string }) =>
-        api.put(`/cultivares/${id}`, data), // Requer autenticação
+    getCultivarEspecie: (id: number) => api.get(`/cultivar-especies/${id}`), // Para buscar uma espécie específica pelo ID
+    getAllCultivarEspecies: () => api.get('/cultivar-especies'), // Para listar todas as espécies
+    createCultivar: (data: { 
+      nome: string; 
+      especie: string; 
+      mantenedor: string;
+      registro: string;
+      dataPlantio?: string; 
+      espacamentoLinhasMetros?: number; 
+      espacamentoMudasMetros?: number; 
+      talhaoId?: string 
+    }) => api.post('/cultivares', data), // Requer autenticação
+    updateCultivar: (id: number, data: { 
+      nome: string; 
+      especie?: string; 
+      mantenedor?: string;
+      registro?: string;
+    }) => api.put(`/cultivares/${id}`, data), // Requer autenticação
     deleteCultivar: (id: number) =>
         api.delete(`/cultivares/${id}`), // Requer autenticação
 
@@ -115,13 +133,49 @@ export default {
         api.delete(`/fazendas/${id}`), // Requer autenticação
 
     // Talhões
-    getAllTalhoes: () => api.get('/talhoes'), // Requer autenticação
-    getTalhaoById: (id: string) => api.get(`/talhoes/${id}`), // Requer autenticação
-    createTalhao: (data: { nome: string; fazendaId: string; dataPlantio: string; espacamentoLinhas: number; espacamentoMudas: number; cultivarId: number }) =>
-        api.post('/talhoes', data), // Requer autenticação
-    updateTalhao: (id: string, data: { nome: string; fazendaId: string; dataPlantio: string; espacamentoLinhas: number; espacamentoMudas: number; cultivarId: number }) =>
-        api.put(`/talhoes/${id}`, data), // Requer autenticação
-    deleteTalhao: (id: string) => api.delete(`/talhoes/${id}`), // Requer autenticação
+    getAllTalhoes: async () => {
+        return api.get('/talhoes');
+    },
+    getTalhaoById: async (id: string) => {
+        console.log(`API: Buscando talhão com ID ${id}`);
+        const response = await api.get(`/talhoes/${id}`);
+        console.log(`API: Resposta recebida para talhão ${id}:`, response.data);
+        return response;
+    },
+    createTalhao: async (data: any) => {
+        console.log('API: Criando talhão com dados:', data);
+        return api.post('/talhoes', data);
+    },
+    updateTalhao: async (id: string, data: any) => {
+        console.log(`API: Atualizando talhão ${id} com dados:`, data);
+        return api.put(`/talhoes/${id}`, data);
+    },
+    deleteTalhao: async (id: string) => {
+        return api.delete(`/talhoes/${id}`);
+    },
+    
+    // Plantios
+    createPlantio: (data: { 
+        data: string | null; 
+        espacamentoLinhasMetros: number | null; 
+        espacamentoMudasMetros: number | null; 
+        cultivarId: number | null;
+        talhaoId: string 
+    }) => api.post('/plantios', data), // Requer autenticação
+    updatePlantio: (id: string, data: { 
+        data?: string | null; 
+        espacamentoLinhasMetros?: number | null; 
+        espacamentoMudasMetros?: number | null; 
+        cultivarId?: number | null;
+        talhaoId?: string 
+    }) => api.put(`/plantios/${id}`, data), // Requer autenticação
+    deletePlantio: (id: string) => api.delete(`/plantios/${id}`), // Requer autenticação
+
+    // Métodos para gerenciamento do desenho do talhão
+    saveDesenhoTalhao: (talhaoId: string, desenho: any) => 
+        api.post(`/talhoes/${talhaoId}/desenho`, { desenhoGeometria: desenho }), // Requer autenticação
+    getDesenhoTalhao: (talhaoId: string) => 
+        api.get(`/talhoes/${talhaoId}/desenho`), // Requer autenticação
 
     // Análises de talhões
     addPlotAnalysis: (talhaoId: string, formData: any) =>
@@ -137,8 +191,16 @@ export default {
     getFilteredAnalyses : (filters: any) =>
         api.get('/analises', { params: filters }), // Requer autenticação
 
-    compareAnalises: (data: { filtersLeft: any, filtersRight: any }) =>
-        api.post('/compare-analises', data),
+    compareAnalises: (data: { filtersLeft: any, filtersRight: any }) => {
+        console.log('API compareAnalises sendo chamada com:', JSON.stringify(data, null, 2));
+        return api.post('/compare-analises', data).then(response => {
+            console.log('API compareAnalises recebeu resposta:', JSON.stringify(response.data, null, 2));
+            return response;
+        }).catch(error => {
+            console.error('API compareAnalises erro:', error);
+            throw error;
+        });
+    },
 
     // Funções de análise rápida
     createRapidAnalysisGroup: (formData: any) =>
@@ -160,43 +222,37 @@ export default {
     compareRapidAnalyses: (data: { analiseRapidaId: string }) =>
         api.post('/analises-rapidas/comparar', data),
 
+    // Método para realizar análise rápida com base em um talhão e período
+    realizarAnaliseRapida: (talhaoId: string, params: { tipoAnalise: string, dataInicio: string, dataFim: string }) =>
+        api.get(`/talhoes/${talhaoId}/analise-rapida`, { params }),
+
     // Perfis
-    getAllPerfis: () => api.get('/perfis'), // Requer autenticação
-    getPerfilById: (id: string) => api.get(`/perfis/${id}`), // Requer autenticação
-    createPerfil: (data: { nome: string; descricao: string; systemKey: string }) =>
-        api.post('/perfis', data), // Requer autenticação
-    updatePerfil: (id: string, data: { nome: string; descricao: string; systemKey: string }) =>
-        api.put(`/perfis/${id}`, data), // Requer autenticação
-    deletePerfil: (id: string) =>
-        api.delete(`/perfis/${id}`), // Requer autenticação
+    getAllPerfis: () => api.get('/perfis'),
+    getPerfilById: (id: string) => api.get(`/perfis/${id}`),
+    createPerfil: (data: any) => api.post('/perfis', data),
+    updatePerfil: (id: string, data: any) => api.put(`/perfis/${id}`, data),
+    deletePerfil: (id: string) => api.delete(`/perfis/${id}`),
 
     // Roles
-    getAllRoles: () => api.get('/roles'), // Requer autenticação
-    getRoleById: (id: string) => api.get(`/roles/${id}`), // Requer autenticação
+    getAllRoles: () => api.get('/roles'),
+    getRoleById: (id: string) => api.get(`/roles/${id}`),
     createRole: (data: { nome: string; descricao: string; systemKey: string; aplicacao: string }) =>
-        api.post('/roles', data), // Requer autenticação
+        api.post('/roles', data),
     updateRole: (id: string, data: { nome: string; descricao: string; systemKey: string; aplicacao: string }) =>
-        api.put(`/roles/${id}`, data), // Requer autenticação
-    deleteRole: (id: string) =>
-        api.delete(`/roles/${id}`), // Requer autenticação
+        api.put(`/roles/${id}`, data),
+    deleteRole: (id: string) => api.delete(`/roles/${id}`),
 
     // Grupos
-    getAllGrupos: () => api.get('/grupos'), // Requer autenticação
-    getGrupoById: (id: string) => api.get(`/grupos/${id}`), // Requer autenticação
-    createGrupo: (data: { nome: string; }) =>
-        api.post('/grupos', data), // Requer autenticação
-    updateGrupo: (id: string, data: { nome: string; }) =>
-        api.put(`/grupos/${id}`, data), // Requer autenticação
-    deleteGrupo: (id: string) =>
-        api.delete(`/grupos/${id}`), // Requer autenticação
+    getAllGrupos: () => api.get('/grupos'),
+    getGrupoById: (id: string) => api.get(`/grupos/${id}`),
+    createGrupo: (data: { nome: string; }) => api.post('/grupos', data),
+    updateGrupo: (id: string, data: { nome: string; }) => api.put(`/grupos/${id}`, data),
+    deleteGrupo: (id: string) => api.delete(`/grupos/${id}`),
 
     // Projetos
-    getAllProjetos: () => api.get('/projetos'), // Requer autenticação
-    getProjetoById: (id: string) => api.get(`/projetos/${id}`), // Requer autenticação
-    createProjeto: (data: { nome: string;  grupoId: string }) =>
-        api.post('/projetos', data), // Requer autenticação
-    updateProjeto: (id: string, data: { nome: string; grupoId: string }) =>
-        api.put(`/projetos/${id}`, data), // Requer autenticação
-    deleteProjeto: (id: string) =>
-        api.delete(`/projetos/${id}`), // Requer autenticação
+    getAllProjetos: () => api.get('/projetos'),
+    getProjetoById: (id: string) => api.get(`/projetos/${id}`),
+    createProjeto: (data: { nome: string; grupoId: string }) => api.post('/projetos', data),
+    updateProjeto: (id: string, data: { nome: string; grupoId: string }) => api.put(`/projetos/${id}`, data),
+    deleteProjeto: (id: string) => api.delete(`/projetos/${id}`),
 };

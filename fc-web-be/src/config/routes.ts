@@ -15,7 +15,7 @@ import {
     createTalhao,
     updateTalhao,
     deleteTalhao,
-    getTalhoesByFazenda, addPlotAnalysis, getPlotAnalyses, getFilteredAnalyses
+    getTalhoesByFazenda, addPlotAnalysis, getPlotAnalyses, getFilteredAnalyses, addTalhaoDesenho, getTalhaoDesenho
 } from '../controllers/TalhaoController';
 import {compareAnalyses, getDataToChartBy, getEstatisticas} from '../controllers/EstatisticasController';
 import { getAllPerfis, getPerfilById, createPerfil, updatePerfil, deletePerfil } from '../controllers/PerfisController';
@@ -33,6 +33,7 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import {pipeline} from "stream";
+import { getAllCultivarEspecies, getCultivarEspecieById } from '../controllers/CultivarEspecieController';
 
 
 const router = express.Router();
@@ -84,6 +85,10 @@ router.post('/cultivares', createCultivar);
 router.put('/cultivares/:id', updateCultivar);
 router.delete('/cultivares/:id', deleteCultivar);
 
+// Espécies de Cultivares
+router.get('/cultivar-especies', getAllCultivarEspecies);
+router.get('/cultivar-especies/:id', getCultivarEspecieById);
+
 // Fazendas
 router.get('/fazendas', getAllFazendas);
 router.get('/fazendas/:id', getFazendaById);
@@ -98,6 +103,9 @@ router.post('/talhoes', createTalhao);
 router.put('/talhoes/:id', updateTalhao);
 router.delete('/talhoes/:id', deleteTalhao);
 router.get('/talhoes/fazenda/:fazendaId', getTalhoesByFazenda);
+
+router.post('/talhoes/:id/desenho', addTalhaoDesenho);
+router.get('/talhoes/:id/desenho', getTalhaoDesenho);
 
 router.post('/talhoes/:talhaoId/analises', upload.single('formFile'), addPlotAnalysis);
 router.get('/talhoes/:talhaoId/analises', getPlotAnalyses);

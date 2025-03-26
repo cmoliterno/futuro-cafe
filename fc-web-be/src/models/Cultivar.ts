@@ -45,6 +45,9 @@ Cultivar.init({
 });
 
 // Definindo a associação com CultivarEspecie
-Cultivar.belongsTo(CultivarEspecie, { foreignKey: 'cultivarEspecieId' });
+Cultivar.belongsTo(CultivarEspecie, { 
+    foreignKey: 'cultivarEspecieId',
+    as: 'cultivarEspecie' // Nome consistente da associação
+});
 
 export default Cultivar;

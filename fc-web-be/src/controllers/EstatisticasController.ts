@@ -304,15 +304,44 @@ export async function compareAnalyses(req: Request, res: Response) {
     try {
         const { filtersLeft, filtersRight } = req.body;
 
-        console.log('filtersLeft:', filtersLeft);
-        console.log('filtersRight:', filtersRight);
-
+        console.log('filtersLeft bruto:', filtersLeft);
+        console.log('filtersRight bruto:', filtersRight);
+        
+        // Validações adicionais
+        if (!filtersLeft || !filtersRight) {
+            return res.status(400).json({
+                message: 'Filtros esquerdo e direito são obrigatórios',
+                success: false,
+                hasErrors: true
+            });
+        }
+        
+        // Verifica se são o mesmo objeto (referência)
+        if (filtersLeft === filtersRight) {
+            console.warn('AVISO: Os filtros left e right são o mesmo objeto em memória!');
+        }
+        
+        // Verifica se são estruturalmente idênticos
+        if (JSON.stringify(filtersLeft) === JSON.stringify(filtersRight)) {
+            console.warn('AVISO: Os filtros left e right são estruturalmente idênticos!');
+        }
+        
+        // Clona os objetos para evitar alterações cruzadas
+        const leftFilters = JSON.parse(JSON.stringify(filtersLeft));
+        const rightFilters = JSON.parse(JSON.stringify(filtersRight));
 
         // -- 1) Busca e agrega para o "lado esquerdo"
-        const leftData = await fetchAggregateData(filtersLeft);
+        console.log('Processando o lado ESQUERDO...');
+        const leftData = await fetchAggregateData(leftFilters);
 
         // -- 2) Busca e agrega para o "lado direito"
-        const rightData = await fetchAggregateData(filtersRight);
+        console.log('Processando o lado DIREITO...');
+        const rightData = await fetchAggregateData(rightFilters);
+        
+        // Verifica se os dados são idênticos
+        if (JSON.stringify(leftData) === JSON.stringify(rightData)) {
+            console.warn('AVISO: Os dados retornados para leftData e rightData são idênticos!');
+        }
 
         return res.status(200).json({
             leftData,
@@ -335,20 +364,19 @@ export async function compareAnalyses(req: Request, res: Response) {
 async function fetchAggregateData(filters: any) {
     const whereConditions: any = {};
 
-    console.log('whereConditions => ', whereConditions);
-
     // Desestrutura o objeto de filtros
     const { fazenda, talhao, grupo, projeto, startDate, endDate } = filters || {};
+    
+    console.log('Filtros recebidos:', JSON.stringify(filters, null, 2));
 
     // Monta o where (sem associations, usando subqueries se precisar filtrar por fazenda)
-    if (talhao) {
-        whereConditions.TalhaoId = talhao;
-    }
     if (grupo) {
         whereConditions.grupoId = grupo;
+        console.log(`Filtro por grupo: ${grupo}`);
     }
     if (projeto) {
         whereConditions.projetoId = projeto;
+        console.log(`Filtro por projeto: ${projeto}`);
     }
     if (startDate && endDate) {
         const start = new Date(startDate);
@@ -356,19 +384,32 @@ async function fetchAggregateData(filters: any) {
         whereConditions.createdAt = {
             [Op.between]: [start, end]
         };
+        console.log(`Filtro por período: ${start.toISOString()} até ${end.toISOString()}`);
     }
-    if (fazenda) {
+    
+    // Lógica priorizada: Se tiver talhão específico, use esse; senão filtre pela fazenda
+    if (talhao) {
+        // Se temos um talhão específico, usamos ele diretamente sem precisar da fazenda
+        whereConditions.TalhaoId = talhao;
+        console.log(`Filtro por talhão específico: ${talhao}`);
+    } else if (fazenda) {
+        // Se não temos talhão mas temos fazenda, buscamos todos os talhões da fazenda
         whereConditions.TalhaoId = {
             [Op.in]: Sequelize.literal(`
         (SELECT "Id" FROM "tbTalhao" WHERE "FazendaId" = '${fazenda}')
       `)
         };
+        console.log(`Filtro por todos os talhões da fazenda: ${fazenda}`);
     }
+
+    console.log('Where conditions finais:', JSON.stringify(whereConditions, null, 2));
 
     // Pega todas as análises que batem com os filtros
     const analyses = await Analise.findAll({
         where: whereConditions
     });
+
+    console.log(`Número de análises encontradas: ${analyses.length}`);
 
     // Agrega (soma) cada campo
     let green = 0, greenYellow = 0, cherry = 0, raisin = 0, dry = 0, total = 0;
@@ -390,7 +431,7 @@ async function fetchAggregateData(filters: any) {
     const dryWeight = dry * GrainWeight.DRY;
     const totalWeight = greenWeight + greenYellowWeight + cherryWeight + raisinWeight + dryWeight;
 
-    return {
+    const result = {
         green,
         greenYellow,
         cherry,
@@ -405,6 +446,10 @@ async function fetchAggregateData(filters: any) {
         dryWeight,
         totalWeight
     };
+
+    console.log('Resultado da agregação:', JSON.stringify(result, null, 2));
+    
+    return result;
 }
 
 export default { getEstatisticas, getDataToChartBy, fetchAggregateData, compareAnalyses };

@@ -2,86 +2,107 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useParams } from 'react-router-dom';
 import api from '../services/api';
-import { FaDownload, FaRedo, FaImage, FaCheck, FaExpand, FaChartBar, FaColumns } from 'react-icons/fa';
+import { FaDownload, FaRedo, FaImage, FaCheck, FaExpand, FaChartBar, FaColumns, FaCamera, FaSearch, FaEraser } from 'react-icons/fa';
 import {BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid, LabelList} from 'recharts';
+import ModalColetaImagens from './ModalColetaImagens';
 
 const Container = styled.div`
-  padding: 20px;
-  background-color: #3E2723;
+  padding: 30px;
+  background-color: var(--color-background);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-md);
+  margin: 20px;
 `;
 
 const Title = styled.h1`
-  color: #ffffff;
+  color: var(--color-primary);
+  margin-bottom: 30px;
   text-align: center;
-  margin-bottom: 20px;
-  font-size: 26px;
-  font-weight: bold;
 `;
 
-const FilterSection = styled.div`
+const FiltersContainer = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: 15px;
-  justify-content: center;
-  margin-bottom: 20px;
-  background-color: #42210b;
-  padding: 20px;
-  border-radius: 10px;
+  gap: 20px;
+  margin-bottom: 30px;
+  background-color: var(--color-surface);
+  padding: 25px;
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-sm);
+`;
+
+const FilterGroup = styled.div`
+  flex: 1;
+  min-width: 200px;
 `;
 
 const FilterLabel = styled.label`
-  font-size: 16px;
-  font-weight: bold;
-  margin-bottom: 5px;
   display: block;
-  color: #f5f5f5;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: var(--color-gray-700);
 `;
 
-const Actions = styled.div`
-  display: flex;
-  justify-content: space-around;
-  margin-top: 15px;
-`;
-
-const FiltersWrapper = styled.div`
-  background-color: #4E342E;
-  padding: 20px;
-  border-radius: 8px;
-  margin-bottom: 30px;
-`;
-
-const FilterSelect = styled.select`
-  width: 220px;
-  padding: 10px;
-  border-radius: 5px;
-  border: 1px solid #ccc;
-  font-size: 14px;
-  background-color: #ffffff;
-`;
-
-const FilterButton = styled.button`
-  background-color: #28a745;
-  color: white;
-  padding: 10px 20px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 14px;
-  margin-top: 15px;
-  border: none;
-
-  &:hover {
-    background-color: #218838;
+const Select = styled.select`
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--border-radius-md);
+  background-color: white;
+  
+  &:focus {
+    border-color: var(--color-secondary);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(4, 117, 2, 0.2);
   }
 `;
 
-const ResultsContainer = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Ajuste dinâmico */
-  max-width: 1200px; /* Limita a largura do grid */
-  gap: 30px;
-  justify-content: center;
+const Button = styled.button`
+  padding: 12px 20px;
+  background-color: var(--color-secondary);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  font-weight: bold;
+  transition: var(--transition-normal);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  &:hover {
+    background-color: var(--color-secondary-dark);
+    transform: translateY(-2px);
+  }
+  
+  &:disabled {
+    background-color: var(--color-gray-400);
+    cursor: not-allowed;
+    transform: none;
+  }
+`;
+
+const SortingSection = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 20px;
+  margin-bottom: 20px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+`;
+
+const ResultsSection = styled.div`
+  max-width: 1200px;
+  margin: 0 auto;
   padding: 20px;
-  margin: 0 auto; /* Centraliza horizontalmente */
+`;
+
+const ResultsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 30px;
+  justify-items: center;
 `;
 
 const ResultCard = styled.div`
@@ -89,13 +110,14 @@ const ResultCard = styled.div`
   padding: 20px;
   border-radius: 12px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  width: 100%;
   max-width: 320px;
   text-align: center;
   color: #333;
   border: 1px solid #ddd;
 
   &:hover {
-    transform: scale(1.03); /* Efeito de hover */
+    transform: scale(1.03);
     transition: 0.3s;
   }
 `;
@@ -218,17 +240,25 @@ const ChartContainer = styled.div`
 
 const CloseButton = styled.button`
   position: absolute;
-  top: 20px;
-  right: 20px;
-  background: #363333;
-  color: #ffffff;
+  top: 10px;
+  right: 10px;
+  background: var(--color-primary);
+  color: white;
   border: none;
-  font-size: 24px;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  font-size: 20px;
   cursor: pointer;
-  z-index: 1020; /* Garante que o botão fique acima de tudo */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1020;
+  transition: all 0.2s ease;
 
   &:hover {
-    color: #463636; /* Cor ao passar o mouse */
+    background: var(--color-primary-dark);
+    transform: scale(1.1);
   }
 `;
 
@@ -268,6 +298,59 @@ const DualImage = styled.img`
   border-radius: 10px;
   object-fit: cover;
 `;
+
+const Actions = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 15px;
+  
+  button {
+    background-color: var(--color-secondary);
+    color: white;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--border-radius-round);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition-normal);
+    padding: 0;
+    
+    &:hover {
+      transform: scale(1.1);
+    }
+    
+    &:nth-child(2) {
+      background-color: var(--color-info);
+    }
+    
+    &:nth-child(3) {
+      background-color: var(--color-accent);
+    }
+    
+    &:nth-child(4) {
+      background-color: var(--color-primary-light);
+    }
+  }
+  
+  input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+  }
+  
+  span {
+    font-weight: bold;
+    margin-left: 5px;
+    background-color: var(--color-warning);
+    color: var(--color-primary);
+    padding: 2px 8px;
+    border-radius: var(--border-radius-sm);
+  }
+`;
+
 interface ModalProps {
     isVisible: boolean;
     isSideBySide: boolean;
@@ -311,8 +394,38 @@ const Modal: React.FC<ModalProps> = ({ isVisible, isSideBySide, originalImage, a
     );
 };
 
+// Botão de nova análise
+const NewAnalysisButton = styled(Button)`
+  margin-left: auto; /* Empurra para a direita */
+  background-color: #4CAF50;
+  
+  &:hover {
+    background-color: #45a049;
+  }
+`;
+
 const ResultadosAnaliseScreen: React.FC = () => {
     const { talhaoId } = useParams<{ talhaoId: string }>();
+
+    // Função para formatar a data como YYYY-MM-DD para o input date
+    const formatDateForInput = (date: Date): string => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    // Obter o primeiro dia do mês atual
+    const getFirstDayOfMonth = (): string => {
+        const today = new Date();
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        return formatDateForInput(firstDay);
+    };
+    
+    // Obter a data atual
+    const getCurrentDate = (): string => {
+        return formatDateForInput(new Date());
+    };
 
     const [fazendas, setFazendas] = useState<any[]>([]);
     const [talhoes, setTalhoes] = useState<any[]>([]);
@@ -324,19 +437,27 @@ const ResultadosAnaliseScreen: React.FC = () => {
     const [selectedTalhao, setSelectedTalhao] = useState<string>(talhaoId || '');
     const [selectedGrupo, setSelectedGrupo] = useState<string>('');
     const [selectedProjeto, setSelectedProjeto] = useState<string>('');
-    const [startDate, setStartDate] = useState<string>('');
-    const [endDate, setEndDate] = useState<string>('');
+    const [startDate, setStartDate] = useState<string>(getFirstDayOfMonth());
+    const [endDate, setEndDate] = useState<string>(getCurrentDate());
     const [selectedImages, setSelectedImages] = useState<any[]>([]);
     const [modalVisible, setModalVisible] = useState(false);
     const [modalImage, setModalImage] = useState<string | null>(null);
     const [chartVisible, setChartVisible] = useState(false);
     const [selectedFarmName, setSelectedFarmName] = useState<string>('Fazenda não selecionada');
     const [selectedPlotName, setSelectedPlotName] = useState<string>('Talhão não selecionado');
-    const [isSideBySide, setIsSideBySide] = useState(false); // Para comparar lado a lado
+    const [isSideBySide, setIsSideBySide] = useState(false);
     const [selectedOriginalImage, setSelectedOriginalImage] = useState<string | null>(null);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+    const [sortConfig, setSortConfig] = useState<{
+        key: 'createdAt';
+        direction: 'asc' | 'desc';
+    }>({ key: 'createdAt', direction: 'desc' });
 
+    // Adicionando estados para o modal de coleta de imagens
+    const [modalColetaVisible, setModalColetaVisible] = useState(false);
+    const [selectedTalhaoId, setSelectedTalhaoId] = useState<string | null>(null);
+    const [selectedTalhaoNome, setSelectedTalhaoNome] = useState<string>('');
 
     useEffect(() => {
         const fetchFilters = async () => {
@@ -355,6 +476,10 @@ const ResultadosAnaliseScreen: React.FC = () => {
         };
 
         fetchFilters();
+        // Buscar análises com as datas iniciais ao carregar a tela
+        if (selectedFazenda && selectedTalhao) {
+            fetchAnalyses(1);
+        }
     }, []);
 
     useEffect(() => {
@@ -379,9 +504,7 @@ const ResultadosAnaliseScreen: React.FC = () => {
     }, [talhaoId]);
 
     const fetchAnalyses = async (page: number) => {
-        if (page < 1 || page > pagination.totalPages) {
-            return; // Evita buscar páginas inválidas
-        }
+        if (page < 1) return;
 
         setLoading(true);
         try {
@@ -393,6 +516,7 @@ const ResultadosAnaliseScreen: React.FC = () => {
                 startDate,
                 endDate,
                 page,
+                sortDirection: sortConfig.direction
             };
             const { data } = await api.getFilteredAnalyses(params);
 
@@ -405,7 +529,7 @@ const ResultadosAnaliseScreen: React.FC = () => {
             );
             setPagination({
                 currentPage: data.page,
-                totalPages: data.pages, // O total de páginas vem no campo "pages"
+                totalPages: data.pages,
             });
         } catch (error) {
             console.error("Erro ao carregar análises:", error);
@@ -413,8 +537,6 @@ const ResultadosAnaliseScreen: React.FC = () => {
             setLoading(false);
         }
     };
-
-
 
     const handleImageClick = (image: string) => {
         setModalImage(image);
@@ -450,7 +572,6 @@ const ResultadosAnaliseScreen: React.FC = () => {
         setChartVisible(true);
     };
 
-
     const handleReanalyzeImage = async (imageId: string) => {
         try {
             const formData = new FormData();
@@ -481,127 +602,150 @@ const ResultadosAnaliseScreen: React.FC = () => {
         setModalVisible(true);
     };
 
+    const handleSort = (key: 'createdAt') => {
+        const direction = sortConfig.direction === 'asc' ? 'desc' : 'asc';
+        setSortConfig({ key, direction });
+        fetchAnalyses(pagination.currentPage); // Recarrega a página atual com a nova ordenação
+    };
+
+    // Modificar o handler de limpar filtros para resetar as datas aos valores padrão
+    const handleClearFilters = () => {
+        setSelectedFazenda('');
+        setSelectedTalhao('');
+        setStartDate(getFirstDayOfMonth());
+        setEndDate(getCurrentDate());
+        setAnalyses([]);
+        setPagination({ currentPage: 1, totalPages: 1 });
+    };
+
+    // Handler para abrir o modal de coleta de imagens
+    const handleOpenColetaModal = () => {
+        if (!selectedTalhaoId) {
+            alert('Por favor, selecione um talhão antes de coletar imagens');
+            return;
+        }
+        setModalColetaVisible(true);
+    };
+
+    // Handler para quando o upload for bem-sucedido
+    const handleSuccessfulUpload = () => {
+        // Recarregar análises para mostrar as novas
+        fetchAnalyses(pagination.currentPage);
+    };
+
+    // Modificar o handler existente para seleção de talhão
+    const handleTalhaoChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const talhaoId = e.target.value;
+        const talhaoNome = e.target.options[e.target.selectedIndex].text;
+        
+        // Atualizar os estados já existentes
+        setSelectedTalhao(talhaoId);
+        setSelectedPlotName(talhaoNome);
+        
+        // Atualizar estado para o modal
+        setSelectedTalhaoId(talhaoId || null);
+        setSelectedTalhaoNome(talhaoId ? talhaoNome : '');
+    };
+
     return (
         <Container>
             <Title>Resultados da Análise</Title>
 
-            {/* Filtros */}
-            <FiltersWrapper>
-                <FilterSection>
-                    <div>
-                        <FilterLabel>Fazenda</FilterLabel>
-                        <FilterSelect
-                            value={selectedFazenda}
-                            onChange={(e) => {
-                                setSelectedFazenda(e.target.value);
-                                setSelectedFarmName(e.target.name);
-                            }}
-                        >
-                            <option value="">Selecione</option>
-                            {fazendas.map((fazenda) => (
-                                <option key={fazenda.id} value={fazenda.id}>
-                                    {fazenda.nome}
-                                </option>
-                            ))}
-                        </FilterSelect>
-                    </div>
+            <FiltersContainer>
+                <FilterGroup>
+                    <FilterLabel>Fazenda</FilterLabel>
+                    <Select
+                        value={selectedFazenda}
+                        onChange={(e) => {
+                            setSelectedFazenda(e.target.value);
+                            setSelectedFarmName(e.target.name);
+                        }}
+                    >
+                        <option value="">Selecione</option>
+                        {fazendas.map((fazenda) => (
+                            <option key={fazenda.id} value={fazenda.id}>
+                                {fazenda.nome}
+                            </option>
+                        ))}
+                    </Select>
+                </FilterGroup>
 
-                    <div>
-                        <FilterLabel>Talhão</FilterLabel>
-                        <FilterSelect
-                            value={selectedTalhao}
-                            onChange={(e) => {
-                                setSelectedTalhao(e.target.value);
-                                setSelectedPlotName(e.target.name);
-                            }}
-                            disabled={!selectedFazenda}
-                        >
-                            <option value="">Selecione</option>
-                            {talhoes.map((talhao) => (
-                                <option key={talhao.id} value={talhao.id}>
-                                    {talhao.nome}
-                                </option>
-                            ))}
-                        </FilterSelect>
-                    </div>
+                <FilterGroup>
+                    <FilterLabel>Talhão</FilterLabel>
+                    <Select
+                        value={selectedTalhao}
+                        onChange={handleTalhaoChange}
+                        disabled={!selectedFazenda}
+                    >
+                        <option value="">Selecione</option>
+                        {talhoes.map((talhao) => (
+                            <option key={talhao.id} value={talhao.id}>
+                                {talhao.nome}
+                            </option>
+                        ))}
+                    </Select>
+                </FilterGroup>
 
-                    <div>
-                        <FilterLabel>Grupo</FilterLabel>
-                        <FilterSelect
-                            value={selectedGrupo}
-                            onChange={(e) => setSelectedGrupo(e.target.value)}
-                        >
-                            <option value="">Selecione</option>
-                            {grupos.map((grupo) => (
-                                <option key={grupo.id} value={grupo.id}>
-                                    {grupo.nome}
-                                </option>
-                            ))}
-                        </FilterSelect>
-                    </div>
+                <FilterGroup>
+                    <FilterLabel>Data Início</FilterLabel>
+                    <input
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        style={{
+                            width: '100%',
+                            padding: '12px',
+                            border: '1px solid var(--color-gray-300)',
+                            borderRadius: 'var(--border-radius-md)',
+                        }}
+                    />
+                </FilterGroup>
 
-                    <div>
-                        <FilterLabel>Projeto</FilterLabel>
-                        <FilterSelect
-                            value={selectedProjeto}
-                            onChange={(e) => setSelectedProjeto(e.target.value)}
-                        >
-                            <option value="">Selecione</option>
-                            {projetos.map((projeto) => (
-                                <option key={projeto.id} value={projeto.id}>
-                                    {projeto.nome}
-                                </option>
-                            ))}
-                        </FilterSelect>
-                    </div>
+                <FilterGroup>
+                    <FilterLabel>Data Fim</FilterLabel>
+                    <input
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        style={{
+                            width: '100%',
+                            padding: '12px',
+                            border: '1px solid var(--color-gray-300)',
+                            borderRadius: 'var(--border-radius-md)',
+                        }}
+                    />
+                </FilterGroup>
 
-                    <div>
-                        <FilterLabel>Data Início</FilterLabel>
-                        <input
-                            type="date"
-                            value={startDate}
-                            onChange={(e) => setStartDate(e.target.value)}
-                        />
-                    </div>
-
-                    <div>
-                        <FilterLabel>Data Fim</FilterLabel>
-                        <input
-                            type="date"
-                            value={endDate}
-                            onChange={(e) => setEndDate(e.target.value)}
-                        />
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
-                        <FilterButton onClick={() => fetchAnalyses(1)}>Buscar Análises</FilterButton>
-                        <FilterButton
-                            style={{ backgroundColor: '#dc3545' }}
-                            onClick={() => {
-                                setSelectedFazenda('');
-                                setSelectedTalhao('');
-                                setSelectedGrupo('');
-                                setSelectedProjeto('');
-                                setStartDate('');
-                                setEndDate('');
-                                setAnalyses([]);
-                                setPagination({ currentPage: 1, totalPages: 1 });
-                            }}
-                        >
-                            Limpar Filtros
-                        </FilterButton>
-                    </div>
-                </FilterSection>
-            </FiltersWrapper>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
+                    <Button onClick={() => fetchAnalyses(1)}>
+                        <FaSearch /> Buscar Análises
+                    </Button>
+                    <Button onClick={handleClearFilters} style={{ backgroundColor: '#e74c3c' }}>
+                        <FaEraser /> Limpar Filtros
+                    </Button>
+                    <NewAnalysisButton 
+                        onClick={handleOpenColetaModal}
+                        disabled={!selectedTalhaoId}
+                        title={!selectedTalhaoId ? "Selecione um talhão primeiro" : "Coletar novas imagens para análise"}
+                    >
+                        <FaCamera /> Nova Análise
+                    </NewAnalysisButton>
+                </div>
+            </FiltersContainer>
 
             {/* Carregando */}
             {loading && <Loading>Carregando, por favor, aguarde...</Loading>}
 
-            {/* Resultados */}
-            <ResultsContainer>
-                {analyses
-                    .slice((pagination.currentPage - 1) * 6, pagination.currentPage * 6)
-                    .map((analysis) => (
+            {/* Seção de Resultados */}
+            <ResultsSection>
+                <SortingSection>
+                    <Button onClick={() => handleSort('createdAt')}>
+                        {sortConfig.direction === 'asc' ? 'Mais antigas primeiro ↑' : 'Mais recentes primeiro ↓'}
+                    </Button>
+                </SortingSection>
+
+                <ResultsGrid>
+                    {analyses.map((analysis) => (
                         <ResultCard key={analysis.id}>
                             <ResultImage
                                 src={analysis.imagemResultadoUrl}
@@ -610,19 +754,19 @@ const ResultadosAnaliseScreen: React.FC = () => {
                             />
                             <ResultInfo>
                                 <ColorLabel color="#34A853">
-                                    <span /> Green: {((analysis.green / analysis.total) * 100).toFixed(2)}%
+                                    <span /> Verde: {((analysis.green / analysis.total) * 100).toFixed(2)}%
                                 </ColorLabel>
                                 <ColorLabel color="#FFD700">
-                                    <span /> Green-Yellow: {((analysis.greenYellow / analysis.total) * 100).toFixed(2)}%
+                                    <span /> Verde Cana: {((analysis.greenYellow / analysis.total) * 100).toFixed(2)}%
                                 </ColorLabel>
                                 <ColorLabel color="#FF6347">
-                                    <span /> Cherry: {((analysis.cherry / analysis.total) * 100).toFixed(2)}%
+                                    <span /> Cereja: {((analysis.cherry / analysis.total) * 100).toFixed(2)}%
                                 </ColorLabel>
                                 <ColorLabel color="#8B4513">
-                                    <span /> Raisin: {((analysis.raisin / analysis.total) * 100).toFixed(2)}%
+                                    <span /> Passa: {((analysis.raisin / analysis.total) * 100).toFixed(2)}%
                                 </ColorLabel>
                                 <ColorLabel color="#A9A9A9">
-                                    <span /> Dry: {((analysis.dry / analysis.total) * 100).toFixed(2)}%
+                                    <span /> Seco: {((analysis.dry / analysis.total) * 100).toFixed(2)}%
                                 </ColorLabel>
                                 <ColorLabel color="#FFFFFF">
                                     <span /> Total: {analysis.total}
@@ -648,13 +792,20 @@ const ResultadosAnaliseScreen: React.FC = () => {
                                 </button>
                                 {selectedImages.some((item) => item.id === analysis.id) && (
                                     <span>
-                {selectedImages.find((item) => item.id === analysis.id)?.name}
-              </span>
+                                        {selectedImages.find((item) => item.id === analysis.id)?.name}
+                                    </span>
                                 )}
                             </Actions>
                         </ResultCard>
                     ))}
-            </ResultsContainer>
+                </ResultsGrid>
+
+                {analyses.length === 0 && !loading && (
+                    <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
+                        Nenhuma análise encontrada para os filtros selecionados.
+                    </div>
+                )}
+            </ResultsSection>
 
             {/* Paginação */}
             <PaginationSection>
@@ -669,8 +820,8 @@ const ResultadosAnaliseScreen: React.FC = () => {
                     Anterior
                 </PaginationButton>
                 <span>
-        Página {pagination.currentPage} de {pagination.totalPages}
-    </span>
+                    Página {pagination.currentPage} de {pagination.totalPages}
+                </span>
                 <PaginationButton
                     onClick={() => {
                         if (pagination.currentPage < pagination.totalPages) {
@@ -682,7 +833,6 @@ const ResultadosAnaliseScreen: React.FC = () => {
                     Próximo
                 </PaginationButton>
             </PaginationSection>
-
 
             {/* Botão flutuante */}
             <FloatingButton onClick={openComparisonChart}>
@@ -704,59 +854,59 @@ const ResultadosAnaliseScreen: React.FC = () => {
                     <CloseButton onClick={() => setChartVisible(false)}>×</CloseButton>
                     <ChartContainer>
                         <BarChart
-                            width={800} // Aumenta a largura do gráfico
-                            height={500} // Aumenta a altura do gráfico
+                            width={800}
+                            height={500}
                             data={selectedImages.map((image) => ({
                                 ...image,
-                                nome: image.name, // Nome atribuído (A, B, C...)
-                                greenPercent: ((image.green / image.total) * 100).toFixed(2),
-                                greenYellowPercent: ((image.greenYellow / image.total) * 100).toFixed(2),
-                                cherryPercent: ((image.cherry / image.total) * 100).toFixed(2),
-                                raisinPercent: ((image.raisin / image.total) * 100).toFixed(2),
-                                dryPercent: ((image.dry / image.total) * 100).toFixed(2),
+                                nome: image.name,
+                                verde: ((image.green / image.total) * 100).toFixed(2),
+                                verdeCana: ((image.greenYellow / image.total) * 100).toFixed(2),
+                                cereja: ((image.cherry / image.total) * 100).toFixed(2),
+                                passa: ((image.raisin / image.total) * 100).toFixed(2),
+                                seco: ((image.dry / image.total) * 100).toFixed(2),
                             }))}
-                            margin={{ top: 20, right: 30, left: 20, bottom: 30 }} // Ajusta as margens do gráfico
+                            margin={{ top: 20, right: 30, left: 20, bottom: 30 }}
                         >
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="nome" />
                             <YAxis />
                             <Tooltip />
                             <Legend />
-                            <Bar dataKey="green" stackId="a" fill="#34A853">
+                            <Bar dataKey="verde" name="Verde" stackId="a" fill="#34A853">
                                 <LabelList
-                                    dataKey="greenPercent"
-                                    position="inside"
-                                    formatter={(value: string | number) => `${value}%`}
-                                    style={{ fontSize: 14, fontWeight: 'bold', fill: 'black' }} // Percentuais em preto
-                                />
-                            </Bar>
-                            <Bar dataKey="greenYellow" stackId="a" fill="#FFD700">
-                                <LabelList
-                                    dataKey="greenYellowPercent"
+                                    dataKey="verde"
                                     position="inside"
                                     formatter={(value: string | number) => `${value}%`}
                                     style={{ fontSize: 14, fontWeight: 'bold', fill: 'black' }}
                                 />
                             </Bar>
-                            <Bar dataKey="cherry" stackId="a" fill="#FF6347">
+                            <Bar dataKey="verdeCana" name="Verde Cana" stackId="a" fill="#FFD700">
                                 <LabelList
-                                    dataKey="cherryPercent"
+                                    dataKey="verdeCana"
                                     position="inside"
                                     formatter={(value: string | number) => `${value}%`}
                                     style={{ fontSize: 14, fontWeight: 'bold', fill: 'black' }}
                                 />
                             </Bar>
-                            <Bar dataKey="raisin" stackId="a" fill="#8B4513">
+                            <Bar dataKey="cereja" name="Cereja" stackId="a" fill="#FF6347">
                                 <LabelList
-                                    dataKey="raisinPercent"
+                                    dataKey="cereja"
                                     position="inside"
                                     formatter={(value: string | number) => `${value}%`}
                                     style={{ fontSize: 14, fontWeight: 'bold', fill: 'black' }}
                                 />
                             </Bar>
-                            <Bar dataKey="dry" stackId="a" fill="#A9A9A9">
+                            <Bar dataKey="passa" name="Passa" stackId="a" fill="#8B4513">
                                 <LabelList
-                                    dataKey="dryPercent"
+                                    dataKey="passa"
+                                    position="inside"
+                                    formatter={(value: string | number) => `${value}%`}
+                                    style={{ fontSize: 14, fontWeight: 'bold', fill: 'black' }}
+                                />
+                            </Bar>
+                            <Bar dataKey="seco" name="Seco" stackId="a" fill="#A9A9A9">
+                                <LabelList
+                                    dataKey="seco"
                                     position="inside"
                                     formatter={(value: string | number) => `${value}%`}
                                     style={{ fontSize: 14, fontWeight: 'bold', fill: 'black' }}
@@ -766,6 +916,15 @@ const ResultadosAnaliseScreen: React.FC = () => {
                     </ChartContainer>
                 </ChartModal>
             )}
+
+            {/* Modal para coleta de imagens */}
+            <ModalColetaImagens
+                isOpen={modalColetaVisible}
+                onClose={() => setModalColetaVisible(false)}
+                talhaoId={selectedTalhaoId || ''}
+                talhaoNome={selectedTalhaoNome}
+                onSuccessfulUpload={handleSuccessfulUpload}
+            />
         </Container>
     );
 };

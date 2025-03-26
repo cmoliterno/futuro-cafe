@@ -27,7 +27,8 @@ export async function getAllFazendas(req: Request, res: Response) {
         const fazendas = await Fazenda.findAll({
             where: {
                 id: fazendaIds // Filtrando as fazendas pelos IDs obtidos
-            }
+            },
+            order: [['nome', 'ASC']] // Ordenando por nome em ordem alfabética
         });
 
         res.json(fazendas);

@@ -6,9 +6,17 @@ import Plantio from '../models/Plantio';
 // Listar todos os cultivares
 export async function getAllCultivares(req: Request, res: Response) {
     try {
-        const cultivares = await Cultivar.findAll();
+        const cultivares = await Cultivar.findAll({
+            include: [{
+                model: CultivarEspecie,
+                as: 'cultivarEspecie', // Nome da associação
+                required: false // Alterado para false para não excluir cultivares sem espécie
+            }],
+            order: [['nome', 'ASC']] // Ordenar por nome em ordem alfabética
+        });
         res.json(cultivares);
     } catch (error) {
+        console.error('Erro ao buscar cultivares:', error);
         res.status(500).json({ message: 'Erro ao buscar cultivares', error });
     }
 }
@@ -17,7 +25,13 @@ export async function getAllCultivares(req: Request, res: Response) {
 export async function getCultivarById(req: Request, res: Response) {
     try {
         const { id } = req.params;
-        const cultivar = await Cultivar.findByPk(id);
+        const cultivar = await Cultivar.findByPk(id, {
+            include: [{
+                model: CultivarEspecie,
+                as: 'cultivarEspecie', // Nome da associação
+                required: false
+            }]
+        });
 
         if (!cultivar) {
             return res.status(404).json({ message: 'Cultivar não encontrado' });
@@ -32,30 +46,48 @@ export async function getCultivarById(req: Request, res: Response) {
 // Criar um novo cultivar
 export async function createCultivar(req: Request, res: Response) {
     try {
-        const { nome, especie, dataPlantio, espacamentoLinhasMetros, espacamentoMudasMetros, talhaoId } = req.body;
+        const { nome, especie, mantenedor, registro, dataPlantio, espacamentoLinhasMetros, espacamentoMudasMetros, talhaoId } = req.body;
 
-        // Verificar se a espécie já existe
-        let cultivarEspecie = await CultivarEspecie.findOne({ where: { Nome: especie } });
+        // Verificar se a espécie já existe ou buscar pelo ID
+        let cultivarEspecie;
         
+        // Tentar buscar a espécie pelo ID (se for um número)
+        if (!isNaN(Number(especie))) {
+            cultivarEspecie = await CultivarEspecie.findByPk(Number(especie));
+        } 
+        
+        // Se não encontrou por ID, busca pelo nome
         if (!cultivarEspecie) {
-            // Se não existir, criar uma nova espécie
-            cultivarEspecie = await CultivarEspecie.create({ Nome: especie });
+            cultivarEspecie = await CultivarEspecie.findOne({ 
+                where: { nome: especie }
+            });
+            
+            // Se ainda não existe, criar uma nova espécie
+            if (!cultivarEspecie) {
+                cultivarEspecie = await CultivarEspecie.create({ 
+                    nome: especie
+                });
+            }
         }
 
         // Criar o cultivar com a ID da espécie
         const cultivar = await Cultivar.create({
             nome,
+            mantenedor,
+            registro,
             cultivarEspecieId: cultivarEspecie.id // Associa a ID da espécie
         });
 
         // Criar um novo plantio associado ao cultivar
-        await Plantio.create({
-            data: dataPlantio,
-            espacamentoLinhasMetros,
-            espacamentoMudasMetros,
-            cultivarId: cultivar.id,  // Associa o plantio ao cultivar recém-criado
-            talhaoId  // Associa o plantio ao talhão se fornecido
-        });
+        if (dataPlantio && talhaoId) {
+            await Plantio.create({
+                data: dataPlantio,
+                espacamentoLinhasMetros,
+                espacamentoMudasMetros,
+                cultivarId: cultivar.id,  // Associa o plantio ao cultivar recém-criado
+                talhaoId  // Associa o plantio ao talhão se fornecido
+            });
+        }
 
         res.status(201).json(cultivar);
     } catch (error) {
@@ -68,7 +100,7 @@ export async function createCultivar(req: Request, res: Response) {
 export async function updateCultivar(req: Request, res: Response) {
     try {
         const { id } = req.params; // Obtém o ID do cultivar a ser atualizado
-        const { nome, cultivarEspecieId } = req.body; // Obtém os novos dados do corpo da requisição
+        const { nome, especie, mantenedor, registro } = req.body; // Obtém os novos dados do corpo da requisição
 
         // Busca o cultivar pelo ID
         const cultivar = await Cultivar.findByPk(id);
@@ -80,8 +112,40 @@ export async function updateCultivar(req: Request, res: Response) {
         if (nome) {
             cultivar.nome = nome; // Atualiza o nome se fornecido
         }
-        if (cultivarEspecieId) {
-            cultivar.cultivarEspecieId = cultivarEspecieId; // Atualiza a ID da espécie se fornecida
+        
+        if (mantenedor) {
+            cultivar.mantenedor = mantenedor; // Atualiza o mantenedor se fornecido
+        }
+        
+        if (registro) {
+            cultivar.registro = registro; // Atualiza o registro se fornecido
+        }
+        
+        // Se recebeu um novo especie, precisa atualizar a relação com CultivarEspecie
+        if (especie) {
+            let cultivarEspecie;
+            
+            // Tentar buscar a espécie pelo ID (se for um número)
+            if (!isNaN(Number(especie))) {
+                cultivarEspecie = await CultivarEspecie.findByPk(Number(especie));
+            } 
+            
+            // Se não encontrou por ID, busca pelo nome
+            if (!cultivarEspecie) {
+                cultivarEspecie = await CultivarEspecie.findOne({ 
+                    where: { nome: especie }
+                });
+                
+                // Se ainda não existe, criar uma nova espécie
+                if (!cultivarEspecie) {
+                    cultivarEspecie = await CultivarEspecie.create({ 
+                        nome: especie
+                    });
+                }
+            }
+            
+            // Atualiza o ID da espécie no cultivar
+            cultivar.cultivarEspecieId = cultivarEspecie.id;
         }
 
         // Salva as alterações
