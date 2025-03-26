@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts';
 import api from '../services/api';
 
 const EstatisticasContainer = styled.div`
@@ -335,6 +335,30 @@ const EstatisticasPage: React.FC = () => {
         setChartData(sortedData);
     };
 
+    // Função para calcular o total de cada registro para percentuais
+    const calculateTotal = (item: ChartData): number => {
+        return item.green + item.greenYellow + item.cherry + item.raisin + item.dry;
+    };
+
+    // Formatter para exibir percentuais
+    const percentFormatter = (value: number, entry: any) => {
+        // Verificar se temos dados válidos para calcular o percentual
+        if (value === 0 || !chartData || chartData.length === 0) return '0%';
+
+        // Encontrar o item correspondente nos dados do gráfico
+        // Como não podemos confiar em entry.payload, usamos o valor e o dataKey (já temos o value)
+        // e encontramos o item pelo índice do elemento no gráfico
+        const index = entry?.index ?? 0;
+        if (!chartData[index]) return '0%';
+        
+        const item = chartData[index];
+        const total = calculateTotal(item);
+        
+        if (total === 0) return '0%';
+        const percent = (value / total * 100).toFixed(1);
+        return `${percent}%`;
+    };
+
     return (
         <EstatisticasContainer>
             <Title>Estatísticas</Title>
@@ -417,90 +441,86 @@ const EstatisticasPage: React.FC = () => {
             {loading && <LoadingText>Carregando dados, por favor aguarde...</LoadingText>}
 
             {chartData.length > 0 && !loading && (
-                <>
-                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '20px' }}>
-                        <Button onClick={() => handleSort('green')}>
-                            Ordenar por Verde {sortConfig?.key === 'green' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                        </Button>
-                        <Button onClick={() => handleSort('greenYellow')}>
-                            Ordenar por Verde Cana {sortConfig?.key === 'greenYellow' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                        </Button>
-                        <Button onClick={() => handleSort('cherry')}>
-                            Ordenar por Cereja {sortConfig?.key === 'cherry' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                        </Button>
-                        <Button onClick={() => handleSort('raisin')}>
-                            Ordenar por Passa {sortConfig?.key === 'raisin' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                        </Button>
-                        <Button onClick={() => handleSort('dry')}>
-                            Ordenar por Seco {sortConfig?.key === 'dry' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                        </Button>
-                        {isFarmReport ? (
-                            <Button onClick={() => handleSort('talhao')}>
-                                Ordenar por Talhão {sortConfig?.key === 'talhao' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                            </Button>
-                        ) : (
-                            <Button onClick={() => handleSort('date')}>
-                                Ordenar por Data {sortConfig?.key === 'date' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                            </Button>
-                        )}
-                    </div>
-                    <ChartContainer>
-                        <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={chartData}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis 
-                                    dataKey={isFarmReport ? 'talhao' : 'date'} 
-                                    tick={{ fill: 'var(--color-primary)', fontSize: 12 }}
-                                />
-                                <YAxis tick={{ fill: 'var(--color-primary)', fontSize: 12 }} />
-                                <Tooltip 
-                                    contentStyle={{ 
-                                        backgroundColor: 'var(--color-surface)', 
-                                        borderColor: 'var(--color-primary)',
-                                        borderRadius: 'var(--border-radius-md)'
-                                    }} 
-                                />
-                                <Legend />
-                                <Line
-                                    type="monotone"
+                <ChartContainer>
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={chartData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis 
+                                dataKey={isFarmReport ? 'talhao' : 'date'} 
+                                tick={{ fill: 'var(--color-primary)', fontSize: 12 }}
+                            />
+                            <YAxis tick={{ fill: 'var(--color-primary)', fontSize: 12 }} />
+                            <Tooltip 
+                                contentStyle={{ 
+                                    backgroundColor: 'var(--color-surface)', 
+                                    borderColor: 'var(--color-primary)',
+                                    borderRadius: 'var(--border-radius-md)'
+                                }} 
+                            />
+                            <Legend />
+                            <Bar
+                                dataKey="green"
+                                fill="#34A853"
+                                name="Verde"
+                            >
+                                <LabelList 
                                     dataKey="green"
-                                    stroke="#34A853"
-                                    strokeWidth={2}
-                                    activeDot={{ r: 8 }}
-                                    name="Verde"
+                                    position="center"
+                                    formatter={percentFormatter}
+                                    style={{ fill: 'black', fontWeight: 'bold', fontSize: 11 }}
                                 />
-                                <Line
-                                    type="monotone"
+                            </Bar>
+                            <Bar
+                                dataKey="greenYellow"
+                                fill="#FFD700"
+                                name="Verde Cana"
+                            >
+                                <LabelList 
                                     dataKey="greenYellow"
-                                    stroke="#FFD700"
-                                    strokeWidth={2}
-                                    name="Verde Cana"
+                                    position="center"
+                                    formatter={percentFormatter}
+                                    style={{ fill: 'black', fontWeight: 'bold', fontSize: 11 }}
                                 />
-                                <Line
-                                    type="monotone"
+                            </Bar>
+                            <Bar
+                                dataKey="cherry"
+                                fill="#FF6347"
+                                name="Cereja"
+                            >
+                                <LabelList 
                                     dataKey="cherry"
-                                    stroke="#FF6347"
-                                    strokeWidth={2}
-                                    name="Cereja"
+                                    position="center"
+                                    formatter={percentFormatter}
+                                    style={{ fill: 'black', fontWeight: 'bold', fontSize: 11 }}
                                 />
-                                <Line
-                                    type="monotone"
+                            </Bar>
+                            <Bar
+                                dataKey="raisin"
+                                fill="#8B4513"
+                                name="Passa"
+                            >
+                                <LabelList 
                                     dataKey="raisin"
-                                    stroke="#8B4513"
-                                    strokeWidth={2}
-                                    name="Passa"
+                                    position="center"
+                                    formatter={percentFormatter}
+                                    style={{ fill: 'black', fontWeight: 'bold', fontSize: 11 }}
                                 />
-                                <Line
-                                    type="monotone"
+                            </Bar>
+                            <Bar
+                                dataKey="dry"
+                                fill="#A9A9A9"
+                                name="Seco"
+                            >
+                                <LabelList 
                                     dataKey="dry"
-                                    stroke="#A9A9A9"
-                                    strokeWidth={2}
-                                    name="Seco"
+                                    position="center"
+                                    formatter={percentFormatter}
+                                    style={{ fill: 'black', fontWeight: 'bold', fontSize: 11 }}
                                 />
-                            </LineChart>
-                        </ResponsiveContainer>
-                    </ChartContainer>
-                </>
+                            </Bar>
+                        </BarChart>
+                    </ResponsiveContainer>
+                </ChartContainer>
             )}
             
             {chartData.length === 0 && !loading && (

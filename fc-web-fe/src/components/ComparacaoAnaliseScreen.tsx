@@ -320,7 +320,7 @@ const ComparacaoAnaliseScreen = () => {
             const areIdentical = JSON.stringify(leftData) === JSON.stringify(rightData);
             if (areIdentical) {
                 console.warn('AVISO: Os dados do lado esquerdo e direito são idênticos!');
-                alert('Atenção! Os dados retornados para os dois lados são idênticos. Verifique se os filtros estão corretos.');
+                //alert('Atenção! Os dados retornados para os dois lados são idênticos. Verifique se os filtros estão corretos.');
             }
 
             // Ajusta dados para o chart
