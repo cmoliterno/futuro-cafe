@@ -10,7 +10,12 @@ export const sequelize = new Sequelize(
         dialect: dbConfig.dialect,
         port: dbConfig.port,
         logging: true,
-        dialectOptions: dbConfig.dialectOptions,
+        dialectOptions: {
+            ...dbConfig.dialectOptions,
+            useUTC: false, // Não usar UTC por padrão
+            timezone: '-03:00' // Configuração para Brasil (BRT)
+        },
+        timezone: '-03:00', // Define o timezone para uso da aplicação
     }
 );
 

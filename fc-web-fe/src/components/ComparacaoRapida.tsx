@@ -12,279 +12,59 @@ import {
     Legend,
     CartesianGrid,
     LabelList,
+    ResponsiveContainer,
+    PieChart,
+    Pie,
+    Cell
 } from "recharts";
 // import Chart from "chart.js/auto"; // <-- Comente/Remova se for trocar por Recharts
-import { FaUpload, FaTrash, FaSpinner, FaSync, FaTimes } from "react-icons/fa";
+import { FaUpload, FaTrash, FaSpinner, FaSync, FaTimes, FaHistory, FaPlus, FaChartBar, FaSearch, FaExclamationCircle } from "react-icons/fa";
+import {
+    Container, Title, TabContainer, Tab, Card, CardHeader, CardBody, FormGroup,
+    Label, Input, DropZoneContainer, DropZoneText, UploadGrid, UploadSection,
+    SectionTitle, ImagePreview, PreviewContainer, PreviewImage, RemoveIcon,
+    FileName, ButtonGroup, Button, ProgressContainer, ProgressBar, StatusCard,
+    LoadingOverlay, SpinnerIcon, ModalOverlay, ModalContent, Table, Th, Td,
+    EmptyState, FilterContainer, FilterInput, DateInput, DescriptionInput,
+    UploadGroup, UploadTitle, FileInput, FileLabel, ActionButtons, ChartContainer
+} from "./ComparacaoRapidaStyles";
+import HistoricoAnaliseRapida from "./HistoricoAnaliseRapida";
+import ResultadosAnaliseRapida from "./ResultadosAnaliseRapida";
+import { Modal } from "@mui/material";
 
-// Styled Components (iguais aos anteriores)
-const Container = styled.div`
-  padding: 20px;
-  background-color: #3e2723;
-  color: #fff;
-  min-height: 100vh;
-`;
+// Cores para os diferentes tipos de grãos
+const COLORS = {
+    green: "#34A853",
+    greenYellow: "#FFD700",
+    cherry: "#FF6347",
+    raisin: "#8B4513",
+    dry: "#A9A9A9"
+};
 
-const Title = styled.h1`
-  text-align: center;
-  font-size: 24px;
-  margin-bottom: 20px;
-`;
+const NAMES = {
+    green: "Verde",
+    greenYellow: "Verde Cana",
+    cherry: "Cereja",
+    raisin: "Passa",
+    dry: "Seco"
+};
 
-const DescriptionInput = styled.input`
-  width: 100%;
-  padding: 10px;
-  margin-bottom: 20px;
-  border-radius: 5px;
-  border: none;
-  font-size: 16px;
-
-  &:disabled {
-    background-color: #6c757d;
-    cursor: not-allowed;
-  }
-`;
-
-const UploadSection = styled.div`
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-  margin-bottom: 30px;
-`;
-
-const UploadGroup = styled.div`
-  flex: 1;
-  background-color: #4e342e;
-  padding: 20px;
-  border-radius: 10px;
-`;
-
-const UploadTitle = styled.h3`
-  text-align: center;
-  margin-bottom: 15px;
-  color: #fff;
-`;
-
-const DropZoneContainer = styled.div<{
-    isDragActive: boolean;
-    isDisabled?: boolean;
-}>`
-  border: 2px dashed #fff;
-  border-color: ${({ isDragActive }) => (isDragActive ? "#28a745" : "#fff")};
-  padding: 20px;
-  text-align: center;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: 0.3s;
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-  }
-
-  ${({ isDisabled }) =>
-          isDisabled &&
-          `
-    pointer-events: none;
-    opacity: 0.6;
-    cursor: not-allowed;
-  `}
-`;
-
-const DropZoneText = styled.p`
-  margin: 10px 0;
-  color: #ccc;
-  font-size: 14px;
-`;
-
-const FileInput = styled.input`
-  display: none;
-`;
-
-const FileLabel = styled.label<{ disabled?: boolean }>`
-  display: inline-flex;
-  align-items: center;
-  background-color: ${(props) => (props.disabled ? "#6c757d" : "#28a745")};
-  color: #fff;
-  padding: 10px;
-  border-radius: 5px;
-  cursor: ${(props) => (props.disabled ? "not-allowed" : "pointer")};
-  margin-top: 15px;
-  font-size: 14px;
-
-  &:hover {
-    background-color: ${(props) => (props.disabled ? "#6c757d" : "#218838")};
-  }
-
-  svg {
-    margin-right: 5px;
-  }
-`;
-
-const ImagePreview = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 15px;
-`;
-
-const PreviewContainer = styled.div`
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-`;
-
-const PreviewImage = styled.img`
-  width: 80px;
-  height: 80px;
-  border-radius: 5px;
-  object-fit: cover;
-  cursor: pointer;
-  border: 2px solid #fff;
-
-  &:hover {
-    opacity: 0.8;
-  }
-`;
-
-const RemoveIcon = styled(FaTimes)`
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  color: #dc3545;
-  background-color: #fff;
-  border-radius: 50%;
-  padding: 2px;
-  font-size: 14px;
-  cursor: pointer;
-
-  &:hover {
-    transform: scale(1.1);
-  }
-`;
-
-const FileName = styled.span`
-  font-size: 12px;
-  color: #ccc;
-  margin-top: 5px;
-  text-align: center;
-`;
-
-const ActionButtons = styled.div`
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-  margin-top: 20px;
-`;
-
-const Button = styled.button`
-  background-color: #007bff;
-  color: #fff;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-
-  &:hover {
-    background-color: #0056b3;
-  }
-
-  &.delete {
-    background-color: #dc3545;
-
-    &:hover {
-      background-color: #c82333;
-    }
-  }
-
-  &.compare {
-    background-color: #28a745;
-
-    &:hover {
-      background-color: #218838;
-    }
-  }
-
-  &.new-comparison {
-    background-color: #ffc107;
-
-    &:hover {
-      background-color: #e0a800;
-    }
-  }
-
-  &.view-comparison {
-    background-color: #17a2b8;
-
-    &:hover {
-      background-color: #138496;
-    }
-  }
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-`;
-
-const LoadingOverlay = styled.div<{ isVisible: boolean }>`
-  display: ${(props) => (props.isVisible ? "flex" : "none")};
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.8);
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-`;
-
-const SpinnerIcon = styled(FaSpinner)`
-  color: #fff;
-  font-size: 50px;
-  animation: spin 1s linear infinite;
-
-  @keyframes spin {
-    100% {
-      transform: rotate(360deg);
-    }
-  }
-`;
-
-const ModalOverlay = styled.div<{ isVisible: boolean }>`
-  display: ${(props) => (props.isVisible ? "flex" : "none")};
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.8);
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-`;
-
-const ModalContent = styled.div`
-  background-color: #ffffff;
-  padding: 20px;
-  border-radius: 10px;
-  width: 60%;
-  max-width: 1000px; /* Ajuste se quiser */
-  text-align: center;
-  max-height: 90%;
-  overflow-y: auto;
-`;
-
-const ChartContainer = styled.div`
-  margin-top: 30px;
-`;
-
-// Função para formatar percentual
 const formatPercent = (value: number, total: number) => {
-    if (!total || total === 0) return "0%";
-    return `${((value / total) * 100).toFixed(2)}%`;
+    if (!total) return "0%";
+    return `${((value / total) * 100).toFixed(1)}%`;
+};
+
+const formatDate = (dateString: string) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleDateString('pt-BR') + ' ' + date.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
 };
 
 const ComparacaoRapida: React.FC = () => {
+    // Estado para controlar qual aba está ativa
+    const [activeTab, setActiveTab] = useState<"nova" | "historico">("nova");
+    
+    // Estados para nova análise
     const [descricao, setDescricao] = useState("");
     const [leftImages, setLeftImages] = useState<File[]>([]);
     const [rightImages, setRightImages] = useState<File[]>([]);
@@ -292,17 +72,51 @@ const ComparacaoRapida: React.FC = () => {
     const [comparisonResults, setComparisonResults] = useState<any>(null);
     const [loading, setLoading] = useState(false);
     const [processing, setProcessing] = useState(false);
+    const [processingProgress, setProcessingProgress] = useState(0);
     const [analiseRapidaId, setAnaliseRapidaId] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-
-    // ---- (1) Vamos criar um state para armazenar os dados formatados do gráfico Recharts
     const [chartData, setChartData] = useState<any[]>([]);
-
+    const [error, setError] = useState<string | null>(null);
+    const [activeResultTab, setActiveResultTab] = useState<"grafico" | "tabela">("grafico");
+    
+    // Estados para histórico
+    const [analiseHistorico, setAnaliseHistorico] = useState<any[]>([]);
+    const [historicoLoading, setHistoricoLoading] = useState(false);
+    const [filtroDescricao, setFiltroDescricao] = useState("");
+    const [filtroDataInicio, setFiltroDataInicio] = useState("");
+    const [filtroDataFim, setFiltroDataFim] = useState("");
+    const [analiseHistoricoSelecionada, setAnaliseHistoricoSelecionada] = useState<string | null>(null);
+    
+    // Estado para controle de ordenação
     const [sortConfig, setSortConfig] = useState<{
         key: 'green' | 'greenYellow' | 'cherry' | 'raisin' | 'dry' | 'total' | 'createdAt';
         direction: 'asc' | 'desc';
     } | null>(null);
 
+    // Dentro do componente ComparacaoRapida, adicione um novo estado:
+    const [descricaoError, setDescricaoError] = useState<string | null>(null);
+
+    // Configuração do dropzone para o lado esquerdo
+    const onDropLeft = useCallback((acceptedFiles: File[]) => {
+        compressAndAddFiles(acceptedFiles, "left");
+    }, []);
+    
+    const { getRootProps: getLeftRootProps, getInputProps: getLeftInputProps, isDragActive: isLeftDragActive } = useDropzone({ 
+        onDrop: onDropLeft,
+        accept: { 'image/*': [] }
+    });
+
+    // Configuração do dropzone para o lado direito
+    const onDropRight = useCallback((acceptedFiles: File[]) => {
+        compressAndAddFiles(acceptedFiles, "right");
+    }, []);
+    
+    const { getRootProps: getRightRootProps, getInputProps: getRightInputProps, isDragActive: isRightDragActive } = useDropzone({ 
+        onDrop: onDropRight,
+        accept: { 'image/*': [] }
+    });
+
+    // Função para comprimir e adicionar arquivos
     const compressAndAddFiles = async (files: File[], side: "left" | "right") => {
         setLoading(true);
         try {
@@ -323,154 +137,254 @@ const ComparacaoRapida: React.FC = () => {
             }
         } catch (error) {
             console.error("Erro no upload:", error);
+            setError("Erro ao processar as imagens. Tente novamente.");
         } finally {
             setLoading(false);
         }
     };
 
-    // Dropzone LADO ESQUERDO
-    const onDropLeft = useCallback(
-        (acceptedFiles: File[]) => {
-            if (processing || comparisonResults) return;
-            compressAndAddFiles(acceptedFiles, "left");
-        },
-        [processing, comparisonResults]
-    );
-    const {
-        getRootProps: getLeftRootProps,
-        getInputProps: getLeftInputProps,
-        isDragActive: isLeftDragActive,
-    } = useDropzone({
-        onDrop: onDropLeft,
-        accept: { "image/*": [] },
-        maxFiles: 20,
-        disabled: processing || !!comparisonResults,
-    });
-
-    // Dropzone LADO DIREITO
-    const onDropRight = useCallback(
-        (acceptedFiles: File[]) => {
-            if (processing || comparisonResults) return;
-            compressAndAddFiles(acceptedFiles, "right");
-        },
-        [processing, comparisonResults]
-    );
-    const {
-        getRootProps: getRightRootProps,
-        getInputProps: getRightInputProps,
-        isDragActive: isRightDragActive,
-    } = useDropzone({
-        onDrop: onDropRight,
-        accept: { "image/*": [] },
-        maxFiles: 20,
-        disabled: processing || !!comparisonResults,
-    });
-
     // Verificar status manualmente
     const handleCheckStatus = async () => {
         if (!analiseRapidaId) return;
-        console.log("Verificando status no backend...");
+        
         try {
             const response = await api.checkProcessingStatus(analiseRapidaId);
-            console.log("Resposta do checkProcessingStatus:", response.data);
-
+            
             if (response.data.status === "COMPLETED") {
                 // Pega resultados
                 const resultsResponse = await api.compareRapidAnalyses({
                     analiseRapidaId,
                 });
-                console.log("Resultado final da análise:", resultsResponse.data);
                 setComparisonResults(resultsResponse.data);
                 setProcessing(false);
+                setProcessingProgress(100);
+            } else if (response.data.status === "PROCESSING") {
+                // Atualiza o progresso para dar feedback visual
+                setProcessingProgress(Math.min(80, processingProgress + 5));
+            } else if (response.data.status === "ERROR") {
+                setError("Ocorreu um erro no processamento. Tente novamente.");
+                setProcessing(false);
             } else {
-                alert("Ainda processando... Tente novamente em alguns segundos!");
+                // Ainda em processamento
+                setProcessingProgress(Math.min(60, processingProgress + 5));
             }
         } catch (error) {
             console.error("Erro ao verificar o status do processamento:", error);
+            setError("Erro ao verificar o status do processamento.");
         }
     };
 
-    // Polling automático
+    // Polling automático para verificar o status
     useEffect(() => {
         if (processing && analiseRapidaId) {
+            // Inicia com 10% de progresso para feedback visual
+            setProcessingProgress(10);
+            
             const interval = setInterval(async () => {
                 try {
                     const response = await api.checkProcessingStatus(analiseRapidaId);
+                    
                     if (response.data.status === "COMPLETED") {
+                        // Atualizamos para 100% para indicar conclusão
+                        setProcessingProgress(100);
+                        
+                        // Buscamos os resultados da comparação
                         const resultsResponse = await api.compareRapidAnalyses({
                             analiseRapidaId,
                         });
+                        
+                        // Atualizamos os resultados
                         setComparisonResults(resultsResponse.data);
                         setProcessing(false);
+                        
+                        // Abrimos automaticamente o modal com os resultados
+                        setIsModalOpen(true);
+                        
+                        // Limpamos o intervalo
                         clearInterval(interval);
+                    } else if (response.data.status === "ERROR") {
+                        setError("Ocorreu um erro no processamento. Tente novamente.");
+                        setProcessing(false);
+                        clearInterval(interval);
+                    } else {
+                        // Aumenta o progresso gradualmente para feedback visual
+                        setProcessingProgress(prev => {
+                            // Progressão mais lenta no início e mais rápida no final
+                            if (prev < 30) return prev + 3;
+                            if (prev < 60) return prev + 2;
+                            return Math.min(90, prev + 1);
+                        });
                     }
                 } catch (error) {
                     console.error("Erro ao verificar o status do processamento:", error);
+                    // Não interrompe o polling em caso de erro temporário
                 }
-            }, 5000);
+            }, 3000);
 
             return () => clearInterval(interval);
         }
     }, [processing, analiseRapidaId]);
 
-    // ----------------------------------
-    // (2) Assim que tiver "comparisonResults", montamos o "chartData" para Recharts
-    // ----------------------------------
+    // Função para formatar os dados do gráfico
+    const formatChartData = (data: any) => {
+        if (!data || !data.grupo) return [];
+
+        const { estatisticasEsquerdo, estatisticasDireito } = data.grupo;
+        
+        // Calculando totais
+        const totalEsquerdo = 
+            Number(estatisticasEsquerdo.green || 0) +
+            Number(estatisticasEsquerdo.greenYellow || 0) +
+            Number(estatisticasEsquerdo.cherry || 0) +
+            Number(estatisticasEsquerdo.raisin || 0) +
+            Number(estatisticasEsquerdo.dry || 0);
+            
+        const totalDireito = 
+            Number(estatisticasDireito.green || 0) +
+            Number(estatisticasDireito.greenYellow || 0) +
+            Number(estatisticasDireito.cherry || 0) +
+            Number(estatisticasDireito.raisin || 0) +
+            Number(estatisticasDireito.dry || 0);
+
+        // Criando objetos com os valores e os percentuais
+        return [
+            {
+                nome: "Esquerdo",
+                total: totalEsquerdo,
+                green: Number(estatisticasEsquerdo.green || 0),
+                greenYellow: Number(estatisticasEsquerdo.greenYellow || 0),
+                cherry: Number(estatisticasEsquerdo.cherry || 0),
+                raisin: Number(estatisticasEsquerdo.raisin || 0),
+                dry: Number(estatisticasEsquerdo.dry || 0),
+                
+                // Percentuais para exibição
+                greenPercent: ((Number(estatisticasEsquerdo.green || 0) / totalEsquerdo) * 100).toFixed(1),
+                greenYellowPercent: ((Number(estatisticasEsquerdo.greenYellow || 0) / totalEsquerdo) * 100).toFixed(1),
+                cherryPercent: ((Number(estatisticasEsquerdo.cherry || 0) / totalEsquerdo) * 100).toFixed(1),
+                raisinPercent: ((Number(estatisticasEsquerdo.raisin || 0) / totalEsquerdo) * 100).toFixed(1),
+                dryPercent: ((Number(estatisticasEsquerdo.dry || 0) / totalEsquerdo) * 100).toFixed(1),
+            },
+            {
+                nome: "Direito",
+                total: totalDireito,
+                green: Number(estatisticasDireito.green || 0),
+                greenYellow: Number(estatisticasDireito.greenYellow || 0),
+                cherry: Number(estatisticasDireito.cherry || 0),
+                raisin: Number(estatisticasDireito.raisin || 0),
+                dry: Number(estatisticasDireito.dry || 0),
+                
+                // Percentuais para exibição
+                greenPercent: ((Number(estatisticasDireito.green || 0) / totalDireito) * 100).toFixed(1),
+                greenYellowPercent: ((Number(estatisticasDireito.greenYellow || 0) / totalDireito) * 100).toFixed(1),
+                cherryPercent: ((Number(estatisticasDireito.cherry || 0) / totalDireito) * 100).toFixed(1),
+                raisinPercent: ((Number(estatisticasDireito.raisin || 0) / totalDireito) * 100).toFixed(1),
+                dryPercent: ((Number(estatisticasDireito.dry || 0) / totalDireito) * 100).toFixed(1),
+            },
+        ];
+    };
+
+    // Atualiza os dados do gráfico quando os resultados da comparação mudam
     useEffect(() => {
         if (comparisonResults) {
-            // Supondo que comparisonResults tenha algo como:
-            //  comparisonResults.grupo.estatisticasEsquerdo.{ green, greenYellow, ... }
-            //  comparisonResults.grupo.estatisticasDireito.{ green, greenYellow, ... }
-            // Precisamos montar 2 objetos: um para o "Esquerdo", outro para o "Direito".
-            const leftStats = comparisonResults.grupo.estatisticasEsquerdo;
-            const rightStats = comparisonResults.grupo.estatisticasDireito;
-
-            // Vamos pegar o total de cada lado (some de todos)
-            const totalLeft =
-                leftStats.green +
-                leftStats.greenYellow +
-                leftStats.cherry +
-                leftStats.raisin +
-                leftStats.dry;
-            const totalRight =
-                rightStats.green +
-                rightStats.greenYellow +
-                rightStats.cherry +
-                rightStats.raisin +
-                rightStats.dry;
-
-            // Monta array para Recharts
-            const dataForChart = [
-                {
-                    nome: "Esquerdo",
-                    green: leftStats.green,
-                    greenYellow: leftStats.greenYellow,
-                    cherry: leftStats.cherry,
-                    raisin: leftStats.raisin,
-                    dry: leftStats.dry,
-                    total: totalLeft,
-                },
-                {
-                    nome: "Direito",
-                    green: rightStats.green,
-                    greenYellow: rightStats.greenYellow,
-                    cherry: rightStats.cherry,
-                    raisin: rightStats.raisin,
-                    dry: rightStats.dry,
-                    total: totalRight,
-                },
-            ];
-            setChartData(dataForChart);
+            const formattedData = formatChartData(comparisonResults);
+            console.log("Dados formatados para o gráfico:", formattedData);
+            setChartData(formattedData);
         }
     }, [comparisonResults]);
 
-    // (Opcional) Se antes usávamos Chart.js, poderíamos comentar:
-    // useEffect(() => {
-    //   if (comparisonResults) {
-    //     renderChart(comparisonResults);
-    //   }
-    // }, [comparisonResults]);
+    // Função para carregar o histórico de análises
+    const carregarHistorico = async () => {
+        setHistoricoLoading(true);
+        setError(null);
+        
+        try {
+            // Montar parâmetros de filtro
+            const filtros: any = {};
+            if (filtroDescricao) filtros.descricao = filtroDescricao;
+            if (filtroDataInicio) filtros.dataInicio = filtroDataInicio;
+            if (filtroDataFim) filtros.dataFim = filtroDataFim;
+            
+            // Supondo que exista um endpoint para buscar as análises rápidas
+            const response = await api.getAnaliseRapidaHistorico(filtros);
+            setAnaliseHistorico(response.data);
+        } catch (error) {
+            console.error("Erro ao carregar histórico:", error);
+            setError("Não foi possível carregar o histórico de análises.");
+        } finally {
+            setHistoricoLoading(false);
+        }
+    };
 
+    // Carregar histórico ao mudar para a tab de histórico
+    useEffect(() => {
+        if (activeTab === "historico") {
+            carregarHistorico();
+        }
+    }, [activeTab]);
+
+    // Função para visualizar uma análise do histórico
+    const handleViewAnalysis = async (analiseId: string) => {
+        setLoading(true);
+        setError(null);
+        
+        try {
+            console.log(`Buscando análise ${analiseId} para visualização`);
+            
+            // Verificamos primeiro se a análise está completa
+            const statusResponse = await api.checkProcessingStatus(analiseId);
+            console.log("Status da análise:", statusResponse.data);
+            
+            if (statusResponse.data.status !== "COMPLETED") {
+                throw new Error(`A análise não está pronta ainda. Status atual: ${statusResponse.data.status}`);
+            }
+            
+            // Buscamos os resultados da análise usando o novo endpoint GET
+            const resultadosResponse = await api.getAnaliseRapidaResultados(analiseId);
+            
+            console.log("Resultados da análise:", resultadosResponse.data);
+            
+            // Atualiza os resultados e abre o modal
+            setComparisonResults(resultadosResponse.data);
+            setAnaliseRapidaId(analiseId);
+            
+            // Formata os dados para o gráfico
+            if (resultadosResponse.data && resultadosResponse.data.grupo) {
+                const formattedData = formatChartData(resultadosResponse.data);
+                setChartData(formattedData);
+                
+                // Abre o modal com os resultados
+                setIsModalOpen(true);
+            } else {
+                throw new Error("Formato de dados inválido. A resposta não contém as informações necessárias.");
+            }
+        } catch (error: any) {
+            console.error("Erro ao buscar detalhes da análise:", error);
+            
+            // Mensagem de erro mais informativa
+            const statusCode = error.response?.status;
+            let errorMessage = error.response?.data?.error || error.message || "Erro desconhecido";
+            
+            // Se for um erro 404 (não encontrado) e não tiver mensagem específica
+            if (statusCode === 404 && !error.response?.data?.error) {
+                errorMessage = "Dados da análise não encontrados. A análise pode ter sido excluída ou não ter sido processada corretamente.";
+            }
+            
+            setError(`Não foi possível carregar a análise. ${errorMessage}`);
+            
+            // Se a análise estava com status COMPLETED mas não tem dados, atualizamos o status
+            if (statusCode === 404) {
+                try {
+                    await api.checkProcessingStatus(analiseId);
+                } catch (innerError) {
+                    console.error("Erro ao tentar atualizar status da análise:", innerError);
+                }
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Handler para upload de arquivos
     const handleUpload = async (
         event: React.ChangeEvent<HTMLInputElement>,
         side: "left" | "right"
@@ -482,6 +396,7 @@ const ComparacaoRapida: React.FC = () => {
         compressAndAddFiles(files, side);
     };
 
+    // Handler para limpar imagens
     const handleClear = (side: "left" | "right") => {
         if (side === "left") {
             setLeftImages([]);
@@ -490,6 +405,7 @@ const ComparacaoRapida: React.FC = () => {
         }
     };
 
+    // Handler para remover uma imagem específica
     const handleRemoveSingle = (side: "left" | "right", index: number) => {
         if (side === "left") {
             setLeftImages((prev) => prev.filter((_, i) => i !== index));
@@ -498,9 +414,24 @@ const ComparacaoRapida: React.FC = () => {
         }
     };
 
+    // Handler para criar uma nova análise
     const handleCreateAnalysis = async () => {
-        if (!descricao || leftImages.length === 0 || rightImages.length === 0) {
-            alert("Preencha a descrição e selecione as imagens.");
+        // Reset errors
+        setError(null);
+        setDescricaoError(null);
+        
+        if (!descricao || descricao.trim() === "") {
+            setDescricaoError("A descrição da análise é obrigatória");
+            return;
+        }
+        
+        if (leftImages.length === 0) {
+            setError("Por favor, selecione pelo menos uma imagem para o lado esquerdo.");
+            return;
+        }
+        
+        if (rightImages.length === 0) {
+            setError("Por favor, selecione pelo menos uma imagem para o lado direito.");
             return;
         }
 
@@ -514,17 +445,24 @@ const ComparacaoRapida: React.FC = () => {
             rightImages.forEach((file) => formData.append("imagensDireito", file));
 
             const response = await api.createRapidAnalysisGroup(formData);
-            console.log("Análise criada:", response.data);
             setAnaliseRapidaId(response.data.analiseRapidaId);
             setProcessing(true);
+            
+            // Iniciamos com 10% para dar feedback visual imediato
+            setProcessingProgress(10);
+            
+            // Exibimos uma mensagem de processamento iniciado
+            setError(null);
         } catch (error) {
-            console.error("Erro na comparação:", error);
+            console.error("Erro na criação da análise:", error);
+            setError("Ocorreu um erro ao enviar as imagens para análise. Tente novamente.");
         } finally {
             setIsComparing(false);
             setLoading(false);
         }
     };
 
+    // Handler para iniciar nova comparação
     const handleNewComparison = () => {
         setDescricao("");
         setLeftImages([]);
@@ -532,320 +470,456 @@ const ComparacaoRapida: React.FC = () => {
         setComparisonResults(null);
         setAnaliseRapidaId(null);
         setProcessing(false);
+        setProcessingProgress(0);
         setChartData([]);
+        setError(null);
     };
 
+    // Handler para ordenação de dados no gráfico/tabela
     const handleSort = (key: 'green' | 'greenYellow' | 'cherry' | 'raisin' | 'dry' | 'total' | 'createdAt') => {
-        const direction = sortConfig?.key === key && sortConfig.direction === 'asc' ? 'desc' : 'asc';
+        // Define a direção da ordenação
+        let direction: 'asc' | 'desc' = 'desc';
+        
+        // Se já estava ordenando pela mesma chave, inverte a direção
+        if (sortConfig && sortConfig.key === key) {
+            direction = sortConfig.direction === 'asc' ? 'desc' : 'asc';
+        }
+        
         setSortConfig({ key, direction });
-
+        
+        // Aplica a ordenação aos dados
         const sortedAnalyses = [...chartData].sort((a, b) => {
+            // Se for ordenação por data, trata diferentemente
             if (key === 'createdAt') {
                 return direction === 'asc' 
-                    ? new Date(a[key]).getTime() - new Date(b[key]).getTime()
-                    : new Date(b[key]).getTime() - new Date(a[key]).getTime();
+                    ? new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+                    : new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
             }
             
-            // Para percentuais
+            // Para outros campos, ordena por valor percentual
             const aValue = (a[key] / a.total) * 100;
             const bValue = (b[key] / b.total) * 100;
             
             return direction === 'asc' ? aValue - bValue : bValue - aValue;
         });
-
+        
         setChartData(sortedAnalyses);
+    };
+    
+    // Função auxiliar para aplicar filtros no histórico
+    const aplicarFiltros = () => {
+        carregarHistorico();
     };
 
     return (
         <Container>
             <Title>Comparação Rápida</Title>
 
-            <DescriptionInput
-                type="text"
-                placeholder="Descrição da Análise"
-                value={descricao}
-                onChange={(e) => setDescricao(e.target.value)}
-                disabled={processing || !!comparisonResults}
-            />
+            <TabContainer>
+                <Tab 
+                    active={activeTab === "nova"} 
+                    onClick={() => setActiveTab("nova")}
+                >
+                    Nova Análise
+                </Tab>
+                <Tab 
+                    active={activeTab === "historico"} 
+                    onClick={() => setActiveTab("historico")}
+                >
+                    Histórico
+                </Tab>
+            </TabContainer>
 
-            <LoadingOverlay isVisible={loading}>
-                <SpinnerIcon />
-            </LoadingOverlay>
-
-            <UploadSection>
-                {/* LADO ESQUERDO */}
-                <UploadGroup>
-                    <UploadTitle>Lado Esquerdo</UploadTitle>
-
-                    <DropZoneContainer
-                        {...getLeftRootProps()}
-                        isDragActive={isLeftDragActive}
-                        isDisabled={processing || !!comparisonResults}
-                    >
-                        <input {...getLeftInputProps()} />
-                        <DropZoneText>
-                            {isLeftDragActive
-                                ? "Solte as imagens aqui..."
-                                : "Arraste e solte as imagens aqui ou clique para selecionar"}
-                        </DropZoneText>
-                    </DropZoneContainer>
-
-                    <FileInput
-                        id="left-upload"
-                        type="file"
-                        multiple
-                        accept="image/*"
-                        onChange={(e) => handleUpload(e, "left")}
+            {activeTab === "nova" ? (
+                <>
+                    <DescriptionInput
+                        type="text"
+                        placeholder="Descrição da Análise"
+                        value={descricao}
+                        onChange={(e) => {
+                            setDescricao(e.target.value);
+                            if (descricaoError) setDescricaoError(null);
+                        }}
                         disabled={processing || !!comparisonResults}
+                        style={descricaoError ? { borderColor: '#D32F2F', boxShadow: '0 0 0 1px #D32F2F' } : {}}
                     />
-                    <FileLabel
-                        htmlFor="left-upload"
-                        disabled={processing || !!comparisonResults}
-                    >
-                        <FaUpload />
-                        Upload
-                    </FileLabel>
+                    {descricaoError && (
+                        <div style={{ 
+                            color: '#D32F2F', 
+                            fontSize: '0.85rem', 
+                            marginTop: '-0.5rem', 
+                            marginBottom: '1rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem'
+                        }}>
+                            <FaExclamationCircle />
+                            {descricaoError}
+                        </div>
+                    )}
 
-                    <ImagePreview>
-                        {leftImages.map((file, idx) => (
-                            <PreviewContainer key={idx}>
-                                <PreviewImage
-                                    src={URL.createObjectURL(file)}
-                                    alt={`Esquerdo ${idx}`}
-                                />
-                                {!processing && !comparisonResults && (
-                                    <RemoveIcon onClick={() => handleRemoveSingle("left", idx)} />
-                                )}
-                                <FileName>{file.name}</FileName>
-                            </PreviewContainer>
-                        ))}
-                    </ImagePreview>
+                    <LoadingOverlay isVisible={loading}>
+                        <SpinnerIcon />
+                    </LoadingOverlay>
+
+                    <UploadSection>
+                        {/* LADO ESQUERDO */}
+                        <UploadGroup>
+                            <UploadTitle>Lado Esquerdo</UploadTitle>
+
+                            <DropZoneContainer
+                                {...getLeftRootProps()}
+                                isDragActive={isLeftDragActive}
+                                isDisabled={processing || !!comparisonResults}
+                            >
+                                <input {...getLeftInputProps()} />
+                                <DropZoneText>
+                                    {isLeftDragActive
+                                        ? "Solte as imagens aqui..."
+                                        : "Arraste e solte as imagens aqui ou clique para selecionar"}
+                                </DropZoneText>
+                            </DropZoneContainer>
+
+                            <FileInput
+                                id="left-upload"
+                                type="file"
+                                multiple
+                                accept="image/*"
+                                onChange={(e) => handleUpload(e, "left")}
+                                disabled={processing || !!comparisonResults}
+                            />
+                            <FileLabel
+                                htmlFor="left-upload"
+                                disabled={processing || !!comparisonResults}
+                            >
+                                <FaUpload />
+                                Upload
+                            </FileLabel>
+
+                            <ImagePreview>
+                                {leftImages.map((file, idx) => (
+                                    <PreviewContainer key={idx}>
+                                        <PreviewImage
+                                            src={URL.createObjectURL(file)}
+                                            alt={`Esquerdo ${idx}`}
+                                        />
+                                        {!processing && !comparisonResults && (
+                                            <RemoveIcon onClick={() => handleRemoveSingle("left", idx)} />
+                                        )}
+                                        <FileName>{file.name}</FileName>
+                                    </PreviewContainer>
+                                ))}
+                            </ImagePreview>
+                            <ActionButtons>
+                                <Button
+                                    className="delete"
+                                    onClick={() => handleClear("left")}
+                                    disabled={processing || !!comparisonResults}
+                                >
+                                    <FaTrash />
+                                    Limpar
+                                </Button>
+                            </ActionButtons>
+                        </UploadGroup>
+
+                        {/* LADO DIREITO */}
+                        <UploadGroup>
+                            <UploadTitle>Lado Direito</UploadTitle>
+
+                            <DropZoneContainer
+                                {...getRightRootProps()}
+                                isDragActive={isRightDragActive}
+                                isDisabled={processing || !!comparisonResults}
+                            >
+                                <input {...getRightInputProps()} />
+                                <DropZoneText>
+                                    {isRightDragActive
+                                        ? "Solte as imagens aqui..."
+                                        : "Arraste e solte as imagens aqui ou clique para selecionar"}
+                                </DropZoneText>
+                            </DropZoneContainer>
+
+                            <FileInput
+                                id="right-upload"
+                                type="file"
+                                multiple
+                                accept="image/*"
+                                onChange={(e) => handleUpload(e, "right")}
+                                disabled={processing || !!comparisonResults}
+                            />
+                            <FileLabel
+                                htmlFor="right-upload"
+                                disabled={processing || !!comparisonResults}
+                            >
+                                <FaUpload />
+                                Upload
+                            </FileLabel>
+
+                            <ImagePreview>
+                                {rightImages.map((file, idx) => (
+                                    <PreviewContainer key={idx}>
+                                        <PreviewImage
+                                            src={URL.createObjectURL(file)}
+                                            alt={`Direito ${idx}`}
+                                        />
+                                        {!processing && !comparisonResults && (
+                                            <RemoveIcon onClick={() => handleRemoveSingle("right", idx)} />
+                                        )}
+                                        <FileName>{file.name}</FileName>
+                                    </PreviewContainer>
+                                ))}
+                            </ImagePreview>
+                            <ActionButtons>
+                                <Button
+                                    className="delete"
+                                    onClick={() => handleClear("right")}
+                                    disabled={processing || !!comparisonResults}
+                                >
+                                    <FaTrash />
+                                    Limpar
+                                </Button>
+                            </ActionButtons>
+                        </UploadGroup>
+                    </UploadSection>
+
+                    {processing && (
+                        <Card style={{ marginTop: '1.5rem' }}>
+                            <CardHeader>Processando análise</CardHeader>
+                            <CardBody>
+                                <UploadTitle>
+                                    Estamos processando suas imagens. Assim que finalizar, você poderá
+                                    visualizar a comparação.
+                                </UploadTitle>
+                                
+                                <ProgressContainer>
+                                    <ProgressBar progress={processingProgress} />
+                                </ProgressContainer>
+                                
+                                <div style={{ textAlign: 'center', fontSize: '0.9rem', color: '#666', marginTop: '0.5rem' }}>
+                                    {processingProgress < 30 && "Iniciando análise..."}
+                                    {processingProgress >= 30 && processingProgress < 60 && "Processando imagens..."}
+                                    {processingProgress >= 60 && processingProgress < 90 && "Analisando contagem de grãos..."}
+                                    {processingProgress >= 90 && "Quase concluído..."}
+                                </div>
+                                
+                                <StatusCard style={{ marginTop: '1rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <FaSpinner style={{ animation: 'spin 1s linear infinite' }} />
+                                        <span>O processamento pode levar alguns minutos. Você receberá uma notificação quando estiver concluído.</span>
+                                    </div>
+                                </StatusCard>
+                                
+                                <ActionButtons style={{ marginTop: '1rem' }}>
+                                    <Button onClick={handleCheckStatus}>
+                                        <FaSync style={{ marginRight: "5px" }} />
+                                        Atualizar Status
+                                    </Button>
+                                </ActionButtons>
+                            </CardBody>
+                        </Card>
+                    )}
+
                     <ActionButtons>
-                        <Button
-                            className="delete"
-                            onClick={() => handleClear("left")}
-                            disabled={processing || !!comparisonResults}
-                        >
-                            <FaTrash />
-                            Limpar
-                        </Button>
+                        {!comparisonResults && !processing && (
+                            <Button
+                                className="compare"
+                                onClick={handleCreateAnalysis}
+                                disabled={isComparing}
+                            >
+                                {isComparing ? "Enviando..." : "Enviar para análise"}
+                            </Button>
+                        )}
+
+                        {processing && (
+                            <Button onClick={handleCheckStatus}>
+                                <FaSync style={{ marginRight: "5px" }} />
+                                Atualizar Status
+                            </Button>
+                        )}
+
+                        {(comparisonResults || processing) && (
+                            <Button className="new-comparison" onClick={handleNewComparison}>
+                                Nova Comparação
+                            </Button>
+                        )}
                     </ActionButtons>
-                </UploadGroup>
 
-                {/* LADO DIREITO */}
-                <UploadGroup>
-                    <UploadTitle>Lado Direito</UploadTitle>
-
-                    <DropZoneContainer
-                        {...getRightRootProps()}
-                        isDragActive={isRightDragActive}
-                        isDisabled={processing || !!comparisonResults}
-                    >
-                        <input {...getRightInputProps()} />
-                        <DropZoneText>
-                            {isRightDragActive
-                                ? "Solte as imagens aqui..."
-                                : "Arraste e solte as imagens aqui ou clique para selecionar"}
-                        </DropZoneText>
-                    </DropZoneContainer>
-
-                    <FileInput
-                        id="right-upload"
-                        type="file"
-                        multiple
-                        accept="image/*"
-                        onChange={(e) => handleUpload(e, "right")}
-                        disabled={processing || !!comparisonResults}
-                    />
-                    <FileLabel
-                        htmlFor="right-upload"
-                        disabled={processing || !!comparisonResults}
-                    >
-                        <FaUpload />
-                        Upload
-                    </FileLabel>
-
-                    <ImagePreview>
-                        {rightImages.map((file, idx) => (
-                            <PreviewContainer key={idx}>
-                                <PreviewImage
-                                    src={URL.createObjectURL(file)}
-                                    alt={`Direito ${idx}`}
-                                />
-                                {!processing && !comparisonResults && (
-                                    <RemoveIcon onClick={() => handleRemoveSingle("right", idx)} />
-                                )}
-                                <FileName>{file.name}</FileName>
-                            </PreviewContainer>
-                        ))}
-                    </ImagePreview>
-                    <ActionButtons>
-                        <Button
-                            className="delete"
-                            onClick={() => handleClear("right")}
-                            disabled={processing || !!comparisonResults}
-                        >
-                            <FaTrash />
-                            Limpar
-                        </Button>
-                    </ActionButtons>
-                </UploadGroup>
-            </UploadSection>
-
-            {processing && (
-                <UploadTitle>
-                    Estamos processando suas imagens. Assim que finalizar, você poderá
-                    visualizar a comparação.
-                </UploadTitle>
-            )}
-
-            <ActionButtons>
-                {!comparisonResults && !processing && (
-                    <Button
-                        className="compare"
-                        onClick={handleCreateAnalysis}
-                        disabled={isComparing}
-                    >
-                        {isComparing ? "Enviando..." : "Enviar para análise"}
-                    </Button>
-                )}
-
-                {processing && (
-                    <Button onClick={handleCheckStatus}>
-                        <FaSync style={{ marginRight: "5px" }} />
-                        Atualizar Status
-                    </Button>
-                )}
-
-                {(comparisonResults || processing) && (
-                    <Button className="new-comparison" onClick={handleNewComparison}>
-                        Nova Comparação
-                    </Button>
-                )}
-            </ActionButtons>
-
-            {/* Quando já houver resultados, exibir botão para abrir o Modal */}
-            {comparisonResults && (
-                <ActionButtons>
-                    <Button className="view-comparison" onClick={() => setIsModalOpen(true)}>
-                        Visualizar Comparação
-                    </Button>
-                </ActionButtons>
+                    {/* Quando já houver resultados, exibir botão para abrir o Modal */}
+                    {comparisonResults && (
+                        <ActionButtons>
+                            <Button className="view-comparison" onClick={() => setIsModalOpen(true)}>
+                                Visualizar Comparação
+                            </Button>
+                        </ActionButtons>
+                    )}
+                </>
+            ) : (
+                /* Aba de histórico */
+                <HistoricoAnaliseRapida 
+                    onViewAnalysis={handleViewAnalysis} 
+                />
             )}
 
             {/* --- MODAL RECHARTS --- */}
-            <ModalOverlay isVisible={isModalOpen}>
-                <ModalContent>
-                    <Button
-                        style={{
-                            position: "absolute",
-                            top: 15,
-                            right: 15,
-                            backgroundColor: "#dc3545",
-                            borderRadius: "50%",
-                            fontSize: 14,
-                            padding: "8px 10px",
-                        }}
-                        onClick={() => setIsModalOpen(false)}
-                    >
-                        <FaTimes />
-                    </Button>
-
-                    <h2>Comparação de Dados (Recharts)</h2>
+            <Modal
+                open={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                aria-labelledby="modal-comparacao"
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                }}
+            >
+                <div style={{ 
+                    background: '#fff', 
+                    borderRadius: '8px', 
+                    padding: '20px', 
+                    maxWidth: '800px', 
+                    maxHeight: '80vh', 
+                    overflow: 'auto',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+                }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                        <h2 style={{ margin: 0 }}>Comparação de Dados</h2>
+                        <FaTimes 
+                            onClick={() => setIsModalOpen(false)} 
+                            style={{ cursor: 'pointer', fontSize: '20px' }} 
+                        />
+                    </div>
                     <ChartContainer>
-                        {/* Exemplo de BarChart com as duas entradas (Esquerdo e Direito) */}
-                        <BarChart
-                            width={800}
-                            height={400}
+                        <BarChart 
+                            width={730} 
+                            height={400} 
                             data={chartData}
-                            style={{ margin: "0 auto" }}
+                            margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
                         >
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="nome" />
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <XAxis 
+                                dataKey="nome" 
+                                tick={{ fontSize: 14, fontWeight: 'bold' }}
+                            />
                             <YAxis />
-                            <Tooltip />
-                            <Legend />
-
-                            {/* Para cada tipo de grão, criamos uma <Bar> */}
-                            <Bar dataKey="green" fill="#34A853" name="Verde">
-                                <LabelList
-                                    dataKey="greenPercent"
-                                    position="inside"
-                                    formatter={(value: string | number) => `${value}%`}
-                                    style={{ fontSize: 14, fontWeight: 'bold', fill: 'black' }}
+                            <Tooltip 
+                                formatter={(value, name, props) => {
+                                    if (name === 'total') return [value, 'Total'];
+                                    const percentKey = `${name}Percent`;
+                                    const percent = props.payload[percentKey];
+                                    return [`${value} (${percent}%)`, NAMES[name as keyof typeof NAMES]];
+                                }}
+                                cursor={{ fill: 'rgba(0, 0, 0, 0.05)' }}
+                                contentStyle={{ 
+                                    backgroundColor: '#fff', 
+                                    border: '1px solid #ddd',
+                                    borderRadius: '4px',
+                                    padding: '10px'
+                                }}
+                            />
+                            <Legend 
+                                verticalAlign="top" 
+                                formatter={(value) => NAMES[value as keyof typeof NAMES]} 
+                            />
+                            <Bar 
+                                dataKey="green" 
+                                name="green" 
+                                fill={COLORS.green} 
+                                stackId="a"
+                            >
+                                <LabelList 
+                                    dataKey="greenPercent" 
+                                    position="inside" 
+                                    fill="#fff" 
+                                    formatter={(value: any) => `${value}%`} 
+                                    style={{ fontWeight: 'bold', textShadow: '0 0 3px rgba(0,0,0,0.5)' }}
                                 />
                             </Bar>
-
-                            <Bar dataKey="greenYellow" fill="#FFD700" name="Verde Cana">
-                                <LabelList
-                                    dataKey="greenYellowPercent"
-                                    position="inside"
-                                    formatter={(value: string | number) => `${value}%`}
-                                    style={{ fontSize: 14, fontWeight: 'bold', fill: 'black' }}
+                            <Bar 
+                                dataKey="greenYellow" 
+                                name="greenYellow" 
+                                fill={COLORS.greenYellow} 
+                                stackId="a"
+                            >
+                                <LabelList 
+                                    dataKey="greenYellowPercent" 
+                                    position="inside" 
+                                    fill="#000"
+                                    formatter={(value: any) => `${value}%`} 
+                                    style={{ fontWeight: 'bold', textShadow: '0 0 3px rgba(255,255,255,0.5)' }}
                                 />
                             </Bar>
-
-                            <Bar dataKey="cherry" fill="#FF6347" name="Cereja">
-                                <LabelList
-                                    dataKey="cherryPercent"
-                                    position="inside"
-                                    formatter={(value: string | number) => `${value}%`}
-                                    style={{ fontSize: 14, fontWeight: 'bold', fill: 'black' }}
+                            <Bar 
+                                dataKey="cherry" 
+                                name="cherry" 
+                                fill={COLORS.cherry} 
+                                stackId="a"
+                            >
+                                <LabelList 
+                                    dataKey="cherryPercent" 
+                                    position="inside" 
+                                    fill="#fff"
+                                    formatter={(value: any) => `${value}%`} 
+                                    style={{ fontWeight: 'bold', textShadow: '0 0 3px rgba(0,0,0,0.5)' }}
                                 />
                             </Bar>
-
-                            <Bar dataKey="raisin" fill="#8B4513" name="Passa">
-                                <LabelList
-                                    dataKey="raisinPercent"
-                                    position="inside"
-                                    formatter={(value: string | number) => `${value}%`}
-                                    style={{ fontSize: 14, fontWeight: 'bold', fill: 'black' }}
+                            <Bar 
+                                dataKey="raisin" 
+                                name="raisin" 
+                                fill={COLORS.raisin} 
+                                stackId="a"
+                            >
+                                <LabelList 
+                                    dataKey="raisinPercent" 
+                                    position="inside" 
+                                    fill="#fff"
+                                    formatter={(value: any) => `${value}%`} 
+                                    style={{ fontWeight: 'bold', textShadow: '0 0 3px rgba(0,0,0,0.5)' }}
                                 />
                             </Bar>
-
-                            <Bar dataKey="dry" fill="#A9A9A9" name="Seco">
-                                <LabelList
-                                    dataKey="dryPercent"
-                                    position="inside"
-                                    formatter={(value: string | number) => `${value}%`}
-                                    style={{ fontSize: 14, fontWeight: 'bold', fill: 'black' }}
+                            <Bar 
+                                dataKey="dry" 
+                                name="dry" 
+                                fill={COLORS.dry} 
+                                stackId="a"
+                            >
+                                <LabelList 
+                                    dataKey="dryPercent" 
+                                    position="inside" 
+                                    fill="#000"
+                                    formatter={(value: any) => `${value}%`} 
+                                    style={{ fontWeight: 'bold', textShadow: '0 0 3px rgba(255,255,255,0.5)' }}
                                 />
                             </Bar>
                         </BarChart>
                     </ChartContainer>
-
-                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '20px' }}>
-                        <Button onClick={() => handleSort('green')}>
-                            Ordenar por Verde {sortConfig?.key === 'green' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                        </Button>
-                        <Button onClick={() => handleSort('greenYellow')}>
-                            Ordenar por Verde Cana {sortConfig?.key === 'greenYellow' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                        </Button>
-                        <Button onClick={() => handleSort('cherry')}>
-                            Ordenar por Cereja {sortConfig?.key === 'cherry' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                        </Button>
-                        <Button onClick={() => handleSort('raisin')}>
-                            Ordenar por Passa {sortConfig?.key === 'raisin' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                        </Button>
-                        <Button onClick={() => handleSort('dry')}>
-                            Ordenar por Seco {sortConfig?.key === 'dry' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                        </Button>
-                        <Button onClick={() => handleSort('total')}>
-                            Ordenar por Total {sortConfig?.key === 'total' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                        </Button>
-                        <Button onClick={() => handleSort('createdAt')}>
-                            Ordenar por Data {sortConfig?.key === 'createdAt' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                        </Button>
+                    
+                    {/* Informações detalhadas abaixo do gráfico */}
+                    <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: '20px' }}>
+                        {chartData.map((item, index) => (
+                            <div key={index} style={{ flex: 1, padding: '10px', backgroundColor: '#f9f9f9', borderRadius: '8px', margin: '0 5px' }}>
+                                <h3 style={{ textAlign: 'center', marginBottom: '10px' }}>{item.nome}</h3>
+                                <p style={{ textAlign: 'center', fontWeight: 'bold' }}>Total: {item.total}</p>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                                    <p style={{ margin: '3px 0', color: COLORS.green }}>
+                                        <strong>{NAMES.green}:</strong> {item.green} ({item.greenPercent}%)
+                                    </p>
+                                    <p style={{ margin: '3px 0', color: COLORS.greenYellow }}>
+                                        <strong>{NAMES.greenYellow}:</strong> {item.greenYellow} ({item.greenYellowPercent}%)
+                                    </p>
+                                    <p style={{ margin: '3px 0', color: COLORS.cherry }}>
+                                        <strong>{NAMES.cherry}:</strong> {item.cherry} ({item.cherryPercent}%)
+                                    </p>
+                                    <p style={{ margin: '3px 0', color: COLORS.raisin }}>
+                                        <strong>{NAMES.raisin}:</strong> {item.raisin} ({item.raisinPercent}%)
+                                    </p>
+                                    <p style={{ margin: '3px 0', color: COLORS.dry }}>
+                                        <strong>{NAMES.dry}:</strong> {item.dry} ({item.dryPercent}%)
+                                    </p>
+                                </div>
+                            </div>
+                        ))}
                     </div>
-
-                    <Button
-                        style={{ marginTop: 20 }}
-                        onClick={() => setIsModalOpen(false)}
-                    >
-                        Fechar
-                    </Button>
-                </ModalContent>
-            </ModalOverlay>
+                </div>
+            </Modal>
         </Container>
     );
 };

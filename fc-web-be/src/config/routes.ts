@@ -25,9 +25,14 @@ import { getAllProjetos, getProjetoById, createProjeto, updateProjeto, deletePro
 import { authenticateJWT } from '../middlewares/authenticateJWT';
 import multer from "multer";
 import {
-    buscarAnalisesRapidasPorGrupo, checkProcessingStatus,
+    buscarAnalisesRapidasPorGrupo, 
+    getAnaliseRapidaHistorico,
+    checkProcessingStatus,
     compararAnalisesRapidas,
-    criarAnaliseRapida
+    criarAnaliseRapida,
+    excluirAnaliseRapida,
+    getAnaliseRapidaById,
+    consultarResultadosAnaliseRapida
 } from "../controllers/AnaliseRapidaController";
 import express from "express";
 import path from "path";
@@ -110,28 +115,19 @@ router.get('/talhoes/:id/desenho', getTalhaoDesenho);
 router.post('/talhoes/:talhaoId/analises', upload.single('formFile'), addPlotAnalysis);
 router.get('/talhoes/:talhaoId/analises', getPlotAnalyses);
 router.get('/analises', getFilteredAnalyses);
-router.post('/analises-rapidas/comparar', compararAnalisesRapidas);
 
 
-// Rotas de análise rápida
-router.post(
-    "/analises-rapidas",
-    upload.fields([
-        { name: "imagensEsquerdo", maxCount: 20 },
-        { name: "imagensDireito", maxCount: 20 },
-    ]),
-    (req, res, next) => {
-        console.log("✅ Upload concluído. Chamando próximo middleware...");
-        next();
-    },
-    criarAnaliseRapida
-);
-
-
-router.get("/analises-rapidas/:grupoId", buscarAnalisesRapidasPorGrupo);
-router.post("/analises-rapidas/comparar", compararAnalisesRapidas);
-// Rota para verificar o status do processamento de uma análise rápida
+// Rotas para análise rápida
+router.post('/analises-rapidas', upload.fields([
+    { name: 'imagensEsquerdo', maxCount: 20 },
+    { name: 'imagensDireito', maxCount: 20 }
+]), criarAnaliseRapida);
+router.get('/analises-rapidas/historico', getAnaliseRapidaHistorico);
+router.get('/analises-rapidas/resultados/:analiseRapidaId', consultarResultadosAnaliseRapida);
+router.get('/analises-rapidas/:id', getAnaliseRapidaById);
 router.get('/analise-rapida/status/:analiseRapidaId', checkProcessingStatus);
+router.post('/analises-rapidas/comparar', compararAnalisesRapidas);
+router.delete('/analises-rapidas/:analiseRapidaId', excluirAnaliseRapida);
 
 // Estatísticas
 router.get('/estatisticas', getEstatisticas);

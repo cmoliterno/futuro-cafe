@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_BASE_URL || 'https://api.futurocafe.com.br/api/';
+const API_URL = process.env.REACT_BASE_URL || 'http://localhost:3000/api/';
 
 const api = axios.create({
     baseURL: API_URL,
@@ -211,16 +211,62 @@ export default {
         }),
 
     // Verifica o status do processamento
-    async checkProcessingStatus(analiseRapidaId: string) {
-        const response = await api.get(`/analise-rapida/status/${analiseRapidaId}`);
-        return response.data;
+    checkProcessingStatus: async (analiseRapidaId: string) => {
+        return api.get(`/analise-rapida/status/${analiseRapidaId}`);
     },
 
     getRapidAnalysisGroup: (grupoId: string) =>
         api.get(`/analises-rapidas/${grupoId}`),
 
-    compareRapidAnalyses: (data: { analiseRapidaId: string }) =>
-        api.post('/analises-rapidas/comparar', data),
+    compareRapidAnalyses: (data: { analiseRapidaId: string }) => {
+        console.log('API compareRapidAnalyses sendo chamada com:', JSON.stringify(data, null, 2));
+        return api.post('/analises-rapidas/comparar', data).then(response => {
+            console.log('API compareRapidAnalyses recebeu resposta:', JSON.stringify(response.data, null, 2));
+            return response;
+        }).catch(error => {
+            console.error('API compareRapidAnalyses erro:', error);
+            throw error;
+        });
+    },
+
+    // Novas funções para gerenciar o histórico de análises rápidas
+    getAnaliseRapidaHistorico: async (filtros?: {
+        page?: number;
+        limit?: number;
+        dataInicio?: string;
+        dataFim?: string;
+        sortBy?: string;
+        sortDirection?: 'asc' | 'desc';
+    }) => {
+        const params = new URLSearchParams();
+        
+        // Adiciona parâmetros de paginação e ordenação
+        if (filtros?.page) params.append('page', String(filtros.page));
+        if (filtros?.limit) params.append('limit', String(filtros.limit));
+        if (filtros?.sortBy) params.append('sortBy', filtros.sortBy);
+        if (filtros?.sortDirection) params.append('sortDirection', filtros.sortDirection);
+        
+        // Adiciona parâmetros de filtro por data
+        if (filtros?.dataInicio) params.append('dataInicio', filtros.dataInicio);
+        if (filtros?.dataFim) params.append('dataFim', filtros.dataFim);
+        
+        console.log('API: Chamando getAnaliseRapidaHistorico com params:', Object.fromEntries(params));
+        
+        return api.get('/analises-rapidas/historico', { params }).then(response => {
+            console.log('API: Resposta de getAnaliseRapidaHistorico:', {
+                total: response.data.total,
+                páginas: response.data.pages,
+                itens: response.data.items?.length || 0
+            });
+            return response;
+        }).catch(error => {
+            console.error('API: Erro em getAnaliseRapidaHistorico:', error);
+            throw error;
+        });
+    },
+    
+    deleteAnaliseRapida: (analiseRapidaId: string) => 
+        api.delete(`/analises-rapidas/${analiseRapidaId}`),
 
     // Método para realizar análise rápida com base em um talhão e período
     realizarAnaliseRapida: (talhaoId: string, params: { tipoAnalise: string, dataInicio: string, dataFim: string }) =>
@@ -248,11 +294,35 @@ export default {
     createGrupo: (data: { nome: string; }) => api.post('/grupos', data),
     updateGrupo: (id: string, data: { nome: string; }) => api.put(`/grupos/${id}`, data),
     deleteGrupo: (id: string) => api.delete(`/grupos/${id}`),
-
+    
     // Projetos
     getAllProjetos: () => api.get('/projetos'),
     getProjetoById: (id: string) => api.get(`/projetos/${id}`),
-    createProjeto: (data: { nome: string; grupoId: string }) => api.post('/projetos', data),
-    updateProjeto: (id: string, data: { nome: string; grupoId: string }) => api.put(`/projetos/${id}`, data),
+    createProjeto: (data: { nome: string; grupoId?: string }) => api.post('/projetos', data),
+    updateProjeto: (id: string, data: { nome: string; grupoId?: string }) => api.put(`/projetos/${id}`, data),
     deleteProjeto: (id: string) => api.delete(`/projetos/${id}`),
+
+    // Consulta uma análise rápida específica por ID
+    getAnaliseRapidaById: (analiseRapidaId: string) => {
+        console.log(`API getAnaliseRapidaById chamada para ID: ${analiseRapidaId}`);
+        return api.get(`/analises-rapidas/${analiseRapidaId}`).then(response => {
+            console.log('API getAnaliseRapidaById recebeu resposta:', JSON.stringify(response.data, null, 2));
+            return response;
+        }).catch(error => {
+            console.error('API getAnaliseRapidaById erro:', error);
+            throw error;
+        });
+    },
+
+    // Consulta os resultados de uma análise rápida específica via GET
+    getAnaliseRapidaResultados: (analiseRapidaId: string) => {
+        console.log(`API getAnaliseRapidaResultados chamada para ID: ${analiseRapidaId}`);
+        return api.get(`/analises-rapidas/resultados/${analiseRapidaId}`).then(response => {
+            console.log('API getAnaliseRapidaResultados recebeu resposta:', JSON.stringify(response.data, null, 2));
+            return response;
+        }).catch(error => {
+            console.error('API getAnaliseRapidaResultados erro:', error);
+            throw error;
+        });
+    },
 };

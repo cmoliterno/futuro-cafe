@@ -660,17 +660,6 @@ const CultivaresPage: React.FC = () => {
           />
         </SearchContainer>
         
-        <Button 
-          onClick={() => fetchCultivares()} 
-          style={{ 
-            backgroundColor: '#985E3B', 
-            display: 'inline-flex', 
-            alignItems: 'center',
-            padding: '10px 15px'
-          }}
-        >
-          <FaSortAlphaDown style={{ marginRight: '5px' }} /> Ordenar por Nome
-        </Button>
       </div>
       
       <Table>

@@ -793,31 +793,48 @@ export const getFilteredAnalyses = async (req: Request, res: Response) => {
 };
 
 export const addFastAnalysis = async (req: Request, res: Response) => {
-
-    console.log("Entrando no: addFastAnalysis");
-    const { talhaoId } = req.params;
-
-    let lado: string | null = null;
-    let analiseRapidaId: string | null = null;
-
-    if (req.body) {
-        lado = req.body.lado || null;
-        analiseRapidaId = req.body.analiseRapidaId || null;
-    }
-
+    console.log("Iniciando addFastAnalysis");
+    const { lado, analiseRapidaId, grupoId } = req.body;
     const formFile = req.file;
 
     if (!formFile) {
-        console.log("Erro: Arquivo de imagem não detectado");
+        console.error("Erro: Arquivo de imagem não detectado");
         return res.status(400).json({ message: "Arquivo de imagem não detectado" });
     }
 
+    if (!lado || !analiseRapidaId) {
+        console.error("Erro: Parâmetros obrigatórios não fornecidos", { lado, analiseRapidaId });
+        return res.status(400).json({ message: "Lado e analiseRapidaId são obrigatórios" });
+    }
+
+    const transaction = await sequelize.transaction();
+
     try {
+        // Gera um nome único para o arquivo usando UUID
+        const fileExtension = formFile.originalname.split('.').pop() || 'jpg';
+        const fileName = `${uuidv4()}.${fileExtension}`;
+        console.log(`Nome do arquivo gerado: ${fileName}`);
+
         // Salva o arquivo no disco
-        const filePath = path.join(__dirname, "../../uploads", formFile.filename);
+        const uploadsDir = path.join(__dirname, "../../uploads");
+        
+        // Certifica que o diretório existe
+        if (!fs.existsSync(uploadsDir)) {
+            fs.mkdirSync(uploadsDir, { recursive: true });
+            console.log(`Diretório de uploads criado: ${uploadsDir}`);
+        }
+        
+        const filePath = path.join(uploadsDir, fileName);
+        console.log(`Caminho do arquivo: ${filePath}`);
+
+        // Se tiver buffer, salva o buffer
+        if (formFile.buffer) {
+            await fsp.writeFile(filePath, formFile.buffer);
+            console.log("Arquivo salvo do buffer");
+        }
 
         // 1) Upload imagem original no Azure
-        const originalImageUrl = await uploadToAzureByFast(filePath, formFile.filename);
+        const originalImageUrl = await uploadToAzureByFast(filePath, fileName);
         console.log(`URL da imagem original: ${originalImageUrl}`);
 
         // 2) Ler metadados EXIF (data e coordenadas)
@@ -825,17 +842,14 @@ export const addFastAnalysis = async (req: Request, res: Response) => {
         let photoCoords: string | null = null;
 
         try {
-            // Lê o arquivo do disco
-            const fileBuffer = await fsp.readFile(filePath);
-            const tags = exifReader.load(fileBuffer); // Correção
+            const fileBuffer = formFile.buffer || await fsp.readFile(filePath);
+            const tags = exifReader.load(fileBuffer);
 
-            // Data
             const dateTimeOriginal = tags.DateTimeOriginal?.description;
             if (dateTimeOriginal) {
-                photoDate = new Date(dateTimeOriginal); // Converte para data
+                photoDate = new Date(dateTimeOriginal);
             }
 
-            // GPS
             const gpsLat = tags.GPSLatitude?.description;
             const gpsLon = tags.GPSLongitude?.description;
             if (gpsLat && gpsLon) {
@@ -847,20 +861,22 @@ export const addFastAnalysis = async (req: Request, res: Response) => {
 
         // 3) Chamar a API de predição
         const formData = new FormData();
-        formData.append("image", fs.createReadStream(filePath), formFile.originalname);
+        formData.append("image", fs.createReadStream(filePath), fileName);
 
         const predictionResponse = await axios.post(
             `${process.env.PREDICTION_REQUEST_URL}`,
             formData,
             { headers: formData.getHeaders() }
         );
+        
         const predictionResult = predictionResponse.data;
-        //console.log("Resultado da previsão:", predictionResult);
+        console.log("Resultado da predição:", predictionResult);
 
         const { cherry, dry, green, greenYellow, raisin, total } = predictionResult.dataframe;
 
         if (cherry == null || dry == null || green == null || greenYellow == null || raisin == null || total == null) {
-            console.log("Erro: Dados incompletos recebidos da API externa.");
+            console.error("Erro: Dados incompletos recebidos da API externa.");
+            await transaction.rollback();
             return res.status(500).json({ message: "A API externa retornou dados incompletos." });
         }
 
@@ -868,35 +884,22 @@ export const addFastAnalysis = async (req: Request, res: Response) => {
         let processedImageUrl: string | null = null;
         if (predictionResult.image) {
             const processedImageBuffer = Buffer.from(predictionResult.image, "base64");
-            const processedFilePath = path.join(__dirname, "../../uploads", `resultado_${formFile.filename}`);
+            const processedFileName = `resultado_${fileName}`;
+            const processedFilePath = path.join(uploadsDir, processedFileName);
             await fsp.writeFile(processedFilePath, processedImageBuffer);
 
-            processedImageUrl = await uploadToAzureByFast(processedFilePath, `resultado_${formFile.filename}`);
-            //console.log(`URL da imagem processada: ${processedImageUrl}`);
+            processedImageUrl = await uploadToAzureByFast(processedFilePath, processedFileName);
+            console.log(`URL da imagem processada: ${processedImageUrl}`);
 
             // Remove a imagem processada do disco
             await fsp.unlink(processedFilePath);
         }
 
-        // console.log("Criando análise no banco de dados com os seguintes dados:", {
-        //     talhaoId,
-        //     cherry,
-        //     dry,
-        //     green,
-        //     greenYellow,
-        //     raisin,
-        //     total,
-        //     imagemUrl: originalImageUrl,
-        //     imagemResultadoUrl: processedImageUrl,
-        //     coordenadas: photoCoords,
-        //     lado: lado || null,
-        //     analiseRapidaId: analiseRapidaId || null,
-        //     createdAt: photoDate || new Date(), // Se não tiver data EXIF, pega data atual
-        // });
-
-        // 5) Inserir no banco (tabela tbAnalise)
-        const newAnalysis = await Analise.create({
-            talhaoId,
+        // 5) Inserir no banco (tbAnalise)
+        console.log("Criando registro de análise com os dados:", {
+            analiseRapidaId,
+            grupoId,
+            lado,
             cherry,
             dry,
             green,
@@ -906,24 +909,40 @@ export const addFastAnalysis = async (req: Request, res: Response) => {
             imagemUrl: originalImageUrl,
             imagemResultadoUrl: processedImageUrl,
             coordenadas: photoCoords,
-            lado: lado || null,
-            analiseRapidaId: analiseRapidaId || null,
-            createdAt: photoDate || new Date(),
-            lastUpdatedAt: new Date(),
+            createdAt: photoDate || new Date()
         });
 
-        //console.log("Análise criada com sucesso no banco de dados:", newAnalysis);
+        const newAnalysis = await Analise.create({
+            analiseRapidaId,
+            grupoId,
+            lado,
+            cherry,
+            dry,
+            green,
+            greenYellow,
+            raisin,
+            total,
+            imagemUrl: originalImageUrl,
+            imagemResultadoUrl: processedImageUrl,
+            coordenadas: photoCoords,
+            createdAt: photoDate || new Date(),
+            lastUpdatedAt: new Date()
+        }, { transaction });
+
+        await transaction.commit();
+        console.log("Análise criada com sucesso:", newAnalysis.id);
 
         // Remove o arquivo original do disco
         await fsp.unlink(filePath);
 
         res.status(200).json({
-            message: "Análise efetuada.",
-            analiseId: newAnalysis.id,
+            message: "Análise efetuada com sucesso",
+            analiseId: newAnalysis.id
         });
     } catch (error) {
-        console.error("Erro ao adicionar análise ao talhão:", error);
-        res.status(500).json({ message: "Erro ao adicionar análise ao talhão", error });
+        await transaction.rollback();
+        console.error("Erro ao adicionar análise:", error);
+        res.status(500).json({ message: "Erro ao adicionar análise", error });
     }
 };
 
