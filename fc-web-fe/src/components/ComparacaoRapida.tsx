@@ -562,7 +562,7 @@ const ComparacaoRapida: React.FC = () => {
                         <SpinnerIcon />
                     </LoadingOverlay>
 
-                    <UploadSection>
+                    <UploadSection style={{ maxWidth: '1100px', margin: '30px auto' }}>
                         {/* LADO ESQUERDO */}
                         <UploadGroup>
                             <UploadTitle>Lado Esquerdo</UploadTitle>

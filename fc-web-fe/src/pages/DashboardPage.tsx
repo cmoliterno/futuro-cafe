@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import api from '../services/api';
+import OnboardingModal from '../components/OnboardingModal';
 
 const DashboardContainer = styled.div`
   padding: 20px;
@@ -35,6 +36,23 @@ const ErrorMessage = styled.p`
   text-align: center;
 `;
 
+const Message = styled.p`
+  color: #047502;
+  text-align: center;
+  padding: 15px;
+  background-color: #e8f5e9;
+  border-radius: 8px;
+  margin: 15px 0;
+  font-weight: 500;
+`;
+
+const Footer = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 30px;
+  padding: 10px;
+`;
+
 const DashboardPage: React.FC = () => {
   const [data, setData] = useState({
     totalAnalisesMesAtual: 0,
@@ -43,6 +61,8 @@ const DashboardPage: React.FC = () => {
     totalTalhoes: 0,
   });
   const [error, setError] = useState(''); // Estado para armazenar mensagens de erro
+  const [showOnboarding, setShowOnboarding] = useState(true); // Alterado para true por padrão
+  const [isNewUser, setIsNewUser] = useState(false);
 
   useEffect(() => {
     const getData = async () => {
@@ -50,6 +70,14 @@ const DashboardPage: React.FC = () => {
         const estatisticasResponse = await api.getEstatisticas();
         setData(estatisticasResponse.data);
         setError(''); // Limpa qualquer mensagem de erro anterior
+        
+        // Verifica se o usuário é novo baseado nos dados
+        const isNew = estatisticasResponse.data.totalTalhoes === 0;
+        setIsNewUser(isNew);
+        
+        // Sempre mostra o onboarding
+        setShowOnboarding(true);
+        
       } catch (error: any) {
         console.error('Erro ao buscar dados do dashboard:', error);
         setError(error.response?.data.message || 'Erro ao buscar dados do dashboard.'); // Define a mensagem de erro
@@ -58,10 +86,16 @@ const DashboardPage: React.FC = () => {
     getData();
   }, []);
 
+  const handleCloseOnboarding = () => {
+    setShowOnboarding(false);
+  };
+
   return (
+    <>
       <DashboardContainer>
         <Title>Dashboard</Title>
         {error && <ErrorMessage>{error}</ErrorMessage>} {/* Exibe a mensagem de erro se existir */}
+        
         <Stats>
           <Card>
             <h2>Total de Talhões</h2>
@@ -80,8 +114,15 @@ const DashboardPage: React.FC = () => {
             <p>{data.totalAnalisesHoje}</p>
           </Card>
         </Stats>
-        {/* Outros componentes e informações adicionais */}
+        
+        {/* Removemos o botão de reset, já que o modal sempre aparece */}
       </DashboardContainer>
+      
+      <OnboardingModal 
+        isOpen={showOnboarding} 
+        onClose={handleCloseOnboarding} 
+      />
+    </>
   );
 };
 

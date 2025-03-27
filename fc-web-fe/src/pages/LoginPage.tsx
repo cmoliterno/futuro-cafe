@@ -97,6 +97,7 @@ const LoginPage: React.FC = () => {
             // Salvar o accessToken e refreshToken retornados
             localStorage.setItem('token', response.data.result.accessToken);
             localStorage.setItem('refreshToken', response.data.result.refreshToken);
+            
             console.log('Token salvo:', response.data.result.accessToken); // Log para verificar
             setSuccess('Login realizado com sucesso!');
             setTimeout(() => {

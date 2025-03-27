@@ -145,20 +145,29 @@ export const UploadGrid = styled.div`
 
 export const UploadSection = styled.div`
   display: flex;
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
-  
-  @media (max-width: 768px) {
-    flex-direction: column;
-  }
+  flex-wrap: wrap;
+  gap: 30px;
+  margin: 30px 0;
+  justify-content: center;
 `;
 
 export const UploadGroup = styled.div`
-  margin-bottom: 2rem;
-  background-color: #FFF;
+  flex: 1;
+  min-width: 350px;
+  max-width: 480px;
+  background-color: white;
+  padding: 25px;
   border-radius: 8px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.3s ease;
+  
+  &:hover {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+  }
+  
+  @media (max-width: 768px) {
+    min-width: 300px;
+  }
 `;
 
 export const UploadTitle = styled.h3`
