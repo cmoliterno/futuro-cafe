@@ -1,5 +1,6 @@
 import { Model, DataTypes } from 'sequelize';
 import { sequelize } from '../services/DatabaseService';
+import Role from './Role';
 
 class Login extends Model {
     public id!: string;  // UUID para identificação
@@ -54,6 +55,14 @@ Login.init({
     sequelize,
     modelName: 'Login',
     tableName: 'tbLogin',
+    timestamps: false
+});
+
+// Adiciona associação com Role através da tabela de junção tbLoginRole
+Login.belongsToMany(Role, {
+    through: 'tbLoginRole',
+    foreignKey: 'LoginId',
+    otherKey: 'RoleId',
     timestamps: false
 });
 

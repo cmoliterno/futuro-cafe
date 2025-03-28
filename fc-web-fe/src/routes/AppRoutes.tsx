@@ -10,6 +10,7 @@ import CultivaresPage from '../pages/CultivaresPage';
 import FazendasPage from '../pages/FazendasPage';
 import EstatisticasPage from '../pages/EstatisticasPage';
 import DashboardPage from '../pages/DashboardPage';
+import RelatoriosPage from '../pages/RelatoriosPage';
 import ProtectedRoute from './ProtectedRoute';
 import ResultadosAnaliseScreen from "../components/ResultadosAnaliseScreen";
 import ComparacaoAnaliseScreen from "../components/ComparacaoAnaliseScreen";
@@ -35,6 +36,7 @@ function AppRoutes() {
             <Route path="/resultados-analise" element={<ProtectedRoute element={<ResultadosAnaliseScreen />} />} />
             <Route path="/comparacao" element={<ProtectedRoute element={<ComparacaoAnaliseScreen />} />} />
             <Route path="/analise-rapida" element={<ProtectedRoute element={<ComparacaoRapida />} />} />
+            <Route path="/relatorios" element={<ProtectedRoute element={<RelatoriosPage />} />} />
         </Routes>
     );
 }

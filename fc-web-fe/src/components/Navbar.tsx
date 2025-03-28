@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
+import api from '../services/api';
 
 const NavbarContainer = styled.nav`
   background-color: var(--color-primary);
@@ -89,12 +90,31 @@ const LogoutButton = styled.button`
 
 const Navbar: React.FC = () => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [temPermissaoRelatorio, setTemPermissaoRelatorio] = useState(false);
     const location = useLocation();
 
     useEffect(() => {
         const token = localStorage.getItem('token');
         setIsAuthenticated(!!token);
+        
+        // Verifica permissão para relatórios
+        if (token) {
+            verificarPermissaoRelatorios();
+        }
     }, [location]);
+    
+    // Função para verificar se o usuário tem permissão para acessar relatórios
+    const verificarPermissaoRelatorios = async () => {
+        try {
+            console.log('Verificando permissão para menu de relatórios...');
+            const response = await api.verificarPermissaoRelatorios();
+            console.log('Permissão concedida:', response.data);
+            setTemPermissaoRelatorio(true);
+        } catch (error) {
+            console.error('Erro na verificação de permissão:', error);
+            setTemPermissaoRelatorio(false);
+        }
+    };
 
     const handleLogout = () => {
         localStorage.removeItem('token');
@@ -121,6 +141,9 @@ const Navbar: React.FC = () => {
                             <NavLink to="/estatisticas" className={isActive("/estatisticas")}>Estatísticas</NavLink>
                             <NavLink to="/dashboard" className={isActive("/dashboard")}>Dashboard</NavLink>
                             <NavLink to="/analise-rapida" className={isActive("/analise-rapida")}>Análise Rápida</NavLink>
+                            
+                            {/* Versão temporária: exibir independente da verificação */}
+                            <NavLink to="/relatorios" className={isActive("/relatorios")}>Relatórios</NavLink>
                         </>
                     )}
                     {!isAuthenticated && (

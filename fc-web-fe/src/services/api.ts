@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_BASE_URL || 'http://localhost:3000/api/';
+const API_URL = process.env.REACT_BASE_URL || 'https://api.futurocafe.com.br/api/';
 
 const api = axios.create({
     baseURL: API_URL,
@@ -61,6 +61,20 @@ api.interceptors.response.use(
 
 // Funções da API
 export default {
+    // Funções de Relatórios
+    verificarPermissaoRelatorios: () => api.get('/relatorios/permissao'),
+    getFazendasParaRelatorio: () => api.get('/relatorios/fazendas'),
+    getTalhoesPorFazendaParaRelatorio: (fazendaIds: string[]) => 
+        api.get('/relatorios/talhoes', { params: { fazendaIds } }),
+    gerarRelatorio: (dados: { 
+        fazendaIds: string[]; 
+        talhaoIds: string[]; 
+        dataInicio?: string; 
+        dataFim?: string; 
+    }) => api.post('/relatorios/gerar', dados, { 
+        responseType: 'blob' // Para receber o arquivo CSV
+    }),
+
     // Função para enviar o email com o link de redefinição de senha
     forgotPassword: (data: { email: string }) =>
         api.post('/auth/forgot-password', data), // Envia o email para redefinir a senha

@@ -34,12 +34,17 @@ import {
     getAnaliseRapidaById,
     consultarResultadosAnaliseRapida
 } from "../controllers/AnaliseRapidaController";
-import express from "express";
+import express, { RequestHandler } from "express";
 import path from "path";
 import fs from "fs";
 import {pipeline} from "stream";
 import { getAllCultivarEspecies, getCultivarEspecieById } from '../controllers/CultivarEspecieController';
-
+import { 
+    verificarPermissaoRelatorios, 
+    getFazendasParaRelatorio, 
+    getTalhoesPorFazendaParaRelatorio, 
+    gerarRelatorio 
+} from '../controllers/RelatoriosController';
 
 const router = express.Router();
 
@@ -112,16 +117,16 @@ router.get('/talhoes/fazenda/:fazendaId', getTalhoesByFazenda);
 router.post('/talhoes/:id/desenho', addTalhaoDesenho);
 router.get('/talhoes/:id/desenho', getTalhaoDesenho);
 
-router.post('/talhoes/:talhaoId/analises', upload.single('formFile'), addPlotAnalysis);
+router.post('/talhoes/:talhaoId/analises', (upload.single('formFile') as unknown) as RequestHandler, addPlotAnalysis);
 router.get('/talhoes/:talhaoId/analises', getPlotAnalyses);
 router.get('/analises', getFilteredAnalyses);
 
 
 // Rotas para análise rápida
-router.post('/analises-rapidas', upload.fields([
+router.post('/analises-rapidas', (upload.fields([
     { name: 'imagensEsquerdo', maxCount: 20 },
     { name: 'imagensDireito', maxCount: 20 }
-]), criarAnaliseRapida);
+]) as unknown) as RequestHandler, criarAnaliseRapida);
 router.get('/analises-rapidas/historico', getAnaliseRapidaHistorico);
 router.get('/analises-rapidas/resultados/:analiseRapidaId', consultarResultadosAnaliseRapida);
 router.get('/analises-rapidas/:id', getAnaliseRapidaById);
@@ -133,6 +138,14 @@ router.delete('/analises-rapidas/:analiseRapidaId', excluirAnaliseRapida);
 router.get('/estatisticas', getEstatisticas);
 router.get('/chart', getDataToChartBy);
 router.post('/compare-analises', compareAnalyses);
+
+// Relatórios (requer permissão de Reports.Access)
+router.get('/relatorios/permissao', verificarPermissaoRelatorios, (req, res) => {
+  res.json({ permissao: true });
+});
+router.get('/relatorios/fazendas', verificarPermissaoRelatorios, getFazendasParaRelatorio);
+router.get('/relatorios/talhoes', verificarPermissaoRelatorios, getTalhoesPorFazendaParaRelatorio);
+router.post('/relatorios/gerar', verificarPermissaoRelatorios, gerarRelatorio);
 
 // Perfis
 router.get('/perfis', getAllPerfis);
