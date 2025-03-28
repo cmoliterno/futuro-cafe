@@ -156,18 +156,27 @@ const Td = styled.td`
     border-bottom: 1px solid var(--color-gray-200);
 `;
 
-const ActionButton = styled(Button)`
+const ActionButton = styled.button`
     padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    background-color: ${props => props.color || '#047502'};
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s;
     font-size: 14px;
-    margin: 0 4px;
-    min-width: 40px;
-    
-    &:first-child {
-        margin-left: 0;
+    gap: 6px;
+
+    &:hover {
+        opacity: 0.9;
     }
-    
-    &:last-child {
-        margin-right: 0;
+
+    svg {
+        width: 14px;
+        height: 14px;
     }
 `;
 
@@ -1034,13 +1043,25 @@ const TalhoesPage: React.FC = () => {
                                     <Td>{fazendas.find(f => f.id === talhao.fazendaId)?.nome || 'N/A'}</Td>
                                     <Td>
                                         <ActionButtonGroup>
-                                            <ActionButton onClick={() => handleSelectForEdit(talhao)}>
+                                            <ActionButton 
+                                              onClick={() => handleSelectForEdit(talhao)}
+                                              title="Editar talhão"
+                                              color="#3498db"
+                                            >
                                                 <FaEdit />
                                             </ActionButton>
-                                            <ActionButton onClick={() => handleDelete(talhao.id)}>
+                                            <ActionButton 
+                                              onClick={() => handleDelete(talhao.id)}
+                                              title="Excluir talhão"
+                                              color="#e74c3c"
+                                            >
                                                 <FaTrash />
                                             </ActionButton>
-                                            <ActionButton onClick={() => navigateToPhotoCollection(talhao.id)}>
+                                            <ActionButton 
+                                              onClick={() => navigateToPhotoCollection(talhao.id)}
+                                              title="Coletar imagens do talhão"
+                                              color="#047502"
+                                            >
                                                 <FaCamera />
                                             </ActionButton>
                                         </ActionButtonGroup>

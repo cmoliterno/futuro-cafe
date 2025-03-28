@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
-import { FaSearch, FaSortAlphaDown, FaCheck, FaTimes } from 'react-icons/fa';
+import { FaSearch, FaSortAlphaDown, FaCheck, FaTimes, FaEdit, FaTrash } from 'react-icons/fa';
 import api from '../services/api';
 
 const CultivaresContainer = styled.div`
@@ -130,28 +130,32 @@ const Td = styled.td`
   border-bottom: 1px solid var(--color-gray-200);
 `;
 
-const ActionButton = styled(Button)`
+const ActionButtonGroup = styled.div`
+  display: flex;
+  gap: 8px;
+`;
+
+const ActionButton = styled.button`
   padding: 8px 12px;
-  margin-right: 10px;
-  
-  &:last-child {
-    margin-right: 0;
-  }
-`;
+  border: none;
+  border-radius: 4px;
+  background-color: ${props => props.color || '#047502'};
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.3s;
+  font-size: 14px;
+  gap: 6px;
 
-const EditButton = styled(ActionButton)`
-  background-color: #3498db;
-  
   &:hover {
-    background-color: #2980b9;
+    opacity: 0.9;
   }
-`;
 
-const DeleteButton = styled(ActionButton)`
-  background-color: #e74c3c;
-  
-  &:hover {
-    background-color: #c0392b;
+  svg {
+    width: 14px;
+    height: 14px;
   }
 `;
 
@@ -684,12 +688,22 @@ const CultivaresPage: React.FC = () => {
               <Td>{cultivar.cultivarEspecie && cultivar.cultivarEspecie.nome ? cultivar.cultivarEspecie.nome : 'Não especificada'}</Td>
               <Td>{cultivar.registro || 'Não registrado'}</Td>
               <Td>
-                <EditButton onClick={() => prepareForEdit(cultivar)}>
-                  Editar
-                </EditButton>
-                <DeleteButton onClick={() => handleDelete(cultivar.id)}>
-                  Excluir
-                </DeleteButton>
+                <ActionButtonGroup>
+                  <ActionButton 
+                    onClick={() => prepareForEdit(cultivar)}
+                    title="Editar cultivar"
+                    color="#3498db"
+                  >
+                    <FaEdit /> Editar
+                  </ActionButton>
+                  <ActionButton 
+                    onClick={() => handleDelete(cultivar.id)}
+                    title="Excluir cultivar"
+                    color="#e74c3c"
+                  >
+                    <FaTrash /> Excluir
+                  </ActionButton>
+                </ActionButtonGroup>
               </Td>
             </tr>
           ))}

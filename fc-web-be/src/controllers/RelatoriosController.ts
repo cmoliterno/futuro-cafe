@@ -100,7 +100,7 @@ export const gerarRelatorio = async (req: Request, res: Response) => {
     
     if (fazendaIds && fazendaIds.length > 0) {
       const formattedFazendaIds = fazendaIds.map((id: string) => `'${id}'`).join(',');
-      whereClausesTalhao.push(`t.FazendaId IN (${formattedFazendaIds})`);
+      whereClausesTalhao.push(`f.Id IN (${formattedFazendaIds})`);
     }
     
     if (talhaoIds && talhaoIds.length > 0) {
@@ -129,51 +129,59 @@ export const gerarRelatorio = async (req: Request, res: Response) => {
     // Executa a query com os filtros
     const queryBase = `
       SELECT 
-        t.Id AS TalhaoId,
+        f.Nome AS Fazenda,
         t.Nome AS NomeTalhao,
         YEAR(p.[Data]) AS AnoPlantio,
         p.EspacamentoLinhasMetros,
         p.EspacamentoMudasMetros,
         c.Nome AS Variedade,
-        td.ImagemUrl AS FotoTalhao,
-        a.ImagemUrl AS FotoAnalise,
+        a.ImagemResultadoUrl AS ImagemAnalisada,
+        a.CreatedAt AS DataAnalise,
         a.Cherry,
         a.Dry,
         a.Green,
         a.GreenYellow,
         a.Raisin,
-        a.Total
+        a.Total,
+        pf.NomeCompleto AS NomeUsuario
       FROM [futurocafe-prod].dbo.tbTalhao t
-      INNER JOIN [futurocafe-prod].dbo.tbPlantio p 
+      INNER JOIN [futurocafe-prod].dbo.tbFazenda f
+          ON t.FazendaId = f.Id
+      INNER JOIN [futurocafe-prod].dbo.tbPlantio p
           ON t.Id = p.TalhaoId
-      INNER JOIN [futurocafe-prod].dbo.tbCultivar c 
+      INNER JOIN [futurocafe-prod].dbo.tbCultivar c
           ON p.CultivarId = c.Id
-      LEFT JOIN [futurocafe-prod].dbo.tbTalhaoDesenho td 
-          ON t.Id = td.TalhaoId
-      LEFT JOIN [futurocafe-prod].dbo.tbAnalise a 
+      LEFT JOIN [futurocafe-prod].dbo.tbAnalise a
           ON t.Id = a.TalhaoId
+      LEFT JOIN [futurocafe-prod].dbo.tbPessoaFisicaFazenda pfaz
+          ON f.Id = pfaz.FazendaId
+      LEFT JOIN [futurocafe-prod].dbo.tbPessoaFisica pf
+          ON pfaz.PessoaFisicaId = pf.Id
     `;
     
     const queryFinal = whereClause 
-      ? `${queryBase} WHERE ${whereClause} ORDER BY t.Nome`
-      : `${queryBase} ORDER BY t.Nome`;
+      ? `${queryBase} WHERE ${whereClause} ORDER BY f.Nome, t.Nome`
+      : `${queryBase} ORDER BY f.Nome, t.Nome`;
     
     const resultados = await sequelize.query(queryFinal, { type: 'SELECT' });
     
     // Preparar dados para o Excel
     const dados = resultados.map((item: any) => ({
-      'ID do Talhão': item.TalhaoId,
+      'Fazenda': item.Fazenda,
       'Nome do Talhão': item.NomeTalhao,
       'Ano de Plantio': item.AnoPlantio,
       'Espaçamento Linhas (m)': item.EspacamentoLinhasMetros,
       'Espaçamento Mudas (m)': item.EspacamentoMudasMetros,
       'Variedade': item.Variedade,
+      'Data da Análise': item.DataAnalise ? new Date(item.DataAnalise).toLocaleDateString('pt-BR') : '',
       'Cherry': item.Cherry,
       'Dry': item.Dry,
       'Green': item.Green,
       'Green/Yellow': item.GreenYellow,
       'Raisin': item.Raisin,
-      'Total': item.Total
+      'Total': item.Total,
+      'Responsável': item.NomeUsuario || '',
+      'Link da Imagem': item.ImagemAnalisada || ''
     }));
 
     // Criar workbook e worksheet
@@ -186,16 +194,15 @@ export const gerarRelatorio = async (req: Request, res: Response) => {
     // Gerar buffer do arquivo Excel
     const excelBuffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
 
-    // Configurar headers para download
+    // Configurar headers da resposta
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', 'attachment; filename=relatorio-talhoes.xlsx');
     
-    // Enviar o arquivo Excel
+    // Enviar o arquivo
     res.send(excelBuffer);
-    
   } catch (error) {
     console.error('Erro ao gerar relatório:', error);
-    res.status(500).json({ message: 'Erro interno ao gerar relatório' });
+    res.status(500).json({ message: 'Erro ao gerar relatório', error });
   }
 };
 
