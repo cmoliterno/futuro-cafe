@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_BASE_URL || 'http://localhost:3000/api/';
+const API_URL = process.env.REACT_BASE_URL || 'https://api.futurocafe.com.br/api/';
 
 const api = axios.create({
     baseURL: API_URL,
@@ -151,6 +151,13 @@ export default {
         return api.get('/talhoes');
     },
     getTalhaoById: async (id: string) => {
+        console.log(`API: Buscando talhão com ID ${id}`);
+        const response = await api.get(`/talhoes/${id}`);
+        console.log(`API: Resposta recebida para talhão ${id}:`, response.data);
+        return response;
+    },
+    // Alias para getTalhaoById para compatibilidade com a nova implementação do dashboard
+    getTalhao: async (id: string) => {
         console.log(`API: Buscando talhão com ID ${id}`);
         const response = await api.get(`/talhoes/${id}`);
         console.log(`API: Resposta recebida para talhão ${id}:`, response.data);
