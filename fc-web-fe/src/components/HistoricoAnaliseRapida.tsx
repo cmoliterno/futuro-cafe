@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FaSearch, FaEye, FaTrash, FaInfoCircle, FaChartBar, FaAngleLeft, FaAngleRight, FaSortAmountDown, FaSortAmountUp } from "react-icons/fa";
+import { FaSearch, FaEye, FaTrash, FaChartBar, FaAngleLeft, FaAngleRight, FaSortAmountDown, FaSortAmountUp } from "react-icons/fa";
 import api from "../services/api";
 import {
   Card, CardHeader, CardBody, FormGroup, Label, Input, ButtonGroup, Button,
@@ -219,8 +219,7 @@ const HistoricoAnaliseRapida: React.FC<HistoricoAnaliseRapidaProps> = ({ onViewA
       {error && (
         <Card style={{ marginBottom: '1rem', backgroundColor: '#FFEBEE', borderLeft: '4px solid #D32F2F' }}>
           <CardBody style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <FaInfoCircle color="#D32F2F" />
-            <span style={{ color: '#D32F2F' }}>{error}</span>
+            ⚠️ <span style={{ color: '#D32F2F' }}>{error}</span>
           </CardBody>
         </Card>
       )}
