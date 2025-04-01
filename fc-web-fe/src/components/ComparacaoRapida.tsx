@@ -18,7 +18,7 @@ import {
     Cell
 } from "recharts";
 // import Chart from "chart.js/auto"; // <-- Comente/Remova se for trocar por Recharts
-import { FaUpload, FaTrash, FaSpinner, FaSync, FaTimes, FaHistory, FaPlus, FaChartBar, FaSearch, FaExclamationCircle } from "react-icons/fa";
+import { FaUpload, FaTrash, FaSpinner, FaSync, FaTimes, FaHistory, FaPlus, FaChartBar, FaSearch, FaInfoCircle } from "react-icons/fa";
 import {
     Container, Title, TabContainer, Tab, Card, CardHeader, CardBody, FormGroup,
     Label, Input, DropZoneContainer, DropZoneText, UploadGrid, UploadSection,
@@ -553,7 +553,7 @@ const ComparacaoRapida: React.FC = () => {
                             alignItems: 'center',
                             gap: '0.5rem'
                         }}>
-                            <FaExclamationCircle />
+                            <FaInfoCircle />
                             {descricaoError}
                         </div>
                     )}
