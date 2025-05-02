@@ -2,6 +2,10 @@ import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts';
 import api from '../services/api';
+import PrevisaoService from '../services/PrevisaoService';
+import PrevisaoSafraCard from '../components/PrevisaoSafraCard';
+import { getFirstDayOfCurrentMonth, getCurrentDate } from '../utils/dateUtils';
+import { percentFormatter } from '../utils/formatUtils';
 
 const EstatisticasContainer = styled.div`
   padding: var(--spacing-xl);
@@ -160,33 +164,30 @@ interface ChartData {
     dry: number;
 }
 
+const TabType = {
+  FARM: 'farm',
+  DATE: 'date',
+  FORECAST: 'forecast'
+} as const;
+
+type TabTypeKeys = keyof typeof TabType;
+type TabTypeValues = typeof TabType[TabTypeKeys];
+
 const EstatisticasPage: React.FC = () => {
+    const [activeTab, setActiveTab] = useState<TabTypeValues>(TabType.FARM);
     const [fazendas, setFazendas] = useState<any[]>([]);
     const [talhoes, setTalhoes] = useState<any[]>([]);
-    const [selectedFazenda, setSelectedFazenda] = useState<string | null>(null);
+    const [selectedFazenda, setSelectedFazenda] = useState<string>('');
     const [selectedTalhao, setSelectedTalhao] = useState<string>('');
-    
-    // Função para obter o primeiro dia do mês atual formatado como YYYY-MM-DD
-    const getFirstDayOfCurrentMonth = () => {
-        const today = new Date();
-        return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
-    };
-
-    // Função para obter a data atual formatada como YYYY-MM-DD
-    const getCurrentDate = () => {
-        const today = new Date();
-        return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    };
-    
     const [startDate, setStartDate] = useState<string>(getFirstDayOfCurrentMonth());
     const [endDate, setEndDate] = useState<string>(getCurrentDate());
     const [chartData, setChartData] = useState<ChartData[]>([]);
     const [loading, setLoading] = useState(false);
-    const [isFarmReport, setIsFarmReport] = useState<boolean>(true);
-    const [sortConfig, setSortConfig] = useState<{
-        key: keyof ChartData;
-        direction: 'asc' | 'desc';
-    } | null>(null);
+    const [loadingTalhoes, setLoadingTalhoes] = useState(false);
+
+    // Novos estados para previsão
+    const [idadePlantasTalhao, setIdadePlantasTalhao] = useState<number>(0);
+    const [previsaoSafra, setPrevisaoSafra] = useState<any>(null);
 
     useEffect(() => {
         fetchFazendas();
@@ -208,27 +209,25 @@ const EstatisticasPage: React.FC = () => {
     };
 
     const fetchTalhoes = async (fazendaId: string) => {
+        setLoadingTalhoes(true);
         try {
             const response = await api.getTalhoesByFazenda(fazendaId);
             setTalhoes(response.data);
         } catch (error) {
             console.error('Erro ao carregar talhões:', error);
+        } finally {
+            setLoadingTalhoes(false);
         }
     };
 
     const handleFetchData = async () => {
         // Verificar se todos os campos necessários foram preenchidos
-        if (!selectedFazenda) {
+        if (!selectedFazenda || selectedFazenda === '') {
             alert('Por favor, selecione uma fazenda.');
             return;
         }
 
-        if (isFarmReport && !startDate) {
-            alert('Por favor, selecione uma data para o gráfico por fazenda.');
-            return;
-        }
-
-        if (!isFarmReport && (!selectedTalhao || !startDate || !endDate)) {
+        if (activeTab === TabType.DATE && (!selectedTalhao || !startDate || !endDate)) {
             alert('Por favor, selecione todos os campos para o gráfico por data.');
             return;
         }
@@ -241,7 +240,7 @@ const EstatisticasPage: React.FC = () => {
                 plotId: selectedTalhao,  // Será utilizado apenas se for por data
                 startDate,
                 endDate,
-                reportType: isFarmReport ? 'byFarm' : 'byDate', // Envia o tipo de relatório
+                reportType: activeTab === TabType.DATE ? 'byDate' : 'byFarm', // Envia o tipo de relatório
             });
 
             const data = transformChartData(response.data);
@@ -256,7 +255,7 @@ const EstatisticasPage: React.FC = () => {
     const transformChartData = (data: any): ChartData[] => {
         const chartData: ChartData[] = [];
 
-        if (isFarmReport) {
+        if (activeTab === TabType.FARM) {
             // Aqui lidamos com o tipo "Por Fazenda"
             data.forEach((talhaoData: any) => {
                 const { talhao, groupedData } = talhaoData;
@@ -305,58 +304,63 @@ const EstatisticasPage: React.FC = () => {
         return chartData;
     };
 
-    // Limpar os campos ao trocar o tipo de relatório
-    const handleToggleReportType = (isFarm: boolean) => {
-        setIsFarmReport(isFarm);
-        setSelectedTalhao('');
-        setStartDate(getFirstDayOfCurrentMonth());
-        setEndDate(getCurrentDate());
-        setChartData([]);
-    };
+    const handleCalcularPrevisao = async () => {
+        if (!selectedTalhao || idadePlantasTalhao === 0) {
+            alert('Por favor, preencha todos os campos necessários');
+            return;
+        }
 
-    const handleSort = (key: keyof ChartData) => {
-        const direction = sortConfig?.key === key && sortConfig.direction === 'asc' ? 'desc' : 'asc';
-        setSortConfig({ key, direction });
+        try {
+            setLoading(true);
+            
+            const response = await api.getUltimaAnaliseTalhao(selectedTalhao);
 
-        const sortedData = [...chartData].sort((a, b) => {
-            if (key === 'date' || key === 'talhao') {
-                const aValue = String(a[key] || '');
-                const bValue = String(b[key] || '');
-                return direction === 'asc' 
-                    ? aValue.localeCompare(bValue)
-                    : bValue.localeCompare(aValue);
+            if (!response.data || !response.data.result) {
+                alert('Não há análises recentes para este talhão');
+                return;
             }
 
-            const aValue = Number(a[key] || 0);
-            const bValue = Number(b[key] || 0);
-            return direction === 'asc' ? aValue - bValue : bValue - aValue;
-        });
+            const ultimaAnalise = response.data.result;
+            const total = ultimaAnalise.total;
 
-        setChartData(sortedData);
-    };
+            // Obter o mês da última coleta
+            const dataUltimaColeta = new Date(ultimaAnalise.createdAt);
+            const meses = [
+                'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+                'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'
+            ];
+            const mesColeta = meses[dataUltimaColeta.getMonth()];
 
-    // Função para calcular o total de cada registro para percentuais
-    const calculateTotal = (item: ChartData): number => {
-        return item.green + item.greenYellow + item.cherry + item.raisin + item.dry;
-    };
+            const porcentagens = {
+                verde: ultimaAnalise.green / total,
+                verdeCana: ultimaAnalise.greenYellow / total,
+                cereja: ultimaAnalise.cherry / total,
+                passa: ultimaAnalise.raisin / total,
+                seco: ultimaAnalise.dry / total
+            };
 
-    // Formatter para exibir percentuais
-    const percentFormatter = (value: number, entry: any) => {
-        // Verificar se temos dados válidos para calcular o percentual
-        if (value === 0 || !chartData || chartData.length === 0) return '0%';
+            const graosPorEstagio = {
+                verde: ultimaAnalise.green,
+                verdeCana: ultimaAnalise.greenYellow,
+                cereja: ultimaAnalise.cherry,
+                passa: ultimaAnalise.raisin,
+                seco: ultimaAnalise.dry
+            };
 
-        // Encontrar o item correspondente nos dados do gráfico
-        // Como não podemos confiar em entry.payload, usamos o valor e o dataKey (já temos o value)
-        // e encontramos o item pelo índice do elemento no gráfico
-        const index = entry?.index ?? 0;
-        if (!chartData[index]) return '0%';
-        
-        const item = chartData[index];
-        const total = calculateTotal(item);
-        
-        if (total === 0) return '0%';
-        const percent = (value / total * 100).toFixed(1);
-        return `${percent}%`;
+            const previsao = PrevisaoService.calcularPrevisoes(
+                idadePlantasTalhao,
+                graosPorEstagio,
+                porcentagens,
+                mesColeta
+            );
+
+            setPrevisaoSafra(previsao);
+        } catch (error) {
+            console.error('Erro ao calcular previsão:', error);
+            alert('Erro ao calcular previsão. Por favor, tente novamente.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -365,28 +369,38 @@ const EstatisticasPage: React.FC = () => {
 
             <TabsContainer>
                 <Tab
-                    isActive={isFarmReport}
-                    onClick={() => handleToggleReportType(true)}
+                    isActive={activeTab === TabType.FARM}
+                    onClick={() => setActiveTab(TabType.FARM)}
                 >
                     Por Fazenda
                 </Tab>
                 <Tab
-                    isActive={!isFarmReport}
-                    onClick={() => handleToggleReportType(false)}
+                    isActive={activeTab === TabType.DATE}
+                    onClick={() => setActiveTab(TabType.DATE)}
                 >
                     Por Data
                 </Tab>
+                <Tab
+                    isActive={activeTab === TabType.FORECAST}
+                    onClick={() => setActiveTab(TabType.FORECAST)}
+                >
+                    Previsão de Safra
+                </Tab>
             </TabsContainer>
 
+            {activeTab === TabType.FORECAST ? (
+                <>
             <FormContainer>
                 <FormField>
                     <Label>Fazenda</Label>
                     <Select
-                        value={selectedFazenda || ''}
-                        onChange={(e) => setSelectedFazenda(e.target.value)}
-                        disabled={loading}
+                                value={selectedFazenda}
+                                onChange={(e) => {
+                                    setSelectedFazenda(e.target.value);
+                                    setSelectedTalhao('');
+                                }}
                     >
-                        <option value="">Selecione a Fazenda</option>
+                                <option value="">Selecione uma fazenda</option>
                         {fazendas.map((fazenda) => (
                             <option key={fazenda.id} value={fazenda.id}>
                                 {fazenda.nome}
@@ -395,29 +409,87 @@ const EstatisticasPage: React.FC = () => {
                     </Select>
                 </FormField>
 
-                {!isFarmReport && (
                     <FormField>
                         <Label>Talhão</Label>
                         <Select
                             value={selectedTalhao}
                             onChange={(e) => setSelectedTalhao(e.target.value)}
-                            disabled={loading || !selectedFazenda}
+                                disabled={!selectedFazenda || loading || loadingTalhoes}
                         >
-                            <option value="">Selecione o Talhão</option>
-                            {talhoes.map((talhao) => (
+                                <option value="">{loadingTalhoes ? "Carregando talhões..." : "Selecione um talhão"}</option>
+                                {!loadingTalhoes && talhoes.map((talhao) => (
                                 <option key={talhao.id} value={talhao.id}>
                                     {talhao.nome}
                                 </option>
                             ))}
                         </Select>
                     </FormField>
-                )}
+
+                        <FormField>
+                            <Label>Idade das Plantas (anos)</Label>
+                            <input
+                                type="number"
+                                min="1"
+                                value={idadePlantasTalhao}
+                                onChange={(e) => setIdadePlantasTalhao(Number(e.target.value))}
+                                style={{
+                                    width: '100%',
+                                    padding: '12px',
+                                    border: '1px solid var(--color-gray-300)',
+                                    borderRadius: 'var(--border-radius-md)',
+                                }}
+                            />
+                        </FormField>
+
+                        <Button onClick={handleCalcularPrevisao} disabled={loading}>
+                            {loading ? 'Calculando...' : 'Calcular Previsão'}
+                        </Button>
+                    </FormContainer>
+
+                    {previsaoSafra && (
+                        <PrevisaoSafraCard
+                            sacasPorHectare={previsaoSafra.sacasPorHectare}
+                            diasParaColheita={previsaoSafra.diasParaColheita}
+                            dataIdealColheita={previsaoSafra.dataIdealColheita}
+                        />
+                    )}
+                </>
+            ) : (
+                <>
+                    <FormContainer>
+                        <FormField>
+                            <Label>Fazenda</Label>
+                            <Select
+                                value={selectedFazenda}
+                                onChange={(e) => setSelectedFazenda(e.target.value)}
+                                disabled={loading}
+                            >
+                                <option value="">Selecione uma fazenda</option>
+                                {fazendas.map(fazenda => (
+                                    <option key={fazenda.id} value={fazenda.id}>{fazenda.nome}</option>
+                                ))}
+                            </Select>
+                        </FormField>
+
+                        <FormField>
+                            <Label>Talhão</Label>
+                            <Select
+                                value={selectedTalhao}
+                                onChange={(e) => setSelectedTalhao(e.target.value)}
+                                disabled={!selectedFazenda || loading || loadingTalhoes}
+                            >
+                                <option value="">{loadingTalhoes ? "Carregando talhões..." : "Selecione um talhão"}</option>
+                                {!loadingTalhoes && talhoes.map(talhao => (
+                                    <option key={talhao.id} value={talhao.id}>{talhao.nome}</option>
+                                ))}
+                            </Select>
+                        </FormField>
 
                 <FormField>
                     <Label>Data Inicial</Label>
                     <DateInput
                         type="date"
-                        value={startDate || ''}
+                                value={startDate}
                         onChange={(e) => setStartDate(e.target.value)}
                         disabled={loading}
                     />
@@ -427,7 +499,7 @@ const EstatisticasPage: React.FC = () => {
                     <Label>Data Final</Label>
                     <DateInput
                         type="date"
-                        value={endDate || ''}
+                                value={endDate}
                         onChange={(e) => setEndDate(e.target.value)}
                         disabled={loading}
                     />
@@ -446,7 +518,7 @@ const EstatisticasPage: React.FC = () => {
                         <BarChart data={chartData}>
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis 
-                                dataKey={isFarmReport ? 'talhao' : 'date'} 
+                                        dataKey={activeTab === TabType.FARM ? 'talhao' : 'date'} 
                                 tick={{ fill: 'var(--color-primary)', fontSize: 12 }}
                             />
                             <YAxis tick={{ fill: 'var(--color-primary)', fontSize: 12 }} />
@@ -525,6 +597,8 @@ const EstatisticasPage: React.FC = () => {
             
             {chartData.length === 0 && !loading && (
                 <NoDataText>Sem dados para exibir. Selecione os filtros e clique em "Filtrar".</NoDataText>
+                    )}
+                </>
             )}
         </EstatisticasContainer>
     );

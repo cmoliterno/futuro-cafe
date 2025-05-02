@@ -8,6 +8,7 @@ import {
   ModalOverlay, ModalContent, Button, TabContainer, Tab,
   Table, Th, Td
 } from "./ComparacaoRapidaStyles";
+import { percentFormatter } from '../utils/formatUtils';
 
 // Cores para os diferentes tipos de grãos
 const COLORS = {

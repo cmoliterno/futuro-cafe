@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import api from '../services/api'; // Importando o serviço de API
 import {Link, useNavigate} from 'react-router-dom'; // Importar useNavigate
@@ -87,6 +87,13 @@ const LoginPage: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState('');
     const navigate = useNavigate(); // Criar o hook de navegação
+
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            navigate('/dashboard');
+        }
+    }, [navigate]);
 
     const handleLogin = async () => {
         setLoading(true);

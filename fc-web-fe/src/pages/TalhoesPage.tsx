@@ -476,42 +476,40 @@ const TalhoesPage: React.FC = () => {
         if (showMap && mapRef.current) {
             const loadLeaflet = async () => {
                 try {
-                    const L = await import('leaflet');
+                    // Primeiro importar os estilos
+                    await import('leaflet/dist/leaflet.css');
+                    await import('leaflet-draw/dist/leaflet.draw.css');
+                    
+                    // Depois importar os módulos
+                    const L = (await import('leaflet')).default;
                     await import('leaflet-draw');
-                    initializeMap(L);
+                    
+                    // Inicializar o mapa
+                    await initializeMap(L);
                 } catch (error) {
                     console.error("Erro ao carregar Leaflet:", error);
-                    setErrors({ general: 'Erro ao carregar o mapa. Tente novamente.' });
+                    setErrors(prev => ({ ...prev, general: 'Erro ao carregar o mapa. Por favor, tente novamente.' }));
                 }
             };
             loadLeaflet();
         }
 
-        // Cleanup
         return () => {
             cleanupMap();
         };
     }, [showMap]);
 
     const initializeMap = async (L: any) => {
-        // Pegar localização do usuário ou usar uma localização padrão
+        try {
         if (!mapRef.current) {
             return;
         }
 
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                setUserLocation([position.coords.latitude, position.coords.longitude]);
-            },
-            (error) => {
-                console.warn('Erro ao obter localização do usuário:', error);
-                setUserLocation([-21.763, -43.349]); // Coordenadas padrão
-            }
-        );
-
-        const location = userLocation || [-21.763, -43.349]; // Coordenadas padrão se não tiver localização do usuário
-        
-        const leafletMap = L.map(mapRef.current).setView(location, 13);
+            // Aguardar a localização do usuário
+            const location = userLocation || [-21.763, -43.349];
+            
+            // Inicializar o mapa
+            leafletMap = L.map(mapRef.current).setView(location, 13);
 
         // Adicionar camada base do mapa (satellite)
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
@@ -527,8 +525,6 @@ const TalhoesPage: React.FC = () => {
         // Se já existe um desenho, mostrar no mapa
         if (desenhoPoligono && desenhoPoligono.coordinates && desenhoPoligono.coordinates.length > 0) {
             try {
-                // No desenho, as coordenadas já estão em [latitude, longitude]
-                // então não precisamos inverter ao mostrar no mapa
                 const latlngs = desenhoPoligono.coordinates[0];
                 const polygon = L.polygon(latlngs, {
                     color: '#34A853',
@@ -542,7 +538,8 @@ const TalhoesPage: React.FC = () => {
             }
         }
         
-        drawControl = new L.Control.Draw({
+            // Configurar controles de desenho
+            const drawOptions = {
             edit: {
                 featureGroup: newDrawnItems,
                 poly: {
@@ -565,55 +562,50 @@ const TalhoesPage: React.FC = () => {
                 marker: false,
                 circlemarker: false
             }
-        });
+            };
+            
+            drawControl = new L.Control.Draw(drawOptions);
         leafletMap.addControl(drawControl);
         
-        // Evento para quando um polígono é desenhado
+            // Configurar eventos de desenho
         leafletMap.on(L.Draw.Event.CREATED, (e: any) => {
             const layer = e.layer;
-            
-            // Limpar desenhos anteriores
             newDrawnItems.clearLayers();
-            
-            // Adicionar o novo desenho
             newDrawnItems.addLayer(layer);
-            
-            // Converter para o mesmo formato usado no APP - [latitude, longitude]
             const coordinates = layer.getLatLngs()[0].map((latlng: any) => [latlng.lat, latlng.lng]);
-            const novoDesenho = {
+                setDesenhoPoligono({
                 type: 'Polygon',
                 coordinates: [coordinates]
-            };
-            setDesenhoPoligono(novoDesenho);
+                });
         });
         
-        // Evento para quando um polígono é editado
         leafletMap.on(L.Draw.Event.EDITED, (e: any) => {
             const layers = e.layers;
             layers.eachLayer((layer: any) => {
-                // Usar o mesmo formato do APP - [latitude, longitude]
                 const coordinates = layer.getLatLngs()[0].map((latlng: any) => [latlng.lat, latlng.lng]);
-                const novoDesenho = {
+                    setDesenhoPoligono({
                     type: 'Polygon',
                     coordinates: [coordinates]
-                };
-                setDesenhoPoligono(novoDesenho);
+                    });
             });
         });
         
-        // Evento para quando um polígono é excluído
         leafletMap.on(L.Draw.Event.DELETED, () => {
             newDrawnItems.clearLayers();
             setDesenhoPoligono(null);
         });
 
-        // Remover mensagem de erro se o mapa foi carregado com sucesso
+            // Remover mensagem de erro
         setErrors((prev) => {
             const newErrors = { ...prev };
             delete newErrors.general;
             return newErrors;
         });
 
+        } catch (error) {
+            console.error("Erro ao inicializar o mapa:", error);
+            setErrors(prev => ({ ...prev, general: 'Erro ao carregar o mapa. Por favor, tente novamente.' }));
+        }
     };
 
     const cleanupMap = () => {
@@ -737,7 +729,11 @@ const TalhoesPage: React.FC = () => {
         const newErrors: FormErrors = {};
         if (!formData.nome.trim()) newErrors.nome = 'Nome é obrigatório';
         if (!formData.fazendaId) newErrors.fazendaId = 'Fazenda é obrigatória';
-        if (!desenhoPoligono) newErrors.desenho = 'É necessário desenhar a área do talhão no mapa';
+        if (!desenhoPoligono) {
+            newErrors.desenho = 'É necessário desenhar a área do talhão no mapa';
+            alert('Por favor, desenhe a área do talhão no mapa antes de salvar.');
+            return;
+        }
         
         // Se houver erros, exibir e parar a submissão
         if (Object.keys(newErrors).length > 0) {
@@ -932,9 +928,10 @@ const TalhoesPage: React.FC = () => {
                     <Label>Espaçamento entre linhas (m)*</Label>
                     <Input
                         type="number"
-                        step="0.01"
+                        step="0.1"
                         value={formData.espacamentoLinhas}
                         onChange={(e) => setFormData({ ...formData, espacamentoLinhas: e.target.value })}
+                        placeholder="Ex: 3.5"
                     />
                     {errors.espacamentoLinhas && <ErrorText>{errors.espacamentoLinhas}</ErrorText>}
                 </FormGroup>
@@ -990,19 +987,14 @@ const TalhoesPage: React.FC = () => {
                 )}
             </FormContainer>
             
-            <SearchContainer>
-                <SearchInput
-                    type="text"
-                    placeholder="Buscar talhões..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
-            </SearchContainer>
-            
             <DrawMapContainer>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                 <Button onClick={toggleDrawMap}>
                     {showMap ? 'Ocultar Mapa' : 'Desenhar Talhão'}
                 </Button>
+                    {desenhoPoligono && <SuccessMessage style={{ padding: '8px', margin: 0 }}>✓ Área do talhão desenhada</SuccessMessage>}
+                    {errors.desenho && <ErrorText style={{ margin: 0 }}>{errors.desenho}</ErrorText>}
+                </div>
                 {showMap && (
                     <>
                         <MapContainer ref={mapRef} />
@@ -1019,6 +1011,15 @@ const TalhoesPage: React.FC = () => {
                     </>
                 )}
             </DrawMapContainer>
+
+            <SearchContainer>
+                <SearchInput
+                    type="text"
+                    placeholder="Buscar talhões..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </SearchContainer>
             
             {loading && !editId ? (
                 <LoadingMessage>Carregando talhões...</LoadingMessage>

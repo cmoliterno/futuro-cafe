@@ -717,48 +717,123 @@ export const getPlotAnalyses = async (req: Request, res: Response) => {
     }
 };
 
+interface AnaliseResult {
+    Id: string;
+    Cherry: number;
+    Coordenadas: string;
+    Dry: number;
+    Green: number;
+    GreenYellow: number;
+    GrupoId: string;
+    ImagemResultadoUrl: string;
+    ImagemUrl: string;
+    ProjetoId: string;
+    Raisin: number;
+    Total: number;
+    CreatedAt: Date;
+    LastUpdatedAt: Date;
+    TalhaoId: string;
+    TalhaoNome: string;
+    FazendaNome: string;
+    FazendaId: string;
+}
+
 // Obter análises com filtros
 export const getFilteredAnalyses = async (req: Request, res: Response) => {
-    const { fazendaId, talhaoId, grupoId, projetoId, startDate, endDate, page = 1, pageSize = 9 } = req.query;
+    const { fazendaId, talhaoId, grupoId, projetoId, startDate, endDate, page = 1, pageSize = 9, sortDirection = 'desc' } = req.query;
 
     try {
+        // Obtém o token do cabeçalho
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ message: 'Token não fornecido' });
+        }
+
+        // Obtém o ID do usuário do token
+        const pessoaId = authService.verifyToken(token)?.userId;
+        if (!pessoaId) {
+            return res.status(401).json({ message: 'Token inválido' });
+        }
+
         // Certifique-se de que os valores sejam números válidos
         const currentPage = Math.max(Number(page) || 1, 1);
         const itemsPerPage = Math.max(Number(pageSize) || 9, 1);
 
-        const whereConditions: any = {};
+        // Validar a direção da ordenação
+        const validSortDirection = sortDirection === 'asc' ? 'ASC' : 'DESC';
 
-        if (talhaoId) {
-            whereConditions.TalhaoId = talhaoId;
-        }
+        // Se não houver fazenda ou talhão selecionado, precisamos filtrar apenas as fazendas do usuário
+        const userFazendasQuery = !fazendaId ? `
+            AND f.Id IN (
+                SELECT FazendaId 
+                FROM tbPessoaFisicaFazenda 
+                WHERE PessoaFisicaId = :pessoaId
+            )
+        ` : '';
 
-        if (grupoId) {
-            whereConditions.grupoId = grupoId;
-        }
-
-        if (projetoId) {
-            whereConditions.projetoId = projetoId;
-        }
-
-        if (startDate && endDate) {
-            whereConditions.createdAt = {
-                [Op.between]: [startDate, endDate]
-            };
-        }
-
-        const { count, rows } = await Analise.findAndCountAll({
-            where: whereConditions,
-            attributes: [
-                'id', 'cherry', 'coordenadas', 'dry', 'green', 'greenYellow',
-                'grupoId', 'imagemResultadoUrl', 'imagemUrl', 'projetoId',
-                'raisin', 'total', 'createdAt', 'lastUpdatedAt'
-            ],
-            limit: itemsPerPage,
+        // Buscar análises com joins para Talhao e Fazenda
+        const results = await sequelize.query<AnaliseResult>(`
+            SELECT 
+                a.*,
+                t.Nome as TalhaoNome,
+                f.Nome as FazendaNome,
+                f.Id as FazendaId
+            FROM tbAnalise a
+            LEFT JOIN tbTalhao t ON a.TalhaoId = t.Id
+            LEFT JOIN tbFazenda f ON t.FazendaId = f.Id
+            WHERE 1=1
+            ${talhaoId ? ' AND a.TalhaoId = :talhaoId' : ''}
+            ${fazendaId ? ' AND f.Id = :fazendaId' : ''}
+            ${grupoId ? ' AND a.GrupoId = :grupoId' : ''}
+            ${projetoId ? ' AND a.ProjetoId = :projetoId' : ''}
+            ${startDate && endDate ? ' AND a.CreatedAt BETWEEN :startDate AND :endDate' : ''}
+            ${userFazendasQuery}
+            ORDER BY a.CreatedAt ${validSortDirection}
+            OFFSET :offset ROWS
+            FETCH NEXT :limit ROWS ONLY
+        `, {
+            replacements: {
+                talhaoId,
+                fazendaId,
+                grupoId,
+                projetoId,
+                startDate,
+                endDate,
+                pessoaId,
             offset: (currentPage - 1) * itemsPerPage,
+                limit: itemsPerPage
+            },
+            type: QueryTypes.SELECT
         });
 
-        // Verificar se a página solicitada está além do limite
-        const totalPages = Math.ceil(count / itemsPerPage);
+        // Contar total de registros para paginação
+        const [countResult] = await sequelize.query(`
+            SELECT COUNT(*) as total
+            FROM tbAnalise a
+            LEFT JOIN tbTalhao t ON a.TalhaoId = t.Id
+            LEFT JOIN tbFazenda f ON t.FazendaId = f.Id
+            WHERE 1=1
+            ${talhaoId ? ' AND a.TalhaoId = :talhaoId' : ''}
+            ${fazendaId ? ' AND f.Id = :fazendaId' : ''}
+            ${grupoId ? ' AND a.GrupoId = :grupoId' : ''}
+            ${projetoId ? ' AND a.ProjetoId = :projetoId' : ''}
+            ${startDate && endDate ? ' AND a.CreatedAt BETWEEN :startDate AND :endDate' : ''}
+            ${userFazendasQuery}
+        `, {
+            replacements: {
+                talhaoId,
+                fazendaId,
+                grupoId,
+                projetoId,
+                startDate,
+                endDate,
+                pessoaId
+            },
+            type: QueryTypes.SELECT
+        });
+
+        const total = (countResult as any).total;
+        const totalPages = Math.ceil(total / itemsPerPage);
 
         if (currentPage > totalPages) {
             return res.status(404).json({
@@ -771,11 +846,33 @@ export const getFilteredAnalyses = async (req: Request, res: Response) => {
             });
         }
 
+        // Formatar os resultados
+        const formattedResults = (results as AnaliseResult[]).map(row => ({
+            id: row.Id,
+            cherry: row.Cherry,
+            coordenadas: row.Coordenadas,
+            dry: row.Dry,
+            green: row.Green,
+            greenYellow: row.GreenYellow,
+            grupoId: row.GrupoId,
+            imagemResultadoUrl: row.ImagemResultadoUrl,
+            imagemUrl: row.ImagemUrl,
+            projetoId: row.ProjetoId,
+            raisin: row.Raisin,
+            total: row.Total,
+            createdAt: row.CreatedAt,
+            lastUpdatedAt: row.LastUpdatedAt,
+            talhaoId: row.TalhaoId,
+            talhaoNome: row.TalhaoNome || 'Talhão não encontrado',
+            fazendaNome: row.FazendaNome || 'Fazenda não encontrada',
+            fazendaId: row.FazendaId
+        }));
+
         res.json({
             page: currentPage,
             pages: totalPages,
             pageSize: itemsPerPage,
-            result: rows,
+            result: formattedResults,
             success: true,
             messages: [],
             hasErrors: false,
@@ -787,7 +884,44 @@ export const getFilteredAnalyses = async (req: Request, res: Response) => {
         res.status(500).json({
             message: 'Erro ao obter análises com filtros',
             success: false,
-            hasErrors: true
+            hasErrors: true,
+            error
+        });
+    }
+};
+
+// Novo método para obter a última análise de um talhão
+export const getUltimaAnaliseTalhao = async (req: Request, res: Response) => {
+    const { talhaoId } = req.params;
+
+    try {
+        const analise = await Analise.findOne({
+            where: { TalhaoId: talhaoId },
+            order: [['createdAt', 'DESC']],
+            attributes: [
+                'id', 'cherry', 'coordenadas', 'dry', 'green', 'greenYellow',
+                'grupoId', 'imagemResultadoUrl', 'imagemUrl', 'projetoId',
+                'raisin', 'total', 'createdAt', 'lastUpdatedAt'
+            ]
+        });
+
+        if (!analise) {
+            return res.status(404).json({
+                message: 'Nenhuma análise encontrada para este talhão',
+                success: false
+            });
+        }
+
+        res.json({
+            success: true,
+            result: analise
+        });
+    } catch (error) {
+        console.error('Erro ao buscar última análise:', error);
+        res.status(500).json({
+            message: 'Erro ao buscar última análise',
+            success: false,
+            error
         });
     }
 };

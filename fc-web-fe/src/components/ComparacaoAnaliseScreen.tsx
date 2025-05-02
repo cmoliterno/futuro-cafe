@@ -10,8 +10,11 @@ import {
     CartesianGrid,
     LabelList,
     Line, BarChart,
+    ResponsiveContainer,
 } from 'recharts';
 import api from '../services/api';
+import { getFirstDayOfCurrentMonth, getCurrentDate } from '../utils/dateUtils';
+import { percentFormatter } from '../utils/formatUtils';
 
 interface ChartData {
     nome: string;
@@ -217,18 +220,6 @@ const ComparacaoAnaliseScreen = () => {
     const [chartData, setChartData] = useState<ChartData[]>([]);
     const [modalVisible, setModalVisible] = useState(false);
     const [loading, setLoading] = useState(false);
-
-    // Função para obter o primeiro dia do mês atual formatado como YYYY-MM-DD
-    const getFirstDayOfCurrentMonth = () => {
-        const today = new Date();
-        return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
-    };
-
-    // Função para obter a data atual formatada como YYYY-MM-DD
-    const getCurrentDate = () => {
-        const today = new Date();
-        return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    };
 
     const [filtersLeft, setFiltersLeft] = useState({
         fazenda: '',

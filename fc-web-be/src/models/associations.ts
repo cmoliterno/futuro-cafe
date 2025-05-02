@@ -9,6 +9,7 @@ import Cultivar from './Cultivar';
 import CultivarEspecie from './CultivarEspecie';
 import Fazenda from './Fazenda';
 import Talhao from './Talhao';
+import Analise from './Analise';
 
 // Define associations
 export const setupAssociations = () => {
@@ -31,6 +32,22 @@ export const setupAssociations = () => {
     // Login.belongsToMany(Perfil, { through: 'LoginPerfil', foreignKey: 'LoginId' });
     // Perfil.belongsToMany(Login, { through: 'LoginPerfil', foreignKey: 'PerfilId' });
 
-
     // Additional associations can be added here as needed
+
+    // Novas associações para Analise
+    Talhao.hasMany(Analise, { foreignKey: 'TalhaoId' });
+    Analise.belongsTo(Talhao, { foreignKey: 'TalhaoId' });
+
+    // Outras associações existentes
+    Fazenda.hasMany(Talhao, { foreignKey: 'FazendaId' });
+    Talhao.belongsTo(Fazenda, { foreignKey: 'FazendaId' });
+
+    CultivarEspecie.hasMany(Cultivar, { foreignKey: 'CultivarEspecieId' });
+    Cultivar.belongsTo(CultivarEspecie, { foreignKey: 'CultivarEspecieId' });
+
+    PessoaFisica.hasMany(Login, { foreignKey: 'PessoaFisicaId' });
+    Login.belongsTo(PessoaFisica, { foreignKey: 'PessoaFisicaId' });
+
+    Login.belongsToMany(Perfil, { through: 'LoginPerfil', foreignKey: 'LoginId' });
+    Perfil.belongsToMany(Login, { through: 'LoginPerfil', foreignKey: 'PerfilId' });
 };

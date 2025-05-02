@@ -209,19 +209,24 @@ export default {
     getPlotAnalyses: (talhaoId: string) =>
         api.get(`/talhoes/${talhaoId}/analises`), // Requer autenticação
 
-    getFilteredAnalyses : (filters: any) =>
-        api.get('/analises', { params: filters }), // Requer autenticação
+    getFilteredAnalyses: (params: {
+        fazendaId?: string;
+        talhaoId?: string;
+        grupoId?: string;
+        projetoId?: string;
+        startDate?: string;
+        endDate?: string;
+        page?: number;
+        sortDirection?: 'asc' | 'desc';
+    }) => api.get('/analises', { params }), // Requer autenticação
+
+    getUltimaAnaliseTalhao: (talhaoId: string) =>
+        api.get(`/analises/talhao/${talhaoId}/ultima`), // Requer autenticação
 
     compareAnalises: (data: { filtersLeft: any, filtersRight: any }) => {
         console.log('API compareAnalises sendo chamada com:', JSON.stringify(data, null, 2));
-        return api.post('/compare-analises', data).then(response => {
-            console.log('API compareAnalises recebeu resposta:', JSON.stringify(response.data, null, 2));
-            return response;
-        }).catch(error => {
-            console.error('API compareAnalises erro:', error);
-            throw error;
-        });
-    },
+        return api.post('/analises/comparar', data);
+    }, // Requer autenticação
 
     // Funções de análise rápida
     createRapidAnalysisGroup: (formData: any) =>

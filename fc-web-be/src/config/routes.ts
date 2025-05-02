@@ -15,7 +15,7 @@ import {
     createTalhao,
     updateTalhao,
     deleteTalhao,
-    getTalhoesByFazenda, addPlotAnalysis, getPlotAnalyses, getFilteredAnalyses, addTalhaoDesenho, getTalhaoDesenho
+    getTalhoesByFazenda, addPlotAnalysis, getPlotAnalyses, getFilteredAnalyses, addTalhaoDesenho, getTalhaoDesenho, getUltimaAnaliseTalhao
 } from '../controllers/TalhaoController';
 import {compareAnalyses, getDataToChartBy, getEstatisticas} from '../controllers/EstatisticasController';
 import { getAllPerfis, getPerfilById, createPerfil, updatePerfil, deletePerfil } from '../controllers/PerfisController';
@@ -120,6 +120,7 @@ router.get('/talhoes/:id/desenho', getTalhaoDesenho);
 router.post('/talhoes/:talhaoId/analises', (upload.single('formFile') as unknown) as RequestHandler, addPlotAnalysis);
 router.get('/talhoes/:talhaoId/analises', getPlotAnalyses);
 router.get('/analises', getFilteredAnalyses);
+router.get('/analises/talhao/:talhaoId/ultima', getUltimaAnaliseTalhao);
 
 
 // Rotas para análise rápida

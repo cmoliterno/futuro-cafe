@@ -3,8 +3,10 @@ import styled from 'styled-components';
 import { useParams } from 'react-router-dom';
 import api from '../services/api';
 import { FaDownload, FaRedo, FaImage, FaCheck, FaExpand, FaChartBar, FaColumns, FaCamera, FaSearch, FaEraser } from 'react-icons/fa';
-import {BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid, LabelList} from 'recharts';
+import {BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid, LabelList, ResponsiveContainer} from 'recharts';
 import ModalColetaImagens from './ModalColetaImagens';
+import { getFirstDayOfCurrentMonth, getCurrentDate } from '../utils/dateUtils';
+import { percentFormatter } from '../utils/formatUtils';
 
 const Container = styled.div`
   padding: 30px;
@@ -407,26 +409,6 @@ const NewAnalysisButton = styled(Button)`
 const ResultadosAnaliseScreen: React.FC = () => {
     const { talhaoId } = useParams<{ talhaoId: string }>();
 
-    // Função para formatar a data como YYYY-MM-DD para o input date
-    const formatDateForInput = (date: Date): string => {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    };
-
-    // Obter o primeiro dia do mês atual
-    const getFirstDayOfMonth = (): string => {
-        const today = new Date();
-        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-        return formatDateForInput(firstDay);
-    };
-    
-    // Obter a data atual
-    const getCurrentDate = (): string => {
-        return formatDateForInput(new Date());
-    };
-
     const [fazendas, setFazendas] = useState<any[]>([]);
     const [talhoes, setTalhoes] = useState<any[]>([]);
     const [grupos, setGrupos] = useState<any[]>([]);
@@ -437,7 +419,7 @@ const ResultadosAnaliseScreen: React.FC = () => {
     const [selectedTalhao, setSelectedTalhao] = useState<string>(talhaoId || '');
     const [selectedGrupo, setSelectedGrupo] = useState<string>('');
     const [selectedProjeto, setSelectedProjeto] = useState<string>('');
-    const [startDate, setStartDate] = useState<string>(getFirstDayOfMonth());
+    const [startDate, setStartDate] = useState<string>(getFirstDayOfCurrentMonth());
     const [endDate, setEndDate] = useState<string>(getCurrentDate());
     const [selectedImages, setSelectedImages] = useState<any[]>([]);
     const [modalVisible, setModalVisible] = useState(false);
@@ -449,6 +431,7 @@ const ResultadosAnaliseScreen: React.FC = () => {
     const [selectedOriginalImage, setSelectedOriginalImage] = useState<string | null>(null);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+    const [loadingTalhoes, setLoadingTalhoes] = useState(false);
     const [sortConfig, setSortConfig] = useState<{
         key: 'createdAt';
         direction: 'asc' | 'desc';
@@ -485,11 +468,14 @@ const ResultadosAnaliseScreen: React.FC = () => {
     useEffect(() => {
         if (selectedFazenda) {
             const fetchTalhoes = async () => {
+                setLoadingTalhoes(true);
                 try {
                     const talhoesData = await api.getTalhoesByFazenda(selectedFazenda);
                     setTalhoes(talhoesData.data);
                 } catch (error) {
                     console.error('Erro ao buscar talhões:', error);
+                } finally {
+                    setLoadingTalhoes(false);
                 }
             };
 
@@ -521,12 +507,19 @@ const ResultadosAnaliseScreen: React.FC = () => {
             const { data } = await api.getFilteredAnalyses(params);
 
             setAnalyses(data.result || []);
+            
+            // Atualizar os nomes apenas se houver seleção específica
+            if (selectedFazenda) {
             setSelectedFarmName(
                 fazendas.find((f) => f.id === selectedFazenda)?.nome || "Fazenda não selecionada"
             );
+            }
+            if (selectedTalhao) {
             setSelectedPlotName(
                 talhoes.find((t) => t.id === selectedTalhao)?.nome || "Talhão não selecionado"
             );
+            }
+            
             setPagination({
                 currentPage: data.page,
                 totalPages: data.pages,
@@ -612,7 +605,7 @@ const ResultadosAnaliseScreen: React.FC = () => {
     const handleClearFilters = () => {
         setSelectedFazenda('');
         setSelectedTalhao('');
-        setStartDate(getFirstDayOfMonth());
+        setStartDate(getFirstDayOfCurrentMonth());
         setEndDate(getCurrentDate());
         setAnalyses([]);
         setPagination({ currentPage: 1, totalPages: 1 });
@@ -675,10 +668,10 @@ const ResultadosAnaliseScreen: React.FC = () => {
                     <Select
                         value={selectedTalhao}
                         onChange={handleTalhaoChange}
-                        disabled={!selectedFazenda}
+                        disabled={!selectedFazenda || loadingTalhoes}
                     >
-                        <option value="">Selecione</option>
-                        {talhoes.map((talhao) => (
+                        <option value="">{loadingTalhoes ? "Carregando talhões..." : "Selecione"}</option>
+                        {!loadingTalhoes && talhoes.map((talhao) => (
                             <option key={talhao.id} value={talhao.id}>
                                 {talhao.nome}
                             </option>
@@ -772,8 +765,8 @@ const ResultadosAnaliseScreen: React.FC = () => {
                                     <span /> Total: {analysis.total}
                                 </ColorLabel>
                                 <p>Data da Análise: {new Date(analysis.createdAt).toLocaleDateString('pt-BR')}</p>
-                                <p>Fazenda: {selectedFarmName}</p>
-                                <p>Talhão: {selectedPlotName}</p>
+                                <p>Fazenda: {analysis.fazendaNome}</p>
+                                <p>Talhão: {analysis.talhaoNome}</p>
                             </ResultInfo>
                             <Actions>
                                 <input

@@ -31,6 +31,7 @@ import {
 import HistoricoAnaliseRapida from "./HistoricoAnaliseRapida";
 import ResultadosAnaliseRapida from "./ResultadosAnaliseRapida";
 import { Modal } from "@mui/material";
+import { percentFormatter, formatDate } from '../utils/formatUtils';
 
 // Cores para os diferentes tipos de grãos
 const COLORS = {
@@ -52,12 +53,6 @@ const NAMES = {
 const formatPercent = (value: number, total: number) => {
     if (!total) return "0%";
     return `${((value / total) * 100).toFixed(1)}%`;
-};
-
-const formatDate = (dateString: string) => {
-    if (!dateString) return "";
-    const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR') + ' ' + date.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
 };
 
 const ComparacaoRapida: React.FC = () => {

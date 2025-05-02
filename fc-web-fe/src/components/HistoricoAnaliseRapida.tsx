@@ -6,33 +6,17 @@ import {
   Table, Th, Td, EmptyState, FilterContainer, FilterInput, DateInput, 
   LoadingOverlay, SpinnerIcon, StatusCard
 } from "./ComparacaoRapidaStyles";
+import { getFirstDayOfCurrentMonth as getPrimeirodiaMes, getCurrentDate as getDataAtual } from '../utils/dateUtils';
+import { formatDate } from '../utils/formatUtils';
 
 interface HistoricoAnaliseRapidaProps {
   onViewAnalysis: (analiseId: string) => void;
 }
 
-const formatDate = (dateString: string) => {
-  if (!dateString) return "";
-  const date = new Date(dateString);
-  return date.toLocaleDateString('pt-BR') + ' ' + date.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
-};
-
 const HistoricoAnaliseRapida: React.FC<HistoricoAnaliseRapidaProps> = ({ onViewAnalysis }) => {
   const [analiseHistorico, setAnaliseHistorico] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
-  // Definindo datas padrão: primeiro dia do mês e dia atual
-  const getPrimeirodiaMes = () => {
-    const now = new Date();
-    const primeiroDia = new Date(now.getFullYear(), now.getMonth(), 1);
-    return primeiroDia.toISOString().split('T')[0]; // Formato YYYY-MM-DD
-  };
-  
-  const getDataAtual = () => {
-    const now = new Date();
-    return now.toISOString().split('T')[0]; // Formato YYYY-MM-DD
-  };
   
   const [filtroDataInicio, setFiltroDataInicio] = useState(getPrimeirodiaMes);
   const [filtroDataFim, setFiltroDataFim] = useState(getDataAtual);
