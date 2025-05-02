@@ -1319,5 +1319,5 @@ export const getTalhaoDesenho = async (req: Request, res: Response) => {
     }
 };
 
-export default { getAllTalhoes, getTalhaoById, createTalhao, updateTalhao, deleteTalhao, getPlotAnalyses, addPlotAnalysis, getPlotAnalysesChart, getTalhoesByFazenda, getFilteredAnalyses, addTalhaoDesenho, getTalhaoDesenho };
+export default { getAllTalhoes, getTalhaoById, createTalhao, updateTalhao, deleteTalhao, getPlotAnalyses, addPlotAnalysis, getPlotAnalysesChart, getTalhoesByFazenda, getFilteredAnalyses, addTalhaoDesenho, getTalhaoDesenho, getUltimaAnaliseTalhao };
 
