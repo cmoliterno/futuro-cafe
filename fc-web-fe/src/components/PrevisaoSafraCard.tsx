@@ -1,123 +1,136 @@
 import React from 'react';
 import styled from 'styled-components';
-import { addDays, subDays } from 'date-fns';
 import { formatarDataPorExtenso } from '../utils/dateFnsUtils';
+import { addDays, subDays } from 'date-fns';
+import { FaLeaf, FaCalendarAlt, FaWarehouse } from 'react-icons/fa';
+
+interface PrevisaoSafraCardProps {
+  sacasPorHectare: number;
+  diasParaColheita: number;
+  dataIdealColheita: Date;
+  dataUltimaAnalise: Date;
+}
 
 const Card = styled.div`
   background-color: var(--color-surface);
-  border-radius: var(--border-radius-md);
+  border-radius: var(--border-radius-lg);
   padding: var(--spacing-lg);
-  box-shadow: var(--shadow-sm);
-  margin-bottom: var(--spacing-md);
+  box-shadow: var(--shadow-md);
+  margin-top: var(--spacing-lg);
 `;
 
 const Section = styled.div`
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
   
   &:last-child {
     margin-bottom: 0;
   }
 `;
 
-const Title = styled.h3`
+const SectionTitle = styled.h3`
   color: var(--color-primary);
-  margin-bottom: var(--spacing-md);
   font-size: 1.2rem;
-  text-align: center;
-`;
-
-const SubTitle = styled.h4`
-  color: var(--color-secondary);
   margin-bottom: var(--spacing-md);
-  font-size: 1.1rem;
-  border-bottom: 2px solid var(--color-secondary);
   padding-bottom: var(--spacing-sm);
+  border-bottom: 2px solid var(--color-secondary);
 `;
 
-const InfoGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+const MetricaContainer = styled.div`
+  display: flex;
+  flex-direction: column;
   gap: var(--spacing-md);
 `;
 
-const InfoItem = styled.div`
-  background-color: var(--color-background);
-  padding: var(--spacing-md);
-  border-radius: var(--border-radius-sm);
-  border-left: 4px solid var(--color-secondary);
-`;
-
-const Label = styled.p`
-  color: var(--color-gray-700);
-  font-size: 0.9rem;
-  margin-bottom: var(--spacing-sm);
-`;
-
-const Value = styled.p`
-  color: var(--color-primary);
-  font-size: 1.1rem;
-  font-weight: bold;
-`;
-
-const DateRange = styled.div`
+const Metrica = styled.div`
   display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md);
+  background-color: var(--color-background);
+  border-radius: var(--border-radius-md);
 `;
 
-const DateRangeText = styled.p`
-  color: var(--color-primary);
+const MetricaLabel = styled.span`
+  color: var(--color-gray-700);
   font-size: 1rem;
-  &:first-child {
-    font-weight: bold;
-    margin-bottom: var(--spacing-xs);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  
+  svg {
+    color: var(--color-primary);
   }
 `;
 
-interface PrevisaoSafraCardProps {
-  sacasPorHectare: number;
-  diasParaColheita: number;
-  dataIdealColheita: Date;
-}
+const MetricaValor = styled.span`
+  color: var(--color-primary);
+  font-weight: 600;
+  font-size: 1.1rem;
+`;
+
+const PeriodoContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`;
+
+const PeriodoData = styled.span`
+  color: var(--color-primary);
+  font-size: 1rem;
+  
+  &:first-child {
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+`;
 
 const PrevisaoSafraCard: React.FC<PrevisaoSafraCardProps> = ({
   sacasPorHectare,
   diasParaColheita,
-  dataIdealColheita
+  dataIdealColheita,
+  dataUltimaAnalise
 }) => {
-  const dataInicio = subDays(dataIdealColheita, 3);
-  const dataFim = addDays(dataIdealColheita, 3);
+  const dataInicio = subDays(dataIdealColheita, 4);
+  const dataFim = addDays(dataIdealColheita, 4);
 
   return (
     <Card>
-      <Title>Previsões do Talhão</Title>
-      
       <Section>
-        <SubTitle>Previsão de Safra</SubTitle>
-        <InfoGrid>
-          <InfoItem>
-            <Label>Produtividade Estimada</Label>
-            <Value>{sacasPorHectare.toFixed(2)} sacas/ha</Value>
-          </InfoItem>
-        </InfoGrid>
+        <SectionTitle>Previsão de Safra</SectionTitle>
+        <MetricaContainer>
+          <Metrica>
+            <MetricaLabel>
+              <FaLeaf />
+              Produtividade Estimada
+            </MetricaLabel>
+            <MetricaValor>{sacasPorHectare.toFixed(2)} sacas/ha</MetricaValor>
+          </Metrica>
+        </MetricaContainer>
       </Section>
 
       <Section>
-        <SubTitle>Previsão de Colheita</SubTitle>
-        <InfoGrid>
-          <InfoItem>
-            <Label>Tempo até a Colheita</Label>
-            <Value>{diasParaColheita} dias</Value>
-          </InfoItem>
-          <InfoItem>
-            <Label>Semana Ideal para Colheita</Label>
-            <DateRange>
-              <DateRangeText>Período recomendado:</DateRangeText>
-              <DateRangeText>De: {formatarDataPorExtenso(dataInicio)}</DateRangeText>
-              <DateRangeText>Até: {formatarDataPorExtenso(dataFim)}</DateRangeText>
-            </DateRange>
-          </InfoItem>
-        </InfoGrid>
+        <SectionTitle>Previsão de Colheita</SectionTitle>
+        <MetricaContainer>
+          <Metrica>
+            <MetricaLabel>
+              <FaCalendarAlt />
+              Data da Última Análise
+            </MetricaLabel>
+            <MetricaValor>{formatarDataPorExtenso(dataUltimaAnalise)}</MetricaValor>
+          </Metrica>
+
+          <Metrica>
+            <MetricaLabel>
+              <FaWarehouse />
+              Período Ideal de Colheita
+            </MetricaLabel>
+            <PeriodoContainer>
+              <PeriodoData>Período recomendado:</PeriodoData>
+              <PeriodoData>De: {formatarDataPorExtenso(dataInicio)}</PeriodoData>
+              <PeriodoData>Até: {formatarDataPorExtenso(dataFim)}</PeriodoData>
+            </PeriodoContainer>
+          </Metrica>
+        </MetricaContainer>
       </Section>
     </Card>
   );

@@ -8,6 +8,7 @@ export interface PrevisaoTalhao {
   sacasPorHectare: number;
   diasParaColheita: number;
   dataIdealColheita: Date;
+  dataUltimaAnalise: Date;
 }
 
 const isValidUUID = (uuid: string): boolean => {
@@ -126,8 +127,8 @@ class PrevisaoColheitaService {
       let idadePlantasTalhao = 3;
       try {
         const { data: talhaoDetalhes } = await api.getTalhao(talhao.id);
-        if (talhaoDetalhes?.dataPlantio) {
-          const dataPlantio = new Date(talhaoDetalhes.dataPlantio);
+        if (talhaoDetalhes?.Plantio?.data) {
+          const dataPlantio = new Date(talhaoDetalhes.Plantio.data);
           const hoje = new Date();
           idadePlantasTalhao = Math.floor((hoje.getTime() - dataPlantio.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
         }
@@ -146,6 +147,7 @@ class PrevisaoColheitaService {
         id: talhao.id,
         nome: talhao.nome,
         fazendaNome: '', // Será preenchido no nível superior
+        dataUltimaAnalise: dataUltimaColeta,
         ...previsao
       };
     } catch (error) {

@@ -689,7 +689,7 @@ const DashboardPage: React.FC = () => {
         </Stats>
         
         <PrevisaoSection>
-          <PrevisaoTitle>Previsões de Colheita</PrevisaoTitle>
+          <PrevisaoTitle>Previsões de Safra e Colheita</PrevisaoTitle>
           <PrevisaoColheitaGrid />
         </PrevisaoSection>
 

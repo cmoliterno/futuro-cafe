@@ -302,13 +302,13 @@ type Coordinate = [number, number]; // [latitude, longitude]
 
 export async function createTalhao(req: Request, res: Response) {
     try {
-        const { nome, nomeResponsavel, fazendaId, dataPlantio, espacamentoLinhas, espacamentoMudas, cultivarId, desenho } = req.body;
+        const { nome, nomeResponsavel, fazendaId, dataPlantio: data, espacamentoLinhas, espacamentoMudas, cultivarId, desenho } = req.body;
 
         // Verificar todos os campos obrigatórios e retornar uma mensagem específica para cada um
         const camposObrigatorios = [];
         if (!nome) camposObrigatorios.push('Nome');
         if (!fazendaId) camposObrigatorios.push('Fazenda');
-        if (!dataPlantio) camposObrigatorios.push('Data de plantio');
+        if (!data) camposObrigatorios.push('Data de plantio');
         if (!espacamentoLinhas) camposObrigatorios.push('Espaçamento entre linhas');
         if (!espacamentoMudas) camposObrigatorios.push('Espaçamento entre mudas');
         if (!cultivarId) camposObrigatorios.push('Cultivar');
@@ -343,7 +343,7 @@ export async function createTalhao(req: Request, res: Response) {
 
             // Criar o plantio associado ao talhão
             const plantio = await Plantio.create({
-                data: new Date(dataPlantio),
+                data: new Date(data),
                 espacamentoLinhasMetros: espacamentoLinhas,
                 espacamentoMudasMetros: espacamentoMudas,
                 cultivarId,
@@ -419,7 +419,7 @@ interface TalhaoAtualizadoResult {
 export async function updateTalhao(req: Request, res: Response) {
     try {
         const { id } = req.params;
-        const { nome, fazendaId, dataPlantio, espacamentoLinhas, espacamentoMudas, cultivarId, desenho } = req.body;
+        const { nome, fazendaId, dataPlantio: data, espacamentoLinhas, espacamentoMudas, cultivarId, desenho } = req.body;
 
         // Validação dos campos obrigatórios
         if (!nome || !fazendaId) {
@@ -499,14 +499,14 @@ export async function updateTalhao(req: Request, res: Response) {
             }
 
             // Atualizar o plantio associado se necessário
-            if (dataPlantio || espacamentoLinhas || espacamentoMudas || cultivarId) {
+            if (data || espacamentoLinhas || espacamentoMudas || cultivarId) {
                 const plantio = await Plantio.findOne({ 
                     where: { talhaoId: id },
                     transaction: t 
                 });
                 
                 const plantioData = {
-                    data: dataPlantio ? new Date(dataPlantio) : undefined,
+                    data: data ? new Date(data) : undefined,
                     espacamentoLinhasMetros: espacamentoLinhas,
                     espacamentoMudasMetros: espacamentoMudas,
                     cultivarId,

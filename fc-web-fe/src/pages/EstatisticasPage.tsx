@@ -6,6 +6,8 @@ import PrevisaoService from '../services/PrevisaoService';
 import PrevisaoSafraCard from '../components/PrevisaoSafraCard';
 import { getFirstDayOfCurrentMonth, getCurrentDate } from '../utils/dateUtils';
 import { percentFormatter } from '../utils/formatUtils';
+import { formatarDataPorExtenso } from '../utils/dateFnsUtils';
+import { addDays, subDays } from 'date-fns';
 
 const EstatisticasContainer = styled.div`
   padding: var(--spacing-xl);
@@ -199,6 +201,12 @@ const EstatisticasPage: React.FC = () => {
         }
     }, [selectedFazenda]);
 
+    useEffect(() => {
+        if (selectedTalhao) {
+            fetchTalhaoDetails(selectedTalhao);
+        }
+    }, [selectedTalhao]);
+
     const fetchFazendas = async () => {
         try {
             const response = await api.getAllFazendas();
@@ -217,6 +225,35 @@ const EstatisticasPage: React.FC = () => {
             console.error('Erro ao carregar talhões:', error);
         } finally {
             setLoadingTalhoes(false);
+        }
+    };
+
+    const fetchTalhaoDetails = async (talhaoId: string) => {
+        try {
+            const response = await api.getTalhao(talhaoId);
+            console.log('Resposta completa do talhão:', response.data);
+            
+            if (response.data?.Plantio?.data) {
+                const dataPlantioStr = response.data.Plantio.data;
+                const dataPlantio = new Date(dataPlantioStr);
+                const hoje = new Date();
+                
+                // Se a data de plantio for no futuro, a idade é 0
+                if (dataPlantio > hoje) {
+                    setIdadePlantasTalhao(0);
+                    return;
+                }
+                
+                const idadeEmAnos = Math.floor((hoje.getTime() - dataPlantio.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+                console.log('Data de Plantio:', dataPlantioStr, 'Data convertida:', dataPlantio, 'Idade calculada:', idadeEmAnos);
+                setIdadePlantasTalhao(idadeEmAnos > 0 ? idadeEmAnos : 0);
+            } else {
+                console.warn('Talhão não possui data de plantio definida');
+                setIdadePlantasTalhao(0);
+            }
+        } catch (error) {
+            console.error('Erro ao buscar detalhes do talhão:', error);
+            setIdadePlantasTalhao(0);
         }
     };
 
@@ -354,7 +391,10 @@ const EstatisticasPage: React.FC = () => {
                 mesColeta
             );
 
-            setPrevisaoSafra(previsao);
+            setPrevisaoSafra({
+                ...previsao,
+                dataUltimaAnalise: ultimaAnalise.createdAt
+            });
         } catch (error) {
             console.error('Erro ao calcular previsão:', error);
             alert('Erro ao calcular previsão. Por favor, tente novamente.');
@@ -384,54 +424,62 @@ const EstatisticasPage: React.FC = () => {
                     isActive={activeTab === TabType.FORECAST}
                     onClick={() => setActiveTab(TabType.FORECAST)}
                 >
-                    Previsão de Safra
+                    Previsão de Safra/Colheita
                 </Tab>
             </TabsContainer>
 
             {activeTab === TabType.FORECAST ? (
                 <>
-            <FormContainer>
-                <FormField>
-                    <Label>Fazenda</Label>
-                    <Select
+                    <FormContainer>
+                        <FormField>
+                            <Label>Fazenda</Label>
+                            <Select
                                 value={selectedFazenda}
                                 onChange={(e) => {
                                     setSelectedFazenda(e.target.value);
                                     setSelectedTalhao('');
                                 }}
-                    >
+                            >
                                 <option value="">Selecione uma fazenda</option>
-                        {fazendas.map((fazenda) => (
-                            <option key={fazenda.id} value={fazenda.id}>
-                                {fazenda.nome}
-                            </option>
-                        ))}
-                    </Select>
-                </FormField>
+                                {fazendas.map((fazenda) => (
+                                    <option key={fazenda.id} value={fazenda.id}>
+                                        {fazenda.nome}
+                                    </option>
+                                ))}
+                            </Select>
+                        </FormField>
 
-                    <FormField>
-                        <Label>Talhão</Label>
-                        <Select
-                            value={selectedTalhao}
-                            onChange={(e) => setSelectedTalhao(e.target.value)}
+                        <FormField>
+                            <Label>Talhão</Label>
+                            <Select
+                                value={selectedTalhao}
+                                onChange={(e) => {
+                                    setSelectedTalhao(e.target.value);
+                                    if (e.target.value) {
+                                        fetchTalhaoDetails(e.target.value);
+                                    } else {
+                                        setIdadePlantasTalhao(0);
+                                    }
+                                }}
                                 disabled={!selectedFazenda || loading || loadingTalhoes}
-                        >
+                            >
                                 <option value="">{loadingTalhoes ? "Carregando talhões..." : "Selecione um talhão"}</option>
                                 {!loadingTalhoes && talhoes.map((talhao) => (
-                                <option key={talhao.id} value={talhao.id}>
-                                    {talhao.nome}
-                                </option>
-                            ))}
-                        </Select>
-                    </FormField>
+                                    <option key={talhao.id} value={talhao.id}>
+                                        {talhao.nome}
+                                    </option>
+                                ))}
+                            </Select>
+                        </FormField>
 
                         <FormField>
                             <Label>Idade das Plantas (anos)</Label>
                             <input
                                 type="number"
-                                min="1"
+                                min="0"
                                 value={idadePlantasTalhao}
                                 onChange={(e) => setIdadePlantasTalhao(Number(e.target.value))}
+                                placeholder="Idade será preenchida automaticamente"
                                 style={{
                                     width: '100%',
                                     padding: '12px',
@@ -451,6 +499,7 @@ const EstatisticasPage: React.FC = () => {
                             sacasPorHectare={previsaoSafra.sacasPorHectare}
                             diasParaColheita={previsaoSafra.diasParaColheita}
                             dataIdealColheita={previsaoSafra.dataIdealColheita}
+                            dataUltimaAnalise={new Date(previsaoSafra.dataUltimaAnalise)}
                         />
                     )}
                 </>
@@ -475,7 +524,14 @@ const EstatisticasPage: React.FC = () => {
                             <Label>Talhão</Label>
                             <Select
                                 value={selectedTalhao}
-                                onChange={(e) => setSelectedTalhao(e.target.value)}
+                                onChange={(e) => {
+                                    setSelectedTalhao(e.target.value);
+                                    if (e.target.value) {
+                                        fetchTalhaoDetails(e.target.value);
+                                    } else {
+                                        setIdadePlantasTalhao(0);
+                                    }
+                                }}
                                 disabled={!selectedFazenda || loading || loadingTalhoes}
                             >
                                 <option value="">{loadingTalhoes ? "Carregando talhões..." : "Selecione um talhão"}</option>
@@ -485,118 +541,118 @@ const EstatisticasPage: React.FC = () => {
                             </Select>
                         </FormField>
 
-                <FormField>
-                    <Label>Data Inicial</Label>
-                    <DateInput
-                        type="date"
+                        <FormField>
+                            <Label>Data Inicial</Label>
+                            <DateInput
+                                type="date"
                                 value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                        disabled={loading}
-                    />
-                </FormField>
+                                onChange={(e) => setStartDate(e.target.value)}
+                                disabled={loading}
+                            />
+                        </FormField>
 
-                <FormField>
-                    <Label>Data Final</Label>
-                    <DateInput
-                        type="date"
+                        <FormField>
+                            <Label>Data Final</Label>
+                            <DateInput
+                                type="date"
                                 value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
-                        disabled={loading}
-                    />
-                </FormField>
-            </FormContainer>
+                                onChange={(e) => setEndDate(e.target.value)}
+                                disabled={loading}
+                            />
+                        </FormField>
+                    </FormContainer>
 
-            <Button onClick={handleFetchData} disabled={loading}>
-                {loading ? 'Carregando...' : 'Filtrar'}
-            </Button>
+                    <Button onClick={handleFetchData} disabled={loading}>
+                        {loading ? 'Carregando...' : 'Filtrar'}
+                    </Button>
 
-            {loading && <LoadingText>Carregando dados, por favor aguarde...</LoadingText>}
+                    {loading && <LoadingText>Carregando dados, por favor aguarde...</LoadingText>}
 
-            {chartData.length > 0 && !loading && (
-                <ChartContainer>
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={chartData}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis 
+                    {chartData.length > 0 && !loading && (
+                        <ChartContainer>
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={chartData}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis 
                                         dataKey={activeTab === TabType.FARM ? 'talhao' : 'date'} 
-                                tick={{ fill: 'var(--color-primary)', fontSize: 12 }}
-                            />
-                            <YAxis tick={{ fill: 'var(--color-primary)', fontSize: 12 }} />
-                            <Tooltip 
-                                contentStyle={{ 
-                                    backgroundColor: 'var(--color-surface)', 
-                                    borderColor: 'var(--color-primary)',
-                                    borderRadius: 'var(--border-radius-md)'
-                                }} 
-                            />
-                            <Legend />
-                            <Bar
-                                dataKey="green"
-                                fill="#34A853"
-                                name="Verde"
-                            >
-                                <LabelList 
-                                    dataKey="green"
-                                    position="center"
-                                    formatter={percentFormatter}
-                                    style={{ fill: 'black', fontWeight: 'bold', fontSize: 11 }}
-                                />
-                            </Bar>
-                            <Bar
-                                dataKey="greenYellow"
-                                fill="#FFD700"
-                                name="Verde Cana"
-                            >
-                                <LabelList 
-                                    dataKey="greenYellow"
-                                    position="center"
-                                    formatter={percentFormatter}
-                                    style={{ fill: 'black', fontWeight: 'bold', fontSize: 11 }}
-                                />
-                            </Bar>
-                            <Bar
-                                dataKey="cherry"
-                                fill="#FF6347"
-                                name="Cereja"
-                            >
-                                <LabelList 
-                                    dataKey="cherry"
-                                    position="center"
-                                    formatter={percentFormatter}
-                                    style={{ fill: 'black', fontWeight: 'bold', fontSize: 11 }}
-                                />
-                            </Bar>
-                            <Bar
-                                dataKey="raisin"
-                                fill="#8B4513"
-                                name="Passa"
-                            >
-                                <LabelList 
-                                    dataKey="raisin"
-                                    position="center"
-                                    formatter={percentFormatter}
-                                    style={{ fill: 'black', fontWeight: 'bold', fontSize: 11 }}
-                                />
-                            </Bar>
-                            <Bar
-                                dataKey="dry"
-                                fill="#A9A9A9"
-                                name="Seco"
-                            >
-                                <LabelList 
-                                    dataKey="dry"
-                                    position="center"
-                                    formatter={percentFormatter}
-                                    style={{ fill: 'black', fontWeight: 'bold', fontSize: 11 }}
-                                />
-                            </Bar>
-                        </BarChart>
-                    </ResponsiveContainer>
-                </ChartContainer>
-            )}
-            
-            {chartData.length === 0 && !loading && (
-                <NoDataText>Sem dados para exibir. Selecione os filtros e clique em "Filtrar".</NoDataText>
+                                        tick={{ fill: 'var(--color-primary)', fontSize: 12 }}
+                                    />
+                                    <YAxis tick={{ fill: 'var(--color-primary)', fontSize: 12 }} />
+                                    <Tooltip 
+                                        contentStyle={{ 
+                                            backgroundColor: 'var(--color-surface)', 
+                                            borderColor: 'var(--color-primary)',
+                                            borderRadius: 'var(--border-radius-md)'
+                                        }} 
+                                    />
+                                    <Legend />
+                                    <Bar
+                                        dataKey="green"
+                                        fill="#34A853"
+                                        name="Verde"
+                                    >
+                                        <LabelList 
+                                            dataKey="green"
+                                            position="center"
+                                            formatter={percentFormatter}
+                                            style={{ fill: 'black', fontWeight: 'bold', fontSize: 11 }}
+                                        />
+                                    </Bar>
+                                    <Bar
+                                        dataKey="greenYellow"
+                                        fill="#FFD700"
+                                        name="Verde Cana"
+                                    >
+                                        <LabelList 
+                                            dataKey="greenYellow"
+                                            position="center"
+                                            formatter={percentFormatter}
+                                            style={{ fill: 'black', fontWeight: 'bold', fontSize: 11 }}
+                                        />
+                                    </Bar>
+                                    <Bar
+                                        dataKey="cherry"
+                                        fill="#FF6347"
+                                        name="Cereja"
+                                    >
+                                        <LabelList 
+                                            dataKey="cherry"
+                                            position="center"
+                                            formatter={percentFormatter}
+                                            style={{ fill: 'black', fontWeight: 'bold', fontSize: 11 }}
+                                        />
+                                    </Bar>
+                                    <Bar
+                                        dataKey="raisin"
+                                        fill="#8B4513"
+                                        name="Passa"
+                                    >
+                                        <LabelList 
+                                            dataKey="raisin"
+                                            position="center"
+                                            formatter={percentFormatter}
+                                            style={{ fill: 'black', fontWeight: 'bold', fontSize: 11 }}
+                                        />
+                                    </Bar>
+                                    <Bar
+                                        dataKey="dry"
+                                        fill="#A9A9A9"
+                                        name="Seco"
+                                    >
+                                        <LabelList 
+                                            dataKey="dry"
+                                            position="center"
+                                            formatter={percentFormatter}
+                                            style={{ fill: 'black', fontWeight: 'bold', fontSize: 11 }}
+                                        />
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </ChartContainer>
+                    )}
+                    
+                    {chartData.length === 0 && !loading && (
+                        <NoDataText>Sem dados para exibir. Selecione os filtros e clique em "Filtrar".</NoDataText>
                     )}
                 </>
             )}

@@ -74,6 +74,16 @@ const MetricaValor = styled.span`
   font-size: 1rem;
 `;
 
+const DataAnaliseLabel = styled(MetricaLabel)`
+  color: var(--color-primary);
+  font-weight: 500;
+`;
+
+const DataAnaliseValor = styled(MetricaValor)`
+  font-size: 0.95rem;
+  color: var(--color-gray-700);
+`;
+
 const PeriodoContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -149,8 +159,11 @@ const PrevisaoColheitaGrid: React.FC = () => {
   return (
     <GridContainer>
       {previsoes.map((previsao) => {
-        const dataInicio = subDays(previsao.dataIdealColheita, 3);
-        const dataFim = addDays(previsao.dataIdealColheita, 3);
+        const dataIdealColheita = previsao.dataIdealColheita ? new Date(previsao.dataIdealColheita) : null;
+        const dataUltimaAnalise = previsao.dataUltimaAnalise ? new Date(previsao.dataUltimaAnalise) : null;
+        
+        const dataInicio = dataIdealColheita ? subDays(dataIdealColheita, 4) : null;
+        const dataFim = dataIdealColheita ? addDays(dataIdealColheita, 4) : null;
 
         return (
           <Card key={previsao.id}>
@@ -173,20 +186,22 @@ const PrevisaoColheitaGrid: React.FC = () => {
               <Metrica>
                 <MetricaLabel>
                   <FaCalendarAlt />
-                  Dias até Colheita
+                  Data da Última Análise
                 </MetricaLabel>
-                <MetricaValor>{previsao.diasParaColheita} dias</MetricaValor>
+                <DataAnaliseValor>
+                  {dataUltimaAnalise ? formatarDataPorExtenso(dataUltimaAnalise) : 'Data não disponível'}
+                </DataAnaliseValor>
               </Metrica>
               
               <Metrica>
                 <MetricaLabel>
                   <FaWarehouse />
-                  Semana Ideal
+                  Período Ideal
                 </MetricaLabel>
                 <PeriodoContainer>
                   <PeriodoData>Período recomendado:</PeriodoData>
-                  <PeriodoData>De: {formatarDataPorExtenso(dataInicio)}</PeriodoData>
-                  <PeriodoData>Até: {formatarDataPorExtenso(dataFim)}</PeriodoData>
+                  <PeriodoData>De: {dataInicio ? formatarDataPorExtenso(dataInicio) : 'Data não disponível'}</PeriodoData>
+                  <PeriodoData>Até: {dataFim ? formatarDataPorExtenso(dataFim) : 'Data não disponível'}</PeriodoData>
                 </PeriodoContainer>
               </Metrica>
             </MetricaContainer>
