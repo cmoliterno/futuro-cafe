@@ -48,7 +48,7 @@ const HomeContainer = styled.div`
 
 const Hero = styled.div`
   background: linear-gradient(rgba(44, 24, 16, 0.85), rgba(44, 24, 16, 0.95)), 
-              url('https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1920&q=80') no-repeat center center;
+              url('https://images.unsplash.com/photo-1447933601403-0c6688de566e') no-repeat center center;
   background-size: cover;
   min-height: 80vh;
   display: flex;
@@ -397,7 +397,7 @@ const BenefitContent = styled.div`
 
 const CTASection = styled.section`
   background: linear-gradient(rgba(44, 24, 16, 0.9), rgba(44, 24, 16, 0.95)),
-              url('https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1920&q=80') no-repeat center center fixed;
+              url('https://images.unsplash.com/photo-1447933601403-0c6688de566e') no-repeat center center fixed;
   background-size: cover;
   padding: 100px 20px;
   color: #EEDCC8;
@@ -464,8 +464,8 @@ const HomePage: React.FC = () => {
 
       <ImageSection>
         <img 
-          src="https://images.unsplash.com/photo-1599639668293-2f8fdb0b763c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2340&q=80" 
-          alt="Sacas de café em armazém"
+          src="https://images.unsplash.com/photo-1447933601403-0c6688de566e" 
+          alt="Grãos de café"
         />
       </ImageSection>
 
