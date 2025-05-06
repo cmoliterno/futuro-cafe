@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, lazy, Suspense } from 'react';
 import styled from 'styled-components';
-import { FaEdit, FaTrash, FaCamera, FaSearch, FaSort, FaDrawPolygon, FaSortAlphaDown } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaCamera, FaSearch, FaSort, FaDrawPolygon, FaSortAlphaDown, FaEye, FaEyeSlash } from 'react-icons/fa';
 import api from '../services/api';
 import '../styles/leaflet-fixes.css';
 import MapSearch from '../components/MapSearch';
@@ -407,6 +407,9 @@ interface ApiResponse {
     };
 }
 
+// Adicionar variável para armazenar a referência do mapa
+let leafletMap: L.Map | null = null;
+
 const TalhoesPage: React.FC = () => {
     const [talhoes, setTalhoes] = useState<Talhao[]>([]);
     const [fazendas, setFazendas] = useState<any[]>([]);
@@ -441,7 +444,6 @@ const TalhoesPage: React.FC = () => {
     
     // Centro aproximado para região cafeeira do Brasil
     const mapCenter = [-22.0, -47.8];
-    let leafletMap: any = null;
     let drawControl: any = null;
     const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
     const [drawnItems, setDrawnItems] = useState<any>(null);
@@ -449,6 +451,7 @@ const TalhoesPage: React.FC = () => {
     const [modalColetaVisible, setModalColetaVisible] = useState(false);
     const [selectedTalhaoId, setSelectedTalhaoId] = useState<string | null>(null);
     const [selectedTalhaoNome, setSelectedTalhaoNome] = useState<string>('');
+    const [mapInstance, setMapInstance] = useState<L.Map | undefined>(undefined);
 
     useEffect(() => {
         // Obter localização do usuário quando o componente montar
@@ -511,17 +514,17 @@ const TalhoesPage: React.FC = () => {
             const location = userLocation || [-21.763, -43.349];
             
             // Inicializar o mapa
-            leafletMap = L.map(mapRef.current).setView(location, 13);
+            const map = L.map(mapRef.current).setView(location, 13);
 
             // Adicionar camada base do mapa (satellite)
             L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                 maxZoom: 18,
                 attribution: 'Tiles &copy; Esri'
-            }).addTo(leafletMap);
+            }).addTo(map);
 
             // Criar camada para desenhos
             const newDrawnItems = new L.FeatureGroup();
-            leafletMap.addLayer(newDrawnItems);
+            map.addLayer(newDrawnItems);
             setDrawnItems(newDrawnItems);
 
             // Se já existe um desenho, mostrar no mapa
@@ -534,12 +537,13 @@ const TalhoesPage: React.FC = () => {
                         fillOpacity: 0.5,
                     });
                     newDrawnItems.addLayer(polygon);
-                    leafletMap.fitBounds(polygon.getBounds());
+                    const bounds = polygon.getBounds();
+                    map.fitBounds(bounds);
                 } catch (error) {
                     console.error('Erro ao renderizar polígono existente:', error);
                 }
             }
-            
+
             // Configurar controles de desenho
             const drawOptions = {
                 edit: {
@@ -565,12 +569,12 @@ const TalhoesPage: React.FC = () => {
                     circlemarker: false
                 }
             };
-            
+
             drawControl = new L.Control.Draw(drawOptions);
-            leafletMap.addControl(drawControl);
-            
+            map.addControl(drawControl);
+
             // Configurar eventos de desenho
-            leafletMap.on(L.Draw.Event.CREATED, (e: any) => {
+            map.on(L.Draw.Event.CREATED, (e: any) => {
                 const layer = e.layer;
                 newDrawnItems.clearLayers();
                 newDrawnItems.addLayer(layer);
@@ -580,29 +584,9 @@ const TalhoesPage: React.FC = () => {
                     coordinates: [coordinates]
                 });
             });
-            
-            leafletMap.on(L.Draw.Event.EDITED, (e: any) => {
-                const layers = e.layers;
-                layers.eachLayer((layer: any) => {
-                    const coordinates = layer.getLatLngs()[0].map((latlng: any) => [latlng.lat, latlng.lng]);
-                    setDesenhoPoligono({
-                        type: 'Polygon',
-                        coordinates: [coordinates]
-                    });
-                });
-            });
-            
-            leafletMap.on(L.Draw.Event.DELETED, () => {
-                newDrawnItems.clearLayers();
-                setDesenhoPoligono(null);
-            });
 
-            // Remover mensagem de erro
-            setErrors((prev) => {
-                const newErrors = { ...prev };
-                delete newErrors.general;
-                return newErrors;
-            });
+            // Salvar a instância do mapa no estado
+            setMapInstance(map);
 
         } catch (error) {
             console.error("Erro ao inicializar o mapa:", error);
@@ -611,29 +595,24 @@ const TalhoesPage: React.FC = () => {
     };
 
     const cleanupMap = () => {
-        try {
-            if (leafletMap) {
-                // Primeiro, remover todos os event listeners
-                leafletMap.off();
+        if (mapInstance) {
+            try {
+                // Primeiro, remover todas as camadas
+                mapInstance.remove();
+                setMapInstance(undefined);
                 
-                // Remover as camadas em ordem
+                // Limpar outras referências
                 if (drawnItems) {
                     drawnItems.clearLayers();
-                    leafletMap.removeLayer(drawnItems);
                     setDrawnItems(null);
                 }
                 
                 if (drawControl) {
-                    leafletMap.removeControl(drawControl);
                     drawControl = null;
                 }
-                
-                // Por último, remover o mapa
-                leafletMap.remove();
-                leafletMap = null;
+            } catch (error) {
+                console.error('Erro ao limpar o mapa:', error);
             }
-        } catch (error) {
-            console.error('Erro ao limpar o mapa:', error);
         }
     };
 
@@ -883,49 +862,37 @@ const TalhoesPage: React.FC = () => {
         // Opcionalmente, atualize a lista de talhões ou mostre mensagem de sucesso
     };
 
-    // Adicionar função para lidar com a seleção de localização
+    // Atualizar a função handleLocationSelect
     const handleLocationSelect = async (location: { lat: number; lng: number }) => {
-        if (!leafletMap) {
+        if (!mapInstance) {
             console.error('Mapa não inicializado');
             return;
         }
 
         try {
-            // Criar o objeto LatLng
-            const latlng = L.latLng(location.lat, location.lng);
-
-            // Primeiro, limpar qualquer marcador existente
-            if (drawnItems) {
-                drawnItems.clearLayers();
-            }
-
-            // Criar um novo marcador com ícone personalizado
-            const customIcon = L.divIcon({
-                className: 'custom-marker',
-                html: '<div style="background-color: #047502; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white;"></div>',
-                iconSize: [20, 20],
-                iconAnchor: [10, 10]
+            // Criar um grupo de camadas para os marcadores temporários
+            const markersGroup = new L.FeatureGroup();
+            
+            // Adicionar um marcador temporário
+            const marker = L.circleMarker([location.lat, location.lng], {
+                radius: 8,
+                fillColor: '#047502',
+                color: '#fff',
+                weight: 2,
+                opacity: 1,
+                fillOpacity: 0.8
             });
-
-            const marker = L.marker(latlng, { icon: customIcon });
-
-            // Adicionar o marcador ao mapa
-            if (drawnItems) {
-                drawnItems.addLayer(marker);
-            } else {
-                marker.addTo(leafletMap);
-            }
+            
+            // Adicionar o marcador ao grupo e o grupo ao mapa
+            markersGroup.addLayer(marker);
+            markersGroup.addTo(mapInstance);
 
             // Centralizar o mapa na nova localização com zoom apropriado
-            leafletMap.setView(latlng, 16);
+            mapInstance.setView([location.lat, location.lng], 16);
 
             // Remover o marcador após 3 segundos
             setTimeout(() => {
-                if (drawnItems) {
-                    drawnItems.clearLayers();
-                } else {
-                    leafletMap.removeLayer(marker);
-                }
+                markersGroup.remove();
             }, 3000);
 
         } catch (error) {
@@ -1039,15 +1006,19 @@ const TalhoesPage: React.FC = () => {
                 )}
             </FormContainer>
             
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
+                <Button onClick={toggleDrawMap}>
+                    {showMap ? <FaEyeSlash /> : <FaEye />} {showMap ? 'Ocultar Mapa' : 'Mostrar Mapa'}
+                </Button>
+                {showMap && mapInstance && (
+                    <MapSearch 
+                        onLocationSelect={handleLocationSelect}
+                        map={mapInstance}
+                    />
+                )}
+            </div>
+
             <DrawMapContainer>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <Button onClick={toggleDrawMap}>
-                        {showMap ? 'Ocultar Mapa' : 'Desenhar Talhão'}
-                    </Button>
-                    {showMap && <MapSearch onLocationSelect={handleLocationSelect} />}
-                    {desenhoPoligono && <SuccessMessage style={{ padding: '8px', margin: 0 }}>✓ Área do talhão desenhada</SuccessMessage>}
-                    {errors.desenho && <ErrorText style={{ margin: 0 }}>{errors.desenho}</ErrorText>}
-                </div>
                 {showMap && (
                     <>
                         <MapContainer ref={mapRef} />

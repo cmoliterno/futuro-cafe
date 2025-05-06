@@ -356,7 +356,7 @@ const BenefitItem = styled.div`
   animation: ${slideIn} 0.6s ease-out forwards;
   opacity: 0;
   background: rgba(238, 220, 200, 0.05);
-  padding: 20px;
+    padding: 20px;
   border-radius: 12px;
   margin-bottom: 20px;
   
@@ -383,7 +383,7 @@ const BenefitContent = styled.div`
     color: #EEDCC8;
     font-size: 1.3rem;
     margin-bottom: 10px;
-    font-weight: 600;
+  font-weight: 600;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
   }
   
@@ -423,23 +423,23 @@ const CTASection = styled.section`
 `;
 
 const HomePage: React.FC = () => {
-  const navigate = useNavigate();
-
-  return (
-    <HomeContainer>
-      <Hero>
+    const navigate = useNavigate();
+    
+    return (
+        <HomeContainer>
+            <Hero>
         <HeroContent>
-          <HeroTitle>Futuro Café</HeroTitle>
-          <HeroSubtitle>
-            Maximize a produtividade da sua fazenda de café com análises avançadas,
+                <HeroTitle>Futuro Café</HeroTitle>
+                <HeroSubtitle>
+                    Maximize a produtividade da sua fazenda de café com análises avançadas,
             previsões de safra e insights detalhados para o melhor manejo da sua
             lavoura.
-          </HeroSubtitle>
+                </HeroSubtitle>
           <CTAButton to="/dashboard">
             Ir para o Dashboard <FaArrowRight />
           </CTAButton>
         </HeroContent>
-      </Hero>
+            </Hero>
 
       <StatsSection>
         <StatsGrid>
@@ -468,78 +468,78 @@ const HomePage: React.FC = () => {
           alt="Grãos de café"
         />
       </ImageSection>
-
-      <FeaturesSection>
-        <SectionTitle>Nossos Recursos</SectionTitle>
-        <FeatureGrid>
-          <FeatureCard>
+            
+            <FeaturesSection>
+                <SectionTitle>Nossos Recursos</SectionTitle>
+                <FeatureGrid>
+                    <FeatureCard>
             <FeatureIcon>
               <FaChartLine />
             </FeatureIcon>
-            <FeatureTitle>Análises Avançadas</FeatureTitle>
-            <FeatureDescription>
+                        <FeatureTitle>Análises Avançadas</FeatureTitle>
+                        <FeatureDescription>
               Acesse análises detalhadas da sua plantação de café, com informações sobre o desenvolvimento
               das plantas, saúde da lavoura, e recomendações específicas para o seu caso.
-            </FeatureDescription>
-          </FeatureCard>
-
-          <FeatureCard>
+                        </FeatureDescription>
+                    </FeatureCard>
+                    
+                    <FeatureCard>
             <FeatureIcon>
               <FaCalendarAlt />
             </FeatureIcon>
-            <FeatureTitle>Previsão de Safra</FeatureTitle>
-            <FeatureDescription>
+                        <FeatureTitle>Previsão de Safra</FeatureTitle>
+                        <FeatureDescription>
               Nossos algoritmos avançados analisam diversos fatores para fornecer previsões precisas sobre o
               volume da sua próxima safra, ajudando no planejamento financeiro e operacional.
-            </FeatureDescription>
-          </FeatureCard>
-
-          <FeatureCard>
+                        </FeatureDescription>
+                    </FeatureCard>
+                    
+                    <FeatureCard>
             <FeatureIcon>
               <FaCoffee />
             </FeatureIcon>
-            <FeatureTitle>Planejamento de Colheita</FeatureTitle>
-            <FeatureDescription>
-              Determine o melhor momento para a colheita com base na maturação dos frutos,
-              maximizando a qualidade e o valor do seu café no mercado.
-            </FeatureDescription>
-          </FeatureCard>
-
-          <FeatureCard>
+                        <FeatureTitle>Planejamento de Colheita</FeatureTitle>
+                        <FeatureDescription>
+                            Determine o melhor momento para a colheita com base na maturação dos frutos,
+                            maximizando a qualidade e o valor do seu café no mercado.
+                        </FeatureDescription>
+                    </FeatureCard>
+                
+                    <FeatureCard>
             <FeatureIcon>
               <FaMapMarkedAlt />
             </FeatureIcon>
-            <FeatureTitle>Gestão de Talhões</FeatureTitle>
-            <FeatureDescription>
+                        <FeatureTitle>Gestão de Talhões</FeatureTitle>
+                        <FeatureDescription>
               Organize sua fazenda em talhões para um gerenciamento mais eficiente, acompanhando
               dados específicos de cada área e identificando oportunidades de melhoria.
-            </FeatureDescription>
-          </FeatureCard>
-
-          <FeatureCard>
+                        </FeatureDescription>
+                    </FeatureCard>
+                    
+                    <FeatureCard>
             <FeatureIcon>
               <FaSeedling />
             </FeatureIcon>
-            <FeatureTitle>Manejo de Cultivares</FeatureTitle>
-            <FeatureDescription>
+                        <FeatureTitle>Manejo de Cultivares</FeatureTitle>
+                        <FeatureDescription>
               Compare o desempenho de diferentes cultivares na sua fazenda, identificando quais apresentam
               melhor produtividade, resistência e qualidade de grãos.
-            </FeatureDescription>
-          </FeatureCard>
-
-          <FeatureCard>
+                        </FeatureDescription>
+                    </FeatureCard>
+                    
+                    <FeatureCard>
             <FeatureIcon>
               <FaChartBar />
             </FeatureIcon>
-            <FeatureTitle>Dashboard Personalizado</FeatureTitle>
-            <FeatureDescription>
+                        <FeatureTitle>Dashboard Personalizado</FeatureTitle>
+                        <FeatureDescription>
               Acesse um painel personalizado com todas as informações relevantes sobre sua lavoura em
               um só lugar, facilitando a tomada de decisões estratégicas.
-            </FeatureDescription>
-          </FeatureCard>
-        </FeatureGrid>
-      </FeaturesSection>
-
+                        </FeatureDescription>
+                    </FeatureCard>
+                </FeatureGrid>
+            </FeaturesSection>
+            
       <BenefitsSection>
         <BenefitsContainer>
           <SectionTitle>Por que escolher o Futuro Café?</SectionTitle>
@@ -597,8 +597,8 @@ const HomePage: React.FC = () => {
           Acessar Dashboard <FaArrowRight />
         </CTAButton>
       </CTASection>
-    </HomeContainer>
-  );
+        </HomeContainer>
+    );
 };
 
 export default HomePage;

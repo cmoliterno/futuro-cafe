@@ -430,29 +430,29 @@ const EstatisticasPage: React.FC = () => {
 
             {activeTab === TabType.FORECAST ? (
                 <>
-                    <FormContainer>
-                        <FormField>
-                            <Label>Fazenda</Label>
-                            <Select
+            <FormContainer>
+                <FormField>
+                    <Label>Fazenda</Label>
+                    <Select
                                 value={selectedFazenda}
                                 onChange={(e) => {
                                     setSelectedFazenda(e.target.value);
                                     setSelectedTalhao('');
                                 }}
-                            >
+                    >
                                 <option value="">Selecione uma fazenda</option>
-                                {fazendas.map((fazenda) => (
-                                    <option key={fazenda.id} value={fazenda.id}>
-                                        {fazenda.nome}
-                                    </option>
-                                ))}
-                            </Select>
-                        </FormField>
+                        {fazendas.map((fazenda) => (
+                            <option key={fazenda.id} value={fazenda.id}>
+                                {fazenda.nome}
+                            </option>
+                        ))}
+                    </Select>
+                </FormField>
 
-                        <FormField>
-                            <Label>Talhão</Label>
-                            <Select
-                                value={selectedTalhao}
+                    <FormField>
+                        <Label>Talhão</Label>
+                        <Select
+                            value={selectedTalhao}
                                 onChange={(e) => {
                                     setSelectedTalhao(e.target.value);
                                     if (e.target.value) {
@@ -462,15 +462,15 @@ const EstatisticasPage: React.FC = () => {
                                     }
                                 }}
                                 disabled={!selectedFazenda || loading || loadingTalhoes}
-                            >
+                        >
                                 <option value="">{loadingTalhoes ? "Carregando talhões..." : "Selecione um talhão"}</option>
                                 {!loadingTalhoes && talhoes.map((talhao) => (
-                                    <option key={talhao.id} value={talhao.id}>
-                                        {talhao.nome}
-                                    </option>
-                                ))}
-                            </Select>
-                        </FormField>
+                                <option key={talhao.id} value={talhao.id}>
+                                    {talhao.nome}
+                                </option>
+                            ))}
+                        </Select>
+                    </FormField>
 
                         <FormField>
                             <Label>Idade das Plantas (anos)</Label>
@@ -541,118 +541,118 @@ const EstatisticasPage: React.FC = () => {
                             </Select>
                         </FormField>
 
-                        <FormField>
-                            <Label>Data Inicial</Label>
-                            <DateInput
-                                type="date"
+                <FormField>
+                    <Label>Data Inicial</Label>
+                    <DateInput
+                        type="date"
                                 value={startDate}
-                                onChange={(e) => setStartDate(e.target.value)}
-                                disabled={loading}
-                            />
-                        </FormField>
+                        onChange={(e) => setStartDate(e.target.value)}
+                        disabled={loading}
+                    />
+                </FormField>
 
-                        <FormField>
-                            <Label>Data Final</Label>
-                            <DateInput
-                                type="date"
+                <FormField>
+                    <Label>Data Final</Label>
+                    <DateInput
+                        type="date"
                                 value={endDate}
-                                onChange={(e) => setEndDate(e.target.value)}
-                                disabled={loading}
-                            />
-                        </FormField>
-                    </FormContainer>
+                        onChange={(e) => setEndDate(e.target.value)}
+                        disabled={loading}
+                    />
+                </FormField>
+            </FormContainer>
 
-                    <Button onClick={handleFetchData} disabled={loading}>
-                        {loading ? 'Carregando...' : 'Filtrar'}
-                    </Button>
+            <Button onClick={handleFetchData} disabled={loading}>
+                {loading ? 'Carregando...' : 'Filtrar'}
+            </Button>
 
-                    {loading && <LoadingText>Carregando dados, por favor aguarde...</LoadingText>}
+            {loading && <LoadingText>Carregando dados, por favor aguarde...</LoadingText>}
 
-                    {chartData.length > 0 && !loading && (
-                        <ChartContainer>
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={chartData}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis 
+            {chartData.length > 0 && !loading && (
+                <ChartContainer>
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={chartData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis 
                                         dataKey={activeTab === TabType.FARM ? 'talhao' : 'date'} 
-                                        tick={{ fill: 'var(--color-primary)', fontSize: 12 }}
-                                    />
-                                    <YAxis tick={{ fill: 'var(--color-primary)', fontSize: 12 }} />
-                                    <Tooltip 
-                                        contentStyle={{ 
-                                            backgroundColor: 'var(--color-surface)', 
-                                            borderColor: 'var(--color-primary)',
-                                            borderRadius: 'var(--border-radius-md)'
-                                        }} 
-                                    />
-                                    <Legend />
-                                    <Bar
-                                        dataKey="green"
-                                        fill="#34A853"
-                                        name="Verde"
-                                    >
-                                        <LabelList 
-                                            dataKey="green"
-                                            position="center"
-                                            formatter={percentFormatter}
-                                            style={{ fill: 'black', fontWeight: 'bold', fontSize: 11 }}
-                                        />
-                                    </Bar>
-                                    <Bar
-                                        dataKey="greenYellow"
-                                        fill="#FFD700"
-                                        name="Verde Cana"
-                                    >
-                                        <LabelList 
-                                            dataKey="greenYellow"
-                                            position="center"
-                                            formatter={percentFormatter}
-                                            style={{ fill: 'black', fontWeight: 'bold', fontSize: 11 }}
-                                        />
-                                    </Bar>
-                                    <Bar
-                                        dataKey="cherry"
-                                        fill="#FF6347"
-                                        name="Cereja"
-                                    >
-                                        <LabelList 
-                                            dataKey="cherry"
-                                            position="center"
-                                            formatter={percentFormatter}
-                                            style={{ fill: 'black', fontWeight: 'bold', fontSize: 11 }}
-                                        />
-                                    </Bar>
-                                    <Bar
-                                        dataKey="raisin"
-                                        fill="#8B4513"
-                                        name="Passa"
-                                    >
-                                        <LabelList 
-                                            dataKey="raisin"
-                                            position="center"
-                                            formatter={percentFormatter}
-                                            style={{ fill: 'black', fontWeight: 'bold', fontSize: 11 }}
-                                        />
-                                    </Bar>
-                                    <Bar
-                                        dataKey="dry"
-                                        fill="#A9A9A9"
-                                        name="Seco"
-                                    >
-                                        <LabelList 
-                                            dataKey="dry"
-                                            position="center"
-                                            formatter={percentFormatter}
-                                            style={{ fill: 'black', fontWeight: 'bold', fontSize: 11 }}
-                                        />
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </ChartContainer>
-                    )}
-                    
-                    {chartData.length === 0 && !loading && (
-                        <NoDataText>Sem dados para exibir. Selecione os filtros e clique em "Filtrar".</NoDataText>
+                                tick={{ fill: 'var(--color-primary)', fontSize: 12 }}
+                            />
+                            <YAxis tick={{ fill: 'var(--color-primary)', fontSize: 12 }} />
+                            <Tooltip 
+                                contentStyle={{ 
+                                    backgroundColor: 'var(--color-surface)', 
+                                    borderColor: 'var(--color-primary)',
+                                    borderRadius: 'var(--border-radius-md)'
+                                }} 
+                            />
+                            <Legend />
+                            <Bar
+                                dataKey="green"
+                                fill="#34A853"
+                                name="Verde"
+                            >
+                                <LabelList 
+                                    dataKey="green"
+                                    position="center"
+                                    formatter={percentFormatter}
+                                    style={{ fill: 'black', fontWeight: 'bold', fontSize: 11 }}
+                                />
+                            </Bar>
+                            <Bar
+                                dataKey="greenYellow"
+                                fill="#FFD700"
+                                name="Verde Cana"
+                            >
+                                <LabelList 
+                                    dataKey="greenYellow"
+                                    position="center"
+                                    formatter={percentFormatter}
+                                    style={{ fill: 'black', fontWeight: 'bold', fontSize: 11 }}
+                                />
+                            </Bar>
+                            <Bar
+                                dataKey="cherry"
+                                fill="#FF6347"
+                                name="Cereja"
+                            >
+                                <LabelList 
+                                    dataKey="cherry"
+                                    position="center"
+                                    formatter={percentFormatter}
+                                    style={{ fill: 'black', fontWeight: 'bold', fontSize: 11 }}
+                                />
+                            </Bar>
+                            <Bar
+                                dataKey="raisin"
+                                fill="#8B4513"
+                                name="Passa"
+                            >
+                                <LabelList 
+                                    dataKey="raisin"
+                                    position="center"
+                                    formatter={percentFormatter}
+                                    style={{ fill: 'black', fontWeight: 'bold', fontSize: 11 }}
+                                />
+                            </Bar>
+                            <Bar
+                                dataKey="dry"
+                                fill="#A9A9A9"
+                                name="Seco"
+                            >
+                                <LabelList 
+                                    dataKey="dry"
+                                    position="center"
+                                    formatter={percentFormatter}
+                                    style={{ fill: 'black', fontWeight: 'bold', fontSize: 11 }}
+                                />
+                            </Bar>
+                        </BarChart>
+                    </ResponsiveContainer>
+                </ChartContainer>
+            )}
+            
+            {chartData.length === 0 && !loading && (
+                <NoDataText>Sem dados para exibir. Selecione os filtros e clique em "Filtrar".</NoDataText>
                     )}
                 </>
             )}
