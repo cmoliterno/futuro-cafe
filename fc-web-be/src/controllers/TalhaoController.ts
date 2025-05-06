@@ -285,13 +285,54 @@ export async function getTalhoesByFazenda(req: Request, res: Response) {
         }
         console.log("Buscando Talhoes com fazenda: ",fazendaId);
 
-        // Busca os talhões associados à fazenda
-        const talhoes = await Talhao.findAll({
-            where: { fazendaId },
-            order: [['nome', 'ASC']] // Ordenar por nome em ordem alfabética
+        // Busca os talhões com todas as informações necessárias
+        const talhoes = await sequelize.query(`
+            SELECT 
+                t.*,
+                f.Nome as FazendaNome,
+                td.desenhoGeometria.STAsText() as desenho,
+                tp.Id as PlantioId,
+                tp.Data as DataPlantio,
+                tp.EspacamentoLinhasMetros,
+                tp.EspacamentoMudasMetros,
+                tp.CultivarId
+            FROM tbTalhao t
+            INNER JOIN tbFazenda f ON t.FazendaId = f.Id
+            LEFT JOIN tbTalhaoDesenho td ON t.Id = td.TalhaoId
+            LEFT JOIN tbPlantio tp ON t.Id = tp.TalhaoId
+            WHERE t.FazendaId = :fazendaId
+            ORDER BY t.Nome ASC
+        `, {
+            replacements: { fazendaId },
+            type: QueryTypes.SELECT
         });
 
-        res.json(talhoes);
+        // Formatar a resposta para manter a compatibilidade com o frontend
+        const response = talhoes.map((talhao: any) => ({
+            id: talhao.Id,
+            nome: talhao.Nome,
+            fazendaId: talhao.FazendaId,
+            createdAt: talhao.CreatedAt,
+            lastUpdatedAt: talhao.LastUpdatedAt,
+            Fazenda: {
+                id: talhao.FazendaId,
+                nome: talhao.FazendaNome
+            },
+            TalhaoDesenho: talhao.desenho ? {
+                talhaoId: talhao.Id,
+                desenhoGeometria: talhao.desenho
+            } : null,
+            Plantio: talhao.PlantioId ? {
+                id: talhao.PlantioId,
+                data: talhao.DataPlantio,
+                espacamentoLinhasMetros: talhao.EspacamentoLinhasMetros,
+                espacamentoMudasMetros: talhao.EspacamentoMudasMetros,
+                cultivarId: talhao.CultivarId,
+                talhaoId: talhao.Id
+            } : null
+        }));
+
+        res.json(response);
     } catch (error) {
         console.error('Erro ao buscar talhões por fazenda:', error);
         res.status(500).json({ message: 'Erro ao buscar talhões por fazenda', error });

@@ -50,23 +50,36 @@ class PrevisaoService {
   };
 
   private static calcularPrevisaoSafra(idadePlantasTalhao: number, totalGraosPorPlanta: number): number {
-    if (idadePlantasTalhao === 1) {
+    // Planta não produz no primeiro ano de vida
+    if (idadePlantasTalhao <= 1) {
       return 0;
-    } else if (idadePlantasTalhao === 2) {
-      return 9.5;
-    } else if (idadePlantasTalhao >= 3) {
-      if (totalGraosPorPlanta <= 30) {
-        return 12.3;
-      } else if (totalGraosPorPlanta <= 50) {
-        return 17.6;
-      } else if (totalGraosPorPlanta <= 100) {
-        return 25.1;
-      } else if (totalGraosPorPlanta <= 200) {
-        return 31.7;
-      } else {
-        return 42.9;
-      }
     }
+    // Produção no segundo ano
+    else if (idadePlantasTalhao === 2) {
+      return 9.5;
+    }
+    // Produção a partir do terceiro ano
+    else if (idadePlantasTalhao >= 3) {
+      let produtividade = 0;
+      if (totalGraosPorPlanta <= 30) {
+        produtividade = 12.3;
+      }
+      else if (totalGraosPorPlanta <= 50) {
+        produtividade = 17.6;
+      }
+      else if (totalGraosPorPlanta <= 100) {
+        produtividade = 25.1;
+      }
+      else if (totalGraosPorPlanta <= 200) {
+        produtividade = 31.7;
+      }
+      else {
+        produtividade = 42.9;
+      }
+      return produtividade;
+    }
+    
+    // Se a idade for 0 ou negativa
     return 0;
   }
 
@@ -150,9 +163,16 @@ class PrevisaoService {
     porcentagens: EstagiosMaturacao,
     mesColeta: string
   ): PrevisaoSafra {
+    // Calcular o total de grãos por planta
     const totalGraosPorPlanta = Object.values(graosPorEstagio).reduce((a, b) => a + b, 0);
+
+    // Calcular sacas por hectare
     const sacasPorHectare = this.calcularPrevisaoSafra(idadePlantasTalhao, totalGraosPorPlanta);
+    
+    // Calcular dias para colheita
     const diasParaColheita = Math.round(this.calcularPrevisaoColheita(porcentagens, mesColeta));
+    
+    // Calcular data ideal de colheita
     const dataIdealColheita = addDays(new Date(), diasParaColheita);
 
     return {

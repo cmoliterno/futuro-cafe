@@ -162,6 +162,7 @@ const PrevisaoColheitaGrid: React.FC = () => {
         const dataIdealColheita = previsao.dataIdealColheita ? new Date(previsao.dataIdealColheita) : null;
         const dataUltimaAnalise = previsao.dataUltimaAnalise ? new Date(previsao.dataUltimaAnalise) : null;
         
+        // Calcular o período recomendado como ±7 dias da data ideal
         const dataInicio = dataIdealColheita ? subDays(dataIdealColheita, 7) : null;
         const dataFim = dataIdealColheita ? addDays(dataIdealColheita, 7) : null;
 

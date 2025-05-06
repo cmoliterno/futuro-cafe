@@ -3,6 +3,8 @@ import styled from 'styled-components';
 import { FaEdit, FaTrash, FaCamera, FaSearch, FaSort, FaDrawPolygon, FaSortAlphaDown } from 'react-icons/fa';
 import api from '../services/api';
 import '../styles/leaflet-fixes.css';
+import MapSearch from '../components/MapSearch';
+import * as L from 'leaflet';
 
 // Carregamento assíncrono do componente ModalColetaImagens
 const ModalColetaImagens = lazy(() => import('../components/ModalColetaImagens'));
@@ -501,9 +503,9 @@ const TalhoesPage: React.FC = () => {
 
     const initializeMap = async (L: any) => {
         try {
-        if (!mapRef.current) {
-            return;
-        }
+            if (!mapRef.current) {
+                return;
+            }
 
             // Aguardar a localização do usuário
             const location = userLocation || [-21.763, -43.349];
@@ -511,96 +513,96 @@ const TalhoesPage: React.FC = () => {
             // Inicializar o mapa
             leafletMap = L.map(mapRef.current).setView(location, 13);
 
-        // Adicionar camada base do mapa (satellite)
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            maxZoom: 18,
-            attribution: 'Tiles &copy; Esri'
-        }).addTo(leafletMap);
+            // Adicionar camada base do mapa (satellite)
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 18,
+                attribution: 'Tiles &copy; Esri'
+            }).addTo(leafletMap);
 
-        // Criar camada para desenhos
-        const newDrawnItems = new L.FeatureGroup();
-        leafletMap.addLayer(newDrawnItems);
-        setDrawnItems(newDrawnItems);
+            // Criar camada para desenhos
+            const newDrawnItems = new L.FeatureGroup();
+            leafletMap.addLayer(newDrawnItems);
+            setDrawnItems(newDrawnItems);
 
-        // Se já existe um desenho, mostrar no mapa
-        if (desenhoPoligono && desenhoPoligono.coordinates && desenhoPoligono.coordinates.length > 0) {
-            try {
-                const latlngs = desenhoPoligono.coordinates[0];
-                const polygon = L.polygon(latlngs, {
-                    color: '#34A853',
-                    fillColor: '#34A853',
-                    fillOpacity: 0.5,
-                });
-                newDrawnItems.addLayer(polygon);
-                leafletMap.fitBounds(polygon.getBounds());
-            } catch (error) {
-                console.error('Erro ao renderizar polígono existente:', error);
-            }
-        }
-        
-            // Configurar controles de desenho
-            const drawOptions = {
-            edit: {
-                featureGroup: newDrawnItems,
-                poly: {
-                    allowIntersection: false
-                }
-            },
-            draw: {
-                polygon: {
-                    allowIntersection: false,
-                    showArea: true,
-                    shapeOptions: {
+            // Se já existe um desenho, mostrar no mapa
+            if (desenhoPoligono && desenhoPoligono.coordinates && desenhoPoligono.coordinates.length > 0) {
+                try {
+                    const latlngs = desenhoPoligono.coordinates[0];
+                    const polygon = L.polygon(latlngs, {
                         color: '#34A853',
                         fillColor: '#34A853',
-                        fillOpacity: 0.5
+                        fillOpacity: 0.5,
+                    });
+                    newDrawnItems.addLayer(polygon);
+                    leafletMap.fitBounds(polygon.getBounds());
+                } catch (error) {
+                    console.error('Erro ao renderizar polígono existente:', error);
+                }
+            }
+            
+            // Configurar controles de desenho
+            const drawOptions = {
+                edit: {
+                    featureGroup: newDrawnItems,
+                    poly: {
+                        allowIntersection: false
                     }
                 },
-                polyline: false,
-                circle: false,
-                rectangle: false,
-                marker: false,
-                circlemarker: false
-            }
+                draw: {
+                    polygon: {
+                        allowIntersection: false,
+                        showArea: true,
+                        shapeOptions: {
+                            color: '#34A853',
+                            fillColor: '#34A853',
+                            fillOpacity: 0.5
+                        }
+                    },
+                    polyline: false,
+                    circle: false,
+                    rectangle: false,
+                    marker: false,
+                    circlemarker: false
+                }
             };
             
             drawControl = new L.Control.Draw(drawOptions);
-        leafletMap.addControl(drawControl);
-        
+            leafletMap.addControl(drawControl);
+            
             // Configurar eventos de desenho
-        leafletMap.on(L.Draw.Event.CREATED, (e: any) => {
-            const layer = e.layer;
-            newDrawnItems.clearLayers();
-            newDrawnItems.addLayer(layer);
-            const coordinates = layer.getLatLngs()[0].map((latlng: any) => [latlng.lat, latlng.lng]);
-                setDesenhoPoligono({
-                type: 'Polygon',
-                coordinates: [coordinates]
-                });
-        });
-        
-        leafletMap.on(L.Draw.Event.EDITED, (e: any) => {
-            const layers = e.layers;
-            layers.eachLayer((layer: any) => {
+            leafletMap.on(L.Draw.Event.CREATED, (e: any) => {
+                const layer = e.layer;
+                newDrawnItems.clearLayers();
+                newDrawnItems.addLayer(layer);
                 const coordinates = layer.getLatLngs()[0].map((latlng: any) => [latlng.lat, latlng.lng]);
-                    setDesenhoPoligono({
+                setDesenhoPoligono({
                     type: 'Polygon',
                     coordinates: [coordinates]
-                    });
+                });
             });
-        });
-        
-        leafletMap.on(L.Draw.Event.DELETED, () => {
-            newDrawnItems.clearLayers();
-            setDesenhoPoligono(null);
-        });
+            
+            leafletMap.on(L.Draw.Event.EDITED, (e: any) => {
+                const layers = e.layers;
+                layers.eachLayer((layer: any) => {
+                    const coordinates = layer.getLatLngs()[0].map((latlng: any) => [latlng.lat, latlng.lng]);
+                    setDesenhoPoligono({
+                        type: 'Polygon',
+                        coordinates: [coordinates]
+                    });
+                });
+            });
+            
+            leafletMap.on(L.Draw.Event.DELETED, () => {
+                newDrawnItems.clearLayers();
+                setDesenhoPoligono(null);
+            });
 
             // Remover mensagem de erro
-        setErrors((prev) => {
-            const newErrors = { ...prev };
-            delete newErrors.general;
-            return newErrors;
-        });
+            setErrors((prev) => {
+                const newErrors = { ...prev };
+                delete newErrors.general;
+                return newErrors;
+            });
 
         } catch (error) {
             console.error("Erro ao inicializar o mapa:", error);
@@ -881,6 +883,56 @@ const TalhoesPage: React.FC = () => {
         // Opcionalmente, atualize a lista de talhões ou mostre mensagem de sucesso
     };
 
+    // Adicionar função para lidar com a seleção de localização
+    const handleLocationSelect = async (location: { lat: number; lng: number }) => {
+        if (!leafletMap) {
+            console.error('Mapa não inicializado');
+            return;
+        }
+
+        try {
+            // Criar o objeto LatLng
+            const latlng = L.latLng(location.lat, location.lng);
+
+            // Primeiro, limpar qualquer marcador existente
+            if (drawnItems) {
+                drawnItems.clearLayers();
+            }
+
+            // Criar um novo marcador com ícone personalizado
+            const customIcon = L.divIcon({
+                className: 'custom-marker',
+                html: '<div style="background-color: #047502; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white;"></div>',
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            });
+
+            const marker = L.marker(latlng, { icon: customIcon });
+
+            // Adicionar o marcador ao mapa
+            if (drawnItems) {
+                drawnItems.addLayer(marker);
+            } else {
+                marker.addTo(leafletMap);
+            }
+
+            // Centralizar o mapa na nova localização com zoom apropriado
+            leafletMap.setView(latlng, 16);
+
+            // Remover o marcador após 3 segundos
+            setTimeout(() => {
+                if (drawnItems) {
+                    drawnItems.clearLayers();
+                } else {
+                    leafletMap.removeLayer(marker);
+                }
+            }, 3000);
+
+        } catch (error) {
+            console.error('Erro ao atualizar localização no mapa:', error);
+        }
+    };
+
     return (
         <Container>
             <Title>Gerenciamento de Talhões</Title>
@@ -989,9 +1041,10 @@ const TalhoesPage: React.FC = () => {
             
             <DrawMapContainer>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <Button onClick={toggleDrawMap}>
-                    {showMap ? 'Ocultar Mapa' : 'Desenhar Talhão'}
-                </Button>
+                    <Button onClick={toggleDrawMap}>
+                        {showMap ? 'Ocultar Mapa' : 'Desenhar Talhão'}
+                    </Button>
+                    {showMap && <MapSearch onLocationSelect={handleLocationSelect} />}
                     {desenhoPoligono && <SuccessMessage style={{ padding: '8px', margin: 0 }}>✓ Área do talhão desenhada</SuccessMessage>}
                     {errors.desenho && <ErrorText style={{ margin: 0 }}>{errors.desenho}</ErrorText>}
                 </div>

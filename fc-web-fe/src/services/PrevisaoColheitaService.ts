@@ -100,7 +100,7 @@ class PrevisaoColheitaService {
         console.warn(`Análise inválida para o talhão ${talhao.nome}: total = ${total}`);
         return null;
       }
-      
+
       const dataUltimaColeta = new Date(ultimaAnalise.createdAt);
       const meses = [
         'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
@@ -124,16 +124,26 @@ class PrevisaoColheitaService {
         seco: ultimaAnalise.dry || 0
       };
       
-      let idadePlantasTalhao = 3;
+      let idadePlantasTalhao = 0;
       try {
         const { data: talhaoDetalhes } = await api.getTalhao(talhao.id);
+        
         if (talhaoDetalhes?.Plantio?.data) {
           const dataPlantio = new Date(talhaoDetalhes.Plantio.data);
           const hoje = new Date();
-          idadePlantasTalhao = Math.floor((hoje.getTime() - dataPlantio.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+          
+          if (dataPlantio > hoje) {
+            idadePlantasTalhao = 0;
+          } else {
+            const diffTime = hoje.getTime() - dataPlantio.getTime();
+            const diffDays = diffTime / (1000 * 60 * 60 * 24);
+            const idadeEmAnos = Math.floor(diffDays / 365.25);
+            idadePlantasTalhao = idadeEmAnos;
+          }
         }
       } catch (error) {
-        console.warn(`Não foi possível obter a idade do talhão ${talhao.nome}:`, error);
+        console.warn(`Erro ao obter idade do talhão ${talhao.nome}:`, error);
+        idadePlantasTalhao = 0;
       }
       
       const previsao = PrevisaoService.calcularPrevisoes(
