@@ -162,8 +162,8 @@ const PrevisaoColheitaGrid: React.FC = () => {
         const dataIdealColheita = previsao.dataIdealColheita ? new Date(previsao.dataIdealColheita) : null;
         const dataUltimaAnalise = previsao.dataUltimaAnalise ? new Date(previsao.dataUltimaAnalise) : null;
         
-        const dataInicio = dataIdealColheita ? subDays(dataIdealColheita, 4) : null;
-        const dataFim = dataIdealColheita ? addDays(dataIdealColheita, 4) : null;
+        const dataInicio = dataIdealColheita ? subDays(dataIdealColheita, 7) : null;
+        const dataFim = dataIdealColheita ? addDays(dataIdealColheita, 7) : null;
 
         return (
           <Card key={previsao.id}>

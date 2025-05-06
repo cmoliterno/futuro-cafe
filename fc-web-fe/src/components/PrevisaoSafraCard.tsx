@@ -90,8 +90,8 @@ const PrevisaoSafraCard: React.FC<PrevisaoSafraCardProps> = ({
   dataIdealColheita,
   dataUltimaAnalise
 }) => {
-  const dataInicio = subDays(dataIdealColheita, 4);
-  const dataFim = addDays(dataIdealColheita, 4);
+  const dataInicio = subDays(dataIdealColheita, 7);
+  const dataFim = addDays(dataIdealColheita, 7);
 
   return (
     <Card>
