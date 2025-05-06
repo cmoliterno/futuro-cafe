@@ -45,6 +45,7 @@ import {
     getTalhoesPorFazendaParaRelatorio, 
     gerarRelatorio 
 } from '../controllers/RelatoriosController';
+import { calcularPrevisaoTalhao, calcularPrevisaoTodasFazendas } from '../controllers/PrevisaoController';
 
 const router = express.Router();
 
@@ -175,5 +176,9 @@ router.get('/projetos/:id', getProjetoById);
 router.post('/projetos', createProjeto);
 router.put('/projetos/:id', updateProjeto);
 router.delete('/projetos/:id', deleteProjeto);
+
+// Previsão de Safra
+router.get('/previsao/talhao/:talhaoId', calcularPrevisaoTalhao);
+router.get('/previsao/todas-fazendas', calcularPrevisaoTodasFazendas);
 
 export default router;

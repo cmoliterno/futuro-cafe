@@ -4,6 +4,9 @@ import { FaCalendarAlt, FaLeaf, FaWarehouse } from 'react-icons/fa';
 import { formatarDataPorExtenso } from '../utils/dateFnsUtils';
 import PrevisaoColheitaService, { PrevisaoTalhao } from '../services/PrevisaoColheitaService';
 import { addDays, subDays } from 'date-fns';
+import LoadingSpinner from '../components/LoadingSpinner';
+import ErrorMessage from '../components/ErrorMessage';
+import { EmptyContainer, EmptyIcon, EmptyMessage } from './EmptyState';
 
 const GridContainer = styled.div`
   display: grid;
@@ -99,72 +102,58 @@ const PeriodoData = styled.span`
   }
 `;
 
-const LoadingContainer = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: var(--spacing-xl);
-  color: var(--color-gray-600);
-`;
-
-const ErrorContainer = styled.div`
-  background-color: var(--color-error-light);
-  color: var(--color-error);
-  padding: var(--spacing-md);
-  border-radius: var(--border-radius-md);
-  margin: var(--spacing-md) 0;
-  text-align: center;
-`;
-
 const PrevisaoColheitaGrid: React.FC = () => {
   const [previsoes, setPrevisoes] = useState<PrevisaoTalhao[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const carregarPrevisoes = async () => {
+      try {
+        setLoading(true);
+        const data = await PrevisaoColheitaService.buscarTodasPrevisoes();
+        setPrevisoes(data);
+        setError(null);
+      } catch (error) {
+        console.error('Erro ao carregar previsões:', error);
+        setError('Não foi possível carregar as previsões. Por favor, tente novamente mais tarde.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     carregarPrevisoes();
   }, []);
 
-  const carregarPrevisoes = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const todasPrevisoes = await PrevisaoColheitaService.buscarTodasPrevisoes();
-      setPrevisoes(todasPrevisoes);
-      
-      if (todasPrevisoes.length === 0) {
-        setError('Não foi possível calcular previsões. Verifique se existem análises recentes.');
-      }
-    } catch (error) {
-      console.error('Erro ao carregar previsões:', error);
-      setError('Erro ao carregar previsões. Por favor, tente novamente.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   if (loading) {
-    return <LoadingContainer>Carregando previsões...</LoadingContainer>;
+    return <LoadingSpinner />;
   }
 
   if (error) {
-    return <ErrorContainer>{error}</ErrorContainer>;
+    return <ErrorMessage>{error}</ErrorMessage>;
   }
 
   if (previsoes.length === 0) {
-    return <LoadingContainer>Nenhuma previsão disponível. Certifique-se de que existem análises recentes.</LoadingContainer>;
+    return (
+      <EmptyContainer>
+        <EmptyIcon name="coffee" />
+        <EmptyMessage>
+          Nenhuma previsão disponível.
+          Certifique-se de que existem análises recentes.
+        </EmptyMessage>
+      </EmptyContainer>
+    );
   }
 
   return (
     <GridContainer>
       {previsoes.map((previsao) => {
-        const dataIdealColheita = previsao.dataIdealColheita ? new Date(previsao.dataIdealColheita) : null;
-        const dataUltimaAnalise = previsao.dataUltimaAnalise ? new Date(previsao.dataUltimaAnalise) : null;
+        const dataIdealColheita = new Date(previsao.dataIdealColheita);
+        const dataUltimaAnalise = new Date(previsao.dataUltimaAnalise);
         
         // Calcular o período recomendado como ±7 dias da data ideal
-        const dataInicio = dataIdealColheita ? subDays(dataIdealColheita, 7) : null;
-        const dataFim = dataIdealColheita ? addDays(dataIdealColheita, 7) : null;
+        const dataInicio = subDays(dataIdealColheita, 7);
+        const dataFim = addDays(dataIdealColheita, 7);
 
         return (
           <Card key={previsao.id}>
@@ -190,19 +179,19 @@ const PrevisaoColheitaGrid: React.FC = () => {
                   Data da Última Análise
                 </MetricaLabel>
                 <DataAnaliseValor>
-                  {dataUltimaAnalise ? formatarDataPorExtenso(dataUltimaAnalise) : 'Data não disponível'}
+                  {formatarDataPorExtenso(dataUltimaAnalise)}
                 </DataAnaliseValor>
               </Metrica>
-              
+
               <Metrica>
                 <MetricaLabel>
                   <FaWarehouse />
-                  Período Ideal
+                  Período Ideal de Colheita
                 </MetricaLabel>
                 <PeriodoContainer>
                   <PeriodoData>Período recomendado:</PeriodoData>
-                  <PeriodoData>De: {dataInicio ? formatarDataPorExtenso(dataInicio) : 'Data não disponível'}</PeriodoData>
-                  <PeriodoData>Até: {dataFim ? formatarDataPorExtenso(dataFim) : 'Data não disponível'}</PeriodoData>
+                  <PeriodoData>De: {formatarDataPorExtenso(dataInicio)}</PeriodoData>
+                  <PeriodoData>Até: {formatarDataPorExtenso(dataFim)}</PeriodoData>
                 </PeriodoContainer>
               </Metrica>
             </MetricaContainer>

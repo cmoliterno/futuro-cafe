@@ -2,12 +2,12 @@ import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts';
 import api from '../services/api';
-import PrevisaoService from '../services/PrevisaoService';
 import PrevisaoSafraCard from '../components/PrevisaoSafraCard';
 import { getFirstDayOfCurrentMonth, getCurrentDate } from '../utils/dateUtils';
 import { percentFormatter } from '../utils/formatUtils';
 import { formatarDataPorExtenso } from '../utils/dateFnsUtils';
 import { addDays, subDays } from 'date-fns';
+import PrevisaoColheitaService from '../services/PrevisaoColheitaService';
 
 const EstatisticasContainer = styled.div`
   padding: var(--spacing-xl);
@@ -342,59 +342,15 @@ const EstatisticasPage: React.FC = () => {
     };
 
     const handleCalcularPrevisao = async () => {
-        if (!selectedTalhao || idadePlantasTalhao === 0) {
-            alert('Por favor, preencha todos os campos necessários');
+        if (!selectedTalhao) {
+            alert('Por favor, selecione um talhão');
             return;
         }
 
         try {
             setLoading(true);
-            
-            const response = await api.getUltimaAnaliseTalhao(selectedTalhao);
-
-            if (!response.data || !response.data.result) {
-                alert('Não há análises recentes para este talhão');
-                return;
-            }
-
-            const ultimaAnalise = response.data.result;
-            const total = ultimaAnalise.total;
-
-            // Obter o mês da última coleta
-            const dataUltimaColeta = new Date(ultimaAnalise.createdAt);
-            const meses = [
-                'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
-                'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'
-            ];
-            const mesColeta = meses[dataUltimaColeta.getMonth()];
-
-            const porcentagens = {
-                verde: ultimaAnalise.green / total,
-                verdeCana: ultimaAnalise.greenYellow / total,
-                cereja: ultimaAnalise.cherry / total,
-                passa: ultimaAnalise.raisin / total,
-                seco: ultimaAnalise.dry / total
-            };
-
-            const graosPorEstagio = {
-                verde: ultimaAnalise.green,
-                verdeCana: ultimaAnalise.greenYellow,
-                cereja: ultimaAnalise.cherry,
-                passa: ultimaAnalise.raisin,
-                seco: ultimaAnalise.dry
-            };
-
-            const previsao = PrevisaoService.calcularPrevisoes(
-                idadePlantasTalhao,
-                graosPorEstagio,
-                porcentagens,
-                mesColeta
-            );
-
-            setPrevisaoSafra({
-                ...previsao,
-                dataUltimaAnalise: ultimaAnalise.createdAt
-            });
+            const previsao = await PrevisaoColheitaService.calcularPrevisaoTalhao(selectedTalhao);
+            setPrevisaoSafra(previsao);
         } catch (error) {
             console.error('Erro ao calcular previsão:', error);
             alert('Erro ao calcular previsão. Por favor, tente novamente.');

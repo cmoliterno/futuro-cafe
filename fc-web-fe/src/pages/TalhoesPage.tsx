@@ -506,9 +506,9 @@ const TalhoesPage: React.FC = () => {
 
     const initializeMap = async (L: any) => {
         try {
-            if (!mapRef.current) {
-                return;
-            }
+        if (!mapRef.current) {
+            return;
+        }
 
             // Aguardar a localização do usuário
             const location = userLocation || [-21.763, -43.349];
@@ -516,75 +516,75 @@ const TalhoesPage: React.FC = () => {
             // Inicializar o mapa
             const map = L.map(mapRef.current).setView(location, 13);
 
-            // Adicionar camada base do mapa (satellite)
-            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                maxZoom: 18,
-                attribution: 'Tiles &copy; Esri'
+        // Adicionar camada base do mapa (satellite)
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 18,
+            attribution: 'Tiles &copy; Esri'
             }).addTo(map);
 
-            // Criar camada para desenhos
-            const newDrawnItems = new L.FeatureGroup();
+        // Criar camada para desenhos
+        const newDrawnItems = new L.FeatureGroup();
             map.addLayer(newDrawnItems);
-            setDrawnItems(newDrawnItems);
+        setDrawnItems(newDrawnItems);
 
-            // Se já existe um desenho, mostrar no mapa
-            if (desenhoPoligono && desenhoPoligono.coordinates && desenhoPoligono.coordinates.length > 0) {
-                try {
-                    const latlngs = desenhoPoligono.coordinates[0];
-                    const polygon = L.polygon(latlngs, {
-                        color: '#34A853',
-                        fillColor: '#34A853',
-                        fillOpacity: 0.5,
-                    });
-                    newDrawnItems.addLayer(polygon);
+        // Se já existe um desenho, mostrar no mapa
+        if (desenhoPoligono && desenhoPoligono.coordinates && desenhoPoligono.coordinates.length > 0) {
+            try {
+                const latlngs = desenhoPoligono.coordinates[0];
+                const polygon = L.polygon(latlngs, {
+                    color: '#34A853',
+                    fillColor: '#34A853',
+                    fillOpacity: 0.5,
+                });
+                newDrawnItems.addLayer(polygon);
                     const bounds = polygon.getBounds();
                     map.fitBounds(bounds);
-                } catch (error) {
-                    console.error('Erro ao renderizar polígono existente:', error);
-                }
+            } catch (error) {
+                console.error('Erro ao renderizar polígono existente:', error);
             }
-
+        }
+        
             // Configurar controles de desenho
             const drawOptions = {
-                edit: {
-                    featureGroup: newDrawnItems,
-                    poly: {
-                        allowIntersection: false
+            edit: {
+                featureGroup: newDrawnItems,
+                poly: {
+                    allowIntersection: false
+                }
+            },
+            draw: {
+                polygon: {
+                    allowIntersection: false,
+                    showArea: true,
+                    shapeOptions: {
+                        color: '#34A853',
+                        fillColor: '#34A853',
+                        fillOpacity: 0.5
                     }
                 },
-                draw: {
-                    polygon: {
-                        allowIntersection: false,
-                        showArea: true,
-                        shapeOptions: {
-                            color: '#34A853',
-                            fillColor: '#34A853',
-                            fillOpacity: 0.5
-                        }
-                    },
-                    polyline: false,
-                    circle: false,
-                    rectangle: false,
-                    marker: false,
-                    circlemarker: false
-                }
+                polyline: false,
+                circle: false,
+                rectangle: false,
+                marker: false,
+                circlemarker: false
+            }
             };
-
+        
             drawControl = new L.Control.Draw(drawOptions);
             map.addControl(drawControl);
-
+            
             // Configurar eventos de desenho
             map.on(L.Draw.Event.CREATED, (e: any) => {
                 const layer = e.layer;
-                newDrawnItems.clearLayers();
-                newDrawnItems.addLayer(layer);
-                const coordinates = layer.getLatLngs()[0].map((latlng: any) => [latlng.lat, latlng.lng]);
+            newDrawnItems.clearLayers();
+            newDrawnItems.addLayer(layer);
+            const coordinates = layer.getLatLngs()[0].map((latlng: any) => [latlng.lat, latlng.lng]);
                 setDesenhoPoligono({
-                    type: 'Polygon',
-                    coordinates: [coordinates]
-                });
+                type: 'Polygon',
+                coordinates: [coordinates]
             });
-
+        });
+        
             // Salvar a instância do mapa no estado
             setMapInstance(map);
 
@@ -609,9 +609,9 @@ const TalhoesPage: React.FC = () => {
                 
                 if (drawControl) {
                     drawControl = null;
-                }
-            } catch (error) {
-                console.error('Erro ao limpar o mapa:', error);
+            }
+        } catch (error) {
+            console.error('Erro ao limpar o mapa:', error);
             }
         }
     };
@@ -1014,10 +1014,10 @@ const TalhoesPage: React.FC = () => {
                     <MapSearch 
                         onLocationSelect={handleLocationSelect}
                         map={mapInstance}
-                    />
+                />
                 )}
             </div>
-
+            
             <DrawMapContainer>
                 {showMap && (
                     <>
