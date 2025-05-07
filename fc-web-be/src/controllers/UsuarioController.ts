@@ -282,7 +282,14 @@ export async function forgotPassword(req: Request, res: Response) {
 }
 
 export async function resetPassword(req: Request, res: Response) {
-    const { token, newPassword } = req.body;
+    const { newPassword } = req.body;
+
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+        return res.status(401).json({ message: 'Token não fornecido' });
+    }
+
+    const pessoaId = authService.verifyToken(token)?.userId;
 
     try {
         // Encontrar o usuário pelo token
