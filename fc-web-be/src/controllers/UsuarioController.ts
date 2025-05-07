@@ -313,34 +313,39 @@ export async function resetPassword(req: Request, res: Response) {
 
 
 export async function updatePassword(req: Request, res: Response) {
-    const { newPassword } = req.body;
-
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) {
-        return res.status(401).json({ message: 'Token não fornecido' });
-    }
     try {
-        const pessoaId = authService.verifyToken(token)?.userId;
+        // Verifica se os dados vieram como FormData ou JSON
+        const newPassword = req.body.newPassword || (req.body._parts && req.body._parts[0][1]);
 
-
-        // Obtém as fazendas associadas ao usuário
-        const pessoaFisica = await PessoaFisica.findByPk(pessoaId);
-
-        if (!pessoaFisica) {
-            return res.status(400).json({ message: 'Token inválido ou expirado' });
+        if (!newPassword || typeof newPassword !== 'string' || newPassword.trim() === '') {
+            return res.status(400).json({ message: 'Nova senha é obrigatória' });
         }
 
-        // Atualizar a senha do usuário
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ message: 'Token não fornecido' });
+        }
+
+        const pessoaId = authService.verifyToken(token)?.userId;
+        if (!pessoaId) {
+            return res.status(401).json({ message: 'Token inválido ou expirado' });
+        }
+
+        const pessoaFisica = await PessoaFisica.findByPk(pessoaId);
+        if (!pessoaFisica) {
+            return res.status(404).json({ message: 'Usuário não encontrado' });
+        }
+
         const hashedPassword = await authService.hashPassword(newPassword);
         pessoaFisica.passwordHash = hashedPassword;
-        pessoaFisica.passwordResetToken = null; // Limpa o token de redefinição
-        pessoaFisica.passwordResetExpires = null; // Limpa a data de expiração
+        pessoaFisica.passwordResetToken = null;
+        pessoaFisica.passwordResetExpires = null;
         await pessoaFisica.save();
 
-        res.status(200).json({ message: 'Senha redefinida com sucesso.' });
+        res.status(200).json({ message: 'Senha atualizada com sucesso.' });
     } catch (error) {
-        console.error('Erro ao redefinir senha:', error);
-        res.status(500).json({ message: 'Erro ao redefinir a senha.' });
+        console.error('Erro ao atualizar senha:', error);
+        res.status(500).json({ message: 'Erro ao atualizar a senha.' });
     }
 }
 
