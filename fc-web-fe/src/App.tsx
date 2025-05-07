@@ -37,7 +37,6 @@ const App: React.FC = () => {
                         </div>
                     </BrowserRouter>
                 </Content>
-                <Footer className="footer">Futuro Café ©2024</Footer>
             </Layout>
         </>
     );

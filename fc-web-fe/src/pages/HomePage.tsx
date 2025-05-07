@@ -396,7 +396,7 @@ const BenefitContent = styled.div`
 `;
 
 const CTASection = styled.section`
-  background: linear-gradient(rgba(44, 24, 16, 0.9), rgba(44, 24, 16, 0.95)),
+  background: linear-gradient(rgba(44, 24, 16, 0.85), rgba(44, 24, 16, 0.85)),
               url('https://images.unsplash.com/photo-1447933601403-0c6688de566e') no-repeat center center fixed;
   background-size: cover;
   padding: 100px 20px;
@@ -422,8 +422,58 @@ const CTASection = styled.section`
   }
 `;
 
+const Footer = styled.footer`
+  background-color: #1A1006;
+  padding: 30px 20px;
+  color: #EEDCC8;
+  text-align: center;
+`;
+
+const FooterContent = styled.div`
+  max-width: 1200px;
+  margin: 0 auto;
+`;
+
+const FooterLinks = styled.div`
+  margin: 15px 0;
+`;
+
+const PolicyLink = styled(Link)`
+  color: #A67C52;
+  text-decoration: none;
+  transition: color 0.3s ease;
+  
+  &:hover {
+    color: #EEDCC8;
+    text-decoration: underline;
+  }
+`;
+
+const DeveloperInfo = styled.div`
+  margin: 15px 0;
+  font-size: 0.95rem;
+`;
+
+const SiteLink = styled.a`
+  color: #A67C52;
+  text-decoration: none;
+  transition: color 0.3s ease;
+  
+  &:hover {
+    color: #EEDCC8;
+    text-decoration: underline;
+  }
+`;
+
+const Copyright = styled.div`
+  margin-top: 20px;
+  opacity: 0.7;
+  font-size: 0.9rem;
+`;
+
 const HomePage: React.FC = () => {
     const navigate = useNavigate();
+    const currentYear = new Date().getFullYear();
     
     return (
         <HomeContainer>
@@ -597,6 +647,20 @@ const HomePage: React.FC = () => {
           Acessar Dashboard <FaArrowRight />
         </CTAButton>
       </CTASection>
+
+      <Footer>
+        <FooterContent>
+          <FooterLinks>
+            Para mais informações, consulte nossa <PolicyLink to="/politica-de-privacidade">Política de Privacidade</PolicyLink>.
+          </FooterLinks>
+          <DeveloperInfo>
+            Desenvolvido por Qwize | <SiteLink href="https://qwize.io" target="_blank" rel="noopener noreferrer">qwize.io</SiteLink>
+          </DeveloperInfo>
+          <Copyright>
+            © {currentYear} Futuro Café. Todos os direitos reservados.
+          </Copyright>
+        </FooterContent>
+      </Footer>
         </HomeContainer>
     );
 };
