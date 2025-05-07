@@ -282,14 +282,7 @@ export async function forgotPassword(req: Request, res: Response) {
 }
 
 export async function resetPassword(req: Request, res: Response) {
-    const { newPassword } = req.body;
-
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) {
-        return res.status(401).json({ message: 'Token não fornecido' });
-    }
-
-    const pessoaId = authService.verifyToken(token)?.userId;
+    const { token, newPassword } = req.body;
 
     try {
         // Encontrar o usuário pelo token
@@ -318,4 +311,37 @@ export async function resetPassword(req: Request, res: Response) {
     }
 }
 
-export default { registerUser, authenticateUser, updateUser, deleteUser, refreshAccessToken, getUserDetails,  };
+
+export async function updatePassword(req: Request, res: Response) {
+    const { newPassword } = req.body;
+
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+        return res.status(401).json({ message: 'Token não fornecido' });
+    }
+    try {
+        const pessoaId = authService.verifyToken(token)?.userId;
+
+
+        // Obtém as fazendas associadas ao usuário
+        const pessoaFisica = await PessoaFisica.findByPk(pessoaId);
+
+        if (!pessoaFisica) {
+            return res.status(400).json({ message: 'Token inválido ou expirado' });
+        }
+
+        // Atualizar a senha do usuário
+        const hashedPassword = await authService.hashPassword(newPassword);
+        pessoaFisica.passwordHash = hashedPassword;
+        pessoaFisica.passwordResetToken = null; // Limpa o token de redefinição
+        pessoaFisica.passwordResetExpires = null; // Limpa a data de expiração
+        await pessoaFisica.save();
+
+        res.status(200).json({ message: 'Senha redefinida com sucesso.' });
+    } catch (error) {
+        console.error('Erro ao redefinir senha:', error);
+        res.status(500).json({ message: 'Erro ao redefinir a senha.' });
+    }
+}
+
+export default { registerUser, authenticateUser, updateUser, deleteUser, refreshAccessToken, getUserDetails, forgotPassword, resetPassword, updatePassword};
