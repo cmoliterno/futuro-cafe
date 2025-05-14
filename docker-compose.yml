@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./fc-web-be
+    container_name: futuro-cafe-backend
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./fc-web-be/uploads:/app/uploads
+      - backend-logs:/app/logs
+    networks:
+      - futuro-cafe-network
+
+  frontend:
+    build: ./fc-web-fe
+    container_name: futuro-cafe-frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - futuro-cafe-network
+
+volumes:
+  backend-logs:
+
+networks:
+  futuro-cafe-network:
+    driver: bridge 
