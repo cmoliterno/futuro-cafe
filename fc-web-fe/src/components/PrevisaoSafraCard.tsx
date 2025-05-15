@@ -5,7 +5,7 @@ import { addDays, subDays } from 'date-fns';
 import { FaLeaf, FaCalendarAlt, FaWarehouse } from 'react-icons/fa';
 
 interface PrevisaoSafraCardProps {
-  sacasPorHectare: number;
+  sacasPorHectare: string;
   diasParaColheita: number;
   dataIdealColheita: Date;
   dataUltimaAnalise: Date;
@@ -103,7 +103,7 @@ const PrevisaoSafraCard: React.FC<PrevisaoSafraCardProps> = ({
               <FaLeaf />
               Produtividade Estimada
             </MetricaLabel>
-            <MetricaValor>{sacasPorHectare.toFixed(2)} sacas/ha</MetricaValor>
+            <MetricaValor>{sacasPorHectare} sacas/ha</MetricaValor>
           </Metrica>
         </MetricaContainer>
       </Section>

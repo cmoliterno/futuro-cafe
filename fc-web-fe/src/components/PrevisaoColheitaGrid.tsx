@@ -170,7 +170,7 @@ const PrevisaoColheitaGrid: React.FC = () => {
                   <FaLeaf />
                   Produtividade Estimada
                 </MetricaLabel>
-                <MetricaValor>{previsao.sacasPorHectare.toFixed(2)} sacas/ha</MetricaValor>
+                <MetricaValor>{previsao.sacasPorHectare} sacas/ha</MetricaValor>
               </Metrica>
               
               <Metrica>

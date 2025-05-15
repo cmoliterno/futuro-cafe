@@ -13,7 +13,7 @@ interface PrevisaoTalhao {
     id: string;
     nome: string;
     fazendaNome: string;
-    sacasPorHectare: number;
+    sacasPorHectare: string;
     diasParaColheita: number;
     dataIdealColheita: Date;
     dataUltimaAnalise: Date;
@@ -67,13 +67,13 @@ export const calcularPrevisaoTalhao = async (req: Request, res: Response) => {
             const hoje = new Date();
             
             if (dataPlantio <= hoje) {
-                const diffTime = hoje.getTime() - dataPlantio.getTime();
-                const diffDays = diffTime / (1000 * 60 * 60 * 24);
-                idadePlantasTalhao = Math.floor(diffDays / 365.25);
+                const diffAnos = hoje.getFullYear() - dataPlantio.getFullYear();
+                const diffMeses = hoje.getMonth() - dataPlantio.getMonth();
+                idadePlantasTalhao = (diffAnos * 12) + diffMeses;
             }
         }
 
-        const total = ultimaAnalise.total || 1; // Evita divisão por zero
+        const total = 100; // Valor base de grãos por amostra, como no código Python
         const dataUltimaColeta = new Date(ultimaAnalise.createdAt);
         const meses = [
             'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
@@ -83,23 +83,25 @@ export const calcularPrevisaoTalhao = async (req: Request, res: Response) => {
 
         // Garantir que as porcentagens somem 1
         const porcentagens = {
-            verde: ultimaAnalise.green / total,
-            verdeCana: ultimaAnalise.greenYellow / total,
-            cereja: ultimaAnalise.cherry / total,
-            passa: ultimaAnalise.raisin / total,
-            seco: ultimaAnalise.dry / total
+            verde: ultimaAnalise.green / ultimaAnalise.total,
+            verde_cana: ultimaAnalise.greenYellow / ultimaAnalise.total,
+            cereja: ultimaAnalise.cherry / ultimaAnalise.total,
+            passa: ultimaAnalise.raisin / ultimaAnalise.total,
+            seco: ultimaAnalise.dry / ultimaAnalise.total
         };
 
         const graosPorEstagio = {
-            verde: ultimaAnalise.green || 0,
-            verdeCana: ultimaAnalise.greenYellow || 0,
-            cereja: ultimaAnalise.cherry || 0,
-            passa: ultimaAnalise.raisin || 0,
-            seco: ultimaAnalise.dry || 0
+            verde: Math.round(porcentagens.verde * total),
+            verde_cana: Math.round(porcentagens.verde_cana * total),
+            cereja: Math.round(porcentagens.cereja * total),
+            passa: Math.round(porcentagens.passa * total),
+            seco: Math.round(porcentagens.seco * total)
         };
 
         const previsao = PrevisaoService.calcularPrevisoes(
-            idadePlantasTalhao,
+            new Date(talhao.DataPlantio || new Date()),
+            2.5, // espacamentoEntreLinhas padrão em metros
+            0.7, // espacamentoEntrePlantas padrão em metros
             graosPorEstagio,
             porcentagens,
             mesColeta
@@ -165,13 +167,13 @@ export const calcularPrevisaoTodasFazendas = async (req: Request, res: Response)
                     const hoje = new Date();
                     
                     if (dataPlantio <= hoje) {
-                        const diffTime = hoje.getTime() - dataPlantio.getTime();
-                        const diffDays = diffTime / (1000 * 60 * 60 * 24);
-                        idadePlantasTalhao = Math.floor(diffDays / 365.25);
+                        const diffAnos = hoje.getFullYear() - dataPlantio.getFullYear();
+                        const diffMeses = hoje.getMonth() - dataPlantio.getMonth();
+                        idadePlantasTalhao = (diffAnos * 12) + diffMeses;
                     }
                 }
 
-                const total = ultimaAnalise.total || 1; // Evita divisão por zero
+                const total = 100; // Valor base de grãos por amostra, como no código Python
                 const dataUltimaColeta = new Date(ultimaAnalise.createdAt);
                 const meses = [
                     'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
@@ -181,23 +183,25 @@ export const calcularPrevisaoTodasFazendas = async (req: Request, res: Response)
 
                 // Garantir que as porcentagens somem 1
                 const porcentagens = {
-                    verde: ultimaAnalise.green / total,
-                    verdeCana: ultimaAnalise.greenYellow / total,
-                    cereja: ultimaAnalise.cherry / total,
-                    passa: ultimaAnalise.raisin / total,
-                    seco: ultimaAnalise.dry / total
+                    verde: ultimaAnalise.green / ultimaAnalise.total,
+                    verde_cana: ultimaAnalise.greenYellow / ultimaAnalise.total,
+                    cereja: ultimaAnalise.cherry / ultimaAnalise.total,
+                    passa: ultimaAnalise.raisin / ultimaAnalise.total,
+                    seco: ultimaAnalise.dry / ultimaAnalise.total
                 };
 
                 const graosPorEstagio = {
-                    verde: ultimaAnalise.green || 0,
-                    verdeCana: ultimaAnalise.greenYellow || 0,
-                    cereja: ultimaAnalise.cherry || 0,
-                    passa: ultimaAnalise.raisin || 0,
-                    seco: ultimaAnalise.dry || 0
+                    verde: Math.round(porcentagens.verde * total),
+                    verde_cana: Math.round(porcentagens.verde_cana * total),
+                    cereja: Math.round(porcentagens.cereja * total),
+                    passa: Math.round(porcentagens.passa * total),
+                    seco: Math.round(porcentagens.seco * total)
                 };
 
                 const previsao = PrevisaoService.calcularPrevisoes(
-                    idadePlantasTalhao,
+                    new Date(talhao.DataPlantio || new Date()),
+                    2.5, // espacamentoEntreLinhas padrão em metros
+                    0.7, // espacamentoEntrePlantas padrão em metros
                     graosPorEstagio,
                     porcentagens,
                     mesColeta

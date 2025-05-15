@@ -4,7 +4,7 @@ export interface PrevisaoTalhao {
   id: string;
   nome: string;
   fazendaNome: string;
-  sacasPorHectare: number;
+  sacasPorHectare: string;
   diasParaColheita: number;
   dataIdealColheita: Date;
   dataUltimaAnalise: Date;
