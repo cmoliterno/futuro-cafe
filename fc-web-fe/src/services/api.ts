@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_BASE_URL || 'https://api.futurocafe.com.br/api/';
+const API_URL = process.env.REACT_BASE_URL || 'http://localhost:3000/api/';
 
 const api = axios.create({
     baseURL: API_URL,
